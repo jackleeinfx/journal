@@ -280,6 +280,167 @@
             margin-bottom: 15px;
         }
 
+        /* 圖片上傳區域 */
+        .image-upload-container {
+            margin-bottom: 15px;
+        }
+
+        .image-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .image-upload-area:hover {
+            background: #e9ecef;
+            border-color: #764ba2;
+        }
+
+        .image-upload-area.dragover {
+            background: #e7f3ff;
+            border-color: #667eea;
+            border-style: solid;
+        }
+
+        .image-upload-area input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .image-upload-text {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .image-upload-hint {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .uploaded-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .uploaded-image-item {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e0e0e0;
+        }
+
+        .uploaded-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .uploaded-image-item .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(220, 53, 69, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .uploaded-image-item .remove-image:hover {
+            background: #dc3545;
+        }
+
+        .image-upload-progress {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .image-upload-area {
+                padding: 15px;
+            }
+
+            .uploaded-image-item {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        body.dark-mode .image-upload-area {
+            background: #2d2d44;
+            border-color: #667eea;
+        }
+
+        body.dark-mode .image-upload-area:hover {
+            background: #3d3d5c;
+        }
+
+        body.dark-mode .image-upload-area.dragover {
+            background: #4a4a6a;
+        }
+
+        body.dark-mode .image-upload-text {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .image-upload-hint {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .uploaded-image-item {
+            border-color: #4a4a6a;
+        }
+
+        /* 日記列表中的圖片顯示 */
+        .diary-item-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .diary-item-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 6px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid #e0e0e0;
+        }
+
+        .diary-item-image:hover {
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .diary-item-image {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
         .textarea-container textarea {
             flex: 1;
             padding: 15px;
@@ -753,6 +914,15 @@
                     <div class="date-container">
                         <input type="date" id="dateInput">
                     </div>
+                    <div class="image-upload-container">
+                        <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
+                            <div class="image-upload-text">📷 點擊或拖拽圖片上傳</div>
+                            <div class="image-upload-hint">支持 JPG、PNG、GIF（將自動壓縮到100KB以下）</div>
+                            <input type="file" id="imageFileInput" accept="image/*" multiple style="display: none;">
+                        </div>
+                        <div class="uploaded-images" id="uploadedImages"></div>
+                        <div class="image-upload-progress" id="uploadProgress" style="display: none;"></div>
+                    </div>
                     <div class="textarea-container">
                         <textarea id="diaryInput" placeholder="開始寫下今天的心情..."></textarea>
                     </div>
@@ -832,6 +1002,7 @@
         let diaries = [];
         let tagUsage = {}; // 記錄標籤使用次數
         let currentUserId = null; // 當前用戶ID（用於Supabase）
+        let uploadedImages = []; // 當前上傳的圖片URL列表
 
         // 切換深色模式
         function toggleDarkMode() {
@@ -1095,6 +1266,216 @@
             }
         }
 
+        // 圖片壓縮函數（壓縮到100KB以下）
+        function compressImage(file, maxSizeKB = 100) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDimension = 1200; // 最大尺寸
+                        
+                        // 如果圖片太大，先縮放
+                        if (width > maxDimension || height > maxDimension) {
+                            if (width > height) {
+                                height = (height / width) * maxDimension;
+                                width = maxDimension;
+                            } else {
+                                width = (width / height) * maxDimension;
+                                height = maxDimension;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 嘗試不同的質量直到文件大小小於100KB
+                        let quality = 0.9;
+                        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        
+                        const tryCompress = () => {
+                            const sizeKB = (dataUrl.length * 3 / 4) / 1024; // base64大小轉換
+                            
+                            if (sizeKB <= maxSizeKB || quality <= 0.1) {
+                                // 轉換為Blob
+                                const byteString = atob(dataUrl.split(',')[1]);
+                                const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                                const ab = new ArrayBuffer(byteString.length);
+                                const ia = new Uint8Array(ab);
+                                for (let i = 0; i < byteString.length; i++) {
+                                    ia[i] = byteString.charCodeAt(i);
+                                }
+                                const blob = new Blob([ab], { type: mimeString });
+                                resolve(blob);
+                            } else {
+                                quality -= 0.1;
+                                dataUrl = canvas.toDataURL('image/jpeg', quality);
+                                tryCompress();
+                            }
+                        };
+                        
+                        tryCompress();
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 上傳圖片到 Supabase Storage
+        async function uploadImageToSupabase(blob, fileName) {
+            if (!USE_SUPABASE) {
+                // 如果不使用Supabase，轉換為base64
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            }
+            
+            try {
+                const userId = getUserId();
+                const timestamp = Date.now();
+                // 清理文件名，移除特殊字符
+                const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const uniqueFileName = `${userId}/${timestamp}_${cleanFileName}`;
+                
+                // 使用 Supabase Storage API (正確的端點格式)
+                const file = new File([blob], cleanFileName, { type: blob.type || 'image/jpeg' });
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                console.log('[Supabase Storage] Uploading to:', `${SUPABASE_URL}/storage/v1/object/diary-images/${uniqueFileName}`);
+                
+                const response = await fetch(`${SUPABASE_URL}/storage/v1/object/diary-images/${uniqueFileName}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('[Supabase Storage] Upload failed:', response.status, errorText);
+                    // 如果上傳失敗，使用base64作為備份
+                    console.log('[Supabase Storage] Falling back to base64');
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                }
+                
+                // 返回公開URL
+                const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/diary-images/${uniqueFileName}`;
+                console.log('[Supabase Storage] Image uploaded successfully:', publicUrl);
+                return publicUrl;
+            } catch (error) {
+                console.error('[Supabase Storage] Upload error:', error);
+                // 如果上傳失敗，使用base64作為備份
+                console.log('[Supabase Storage] Falling back to base64 due to error');
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            }
+        }
+
+        // 初始化圖片上傳功能
+        function initImageUpload() {
+            const imageUploadArea = document.getElementById('imageUploadArea');
+            const imageFileInput = document.getElementById('imageFileInput');
+            
+            // 文件選擇
+            imageFileInput.addEventListener('change', async (e) => {
+                await handleFiles(Array.from(e.target.files));
+            });
+            
+            // 拖拽功能
+            imageUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                imageUploadArea.classList.add('dragover');
+            });
+            
+            imageUploadArea.addEventListener('dragleave', () => {
+                imageUploadArea.classList.remove('dragover');
+            });
+            
+            imageUploadArea.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                imageUploadArea.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+                await handleFiles(files);
+            });
+        }
+
+        // 處理上傳的圖片
+        async function handleFiles(files) {
+            const uploadProgress = document.getElementById('uploadProgress');
+            const uploadedImagesContainer = document.getElementById('uploadedImages');
+            
+            uploadProgress.style.display = 'block';
+            uploadProgress.textContent = '正在壓縮和上傳圖片...';
+            
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                uploadProgress.textContent = `正在處理圖片 ${i + 1}/${files.length}...`;
+                
+                try {
+                    // 壓縮圖片
+                    const compressedBlob = await compressImage(file);
+                    console.log(`[Image] Compressed ${file.name}: ${(file.size / 1024).toFixed(2)}KB -> ${(compressedBlob.size / 1024).toFixed(2)}KB`);
+                    
+                    // 上傳到 Supabase
+                    const imageUrl = await uploadImageToSupabase(compressedBlob, file.name);
+                    
+                    // 添加到上傳列表
+                    uploadedImages.push(imageUrl);
+                    
+                    // 顯示預覽
+                    updateImagePreview();
+                } catch (error) {
+                    console.error('[Image] Error processing image:', error);
+                    alert(`處理圖片 ${file.name} 時發生錯誤: ${error.message}`);
+                }
+            }
+            
+            uploadProgress.style.display = 'none';
+            uploadProgress.textContent = '';
+        }
+
+        // 移除圖片
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            updateImagePreview();
+        }
+
+        // 更新圖片預覽
+        function updateImagePreview() {
+            const uploadedImagesContainer = document.getElementById('uploadedImages');
+            uploadedImagesContainer.innerHTML = '';
+            
+            uploadedImages.forEach((imageUrl, index) => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'uploaded-image-item';
+                imageItem.innerHTML = `
+                    <img src="${imageUrl}" alt="上傳的圖片">
+                    <button class="remove-image" onclick="removeImage(${index})">×</button>
+                `;
+                uploadedImagesContainer.appendChild(imageItem);
+            });
+        }
+
         // 獲取或創建用戶ID
         // 使用密碼的簡單哈希作為用戶ID，這樣所有使用相同密碼的設備都能看到相同的日記
         function getUserId() {
@@ -1171,6 +1552,7 @@
                             content: d.content,
                             translation: d.translation || '',
                             tags: d.tags || [],
+                            images: d.images || [],
                             createdAt: d.created_at
                         }));
                         console.log('[Supabase] Processed diaries:', diaries.length);
@@ -1288,6 +1670,7 @@
                         content: content,
                         translation: translation,
                         tags: tags,
+                        images: uploadedImages.length > 0 ? uploadedImages : (existingDiary.images || []),
                         updatedAt: new Date().toISOString()
                     };
                     diaries[existingIndex] = updatedDiary;
@@ -1299,7 +1682,8 @@
                             date: date,
                             content: content,
                             translation: translation || null,
-                            tags: tags.length > 0 ? tags : null
+                            tags: tags.length > 0 ? tags : null,
+                            images: uploadedImages.length > 0 ? uploadedImages : null
                         }, `?id=eq.${currentEditingId}`);
                         console.log('[Supabase] Update result:', updateResult);
                         if (!updateResult) {
@@ -1317,6 +1701,7 @@
                     content: content,
                     translation: translation,
                     tags: tags,
+                    images: uploadedImages,
                     createdAt: new Date().toISOString()
                 };
                 diaries.unshift(diaryEntry);
@@ -1329,7 +1714,8 @@
                         date: date,
                         content: content,
                         translation: translation || null,
-                        tags: tags.length > 0 ? tags : null
+                        tags: tags.length > 0 ? tags : null,
+                        images: uploadedImages.length > 0 ? uploadedImages : null
                     });
                     console.log('[Supabase] Save result:', result);
                     if (result && Array.isArray(result) && result[0]) {
@@ -1375,11 +1761,13 @@
             localStorage.setItem('diaries', JSON.stringify(diaries));
             localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
 
-            // 清空輸入框
+            // 清空輸入框和圖片
             document.getElementById('diaryInput').value = '';
             document.getElementById('translationInput').value = '';
             document.getElementById('translationSection').classList.remove('show');
             document.getElementById('translationSection').style.display = 'none';
+            uploadedImages = [];
+            updateImagePreview();
             currentEditingId = null;
             setTodayDate();
             
@@ -1583,6 +1971,12 @@
                     `<span class="diary-item-tag">#${tag}</span>`
                 ).join('');
 
+                const imagesHtml = diary.images && diary.images.length > 0 ? `
+                    <div class="diary-item-images">
+                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
+                    </div>
+                ` : '';
+                
                 return `
                     <div class="diary-item">
                         <div class="diary-item-header">
@@ -1591,6 +1985,7 @@
                         </div>
                         <div class="diary-item-content">${escapeHtml(diary.content)}</div>
                         ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
+                        ${imagesHtml}
                         ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
                     </div>
                 `;
@@ -1614,6 +2009,10 @@
                 document.getElementById('dateInput').value = diary.date;
                 document.getElementById('diaryInput').value = diary.content;
                 document.getElementById('translationInput').value = diary.translation || '';
+                
+                // 載入圖片
+                uploadedImages = diary.images || [];
+                updateImagePreview();
                 
                 // 如果有翻譯內容，顯示翻譯區域
                 if (diary.translation) {
@@ -1641,6 +2040,8 @@
             document.getElementById('translationInput').value = '';
             document.getElementById('translationSection').classList.remove('show');
             document.getElementById('translationSection').style.display = 'none';
+            uploadedImages = [];
+            updateImagePreview();
             setTodayDate();
             document.getElementById('saveBtn').textContent = '💾 儲存';
             document.getElementById('cancelEditBtn').style.display = 'none';
@@ -1761,6 +2162,12 @@
                     `<span class="diary-item-tag">#${tag}</span>`
                 ).join('');
 
+                const imagesHtml = diary.images && diary.images.length > 0 ? `
+                    <div class="diary-item-images">
+                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
+                    </div>
+                ` : '';
+                
                 return `
                     <div class="diary-item">
                         <div class="diary-item-header">
@@ -1769,6 +2176,7 @@
                         </div>
                         <div class="diary-item-content">${highlightedContent}</div>
                         ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
+                        ${imagesHtml}
                         ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
                     </div>
                 `;

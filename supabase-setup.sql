@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS diaries (
   content TEXT NOT NULL,
   translation TEXT,
   tags TEXT[] DEFAULT '{}',
+  images TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
