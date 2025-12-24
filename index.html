@@ -1,0 +1,1657 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的日記</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .dark-mode-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .dark-mode-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .dark-mode-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+
+        .settings-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .settings-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .settings-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        .password-modal, .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            outline: none;
+        }
+
+        .modal-content input:focus {
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .diary-writing-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .diary-writing-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+                gap: 10px;
+            }
+            .diary-writing-section {
+                gap: 15px;
+            }
+        }
+
+        .translation-section {
+            display: none !important;
+        }
+
+        .translation-section.show {
+            display: block !important;
+        }
+
+        .translation-section .section-title {
+            display: none !important;
+        }
+
+        .translation-section.show .section-title {
+            display: block !important;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+                gap: 10px;
+            }
+        }
+
+        .diary-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-container {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .date-container input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            flex: 1;
+            outline: none;
+            min-height: 44px;
+        }
+
+        .date-container input:focus {
+            border-color: #667eea;
+        }
+
+
+        @media (max-width: 768px) {
+            .date-container input {
+                padding: 10px;
+                font-size: 16px;
+            }
+        }
+
+        .textarea-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+
+        .textarea-container textarea {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            resize: vertical;
+            min-height: 300px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .textarea-container textarea:focus {
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .textarea-container textarea {
+                padding: 12px;
+                font-size: 16px;
+                min-height: 200px;
+            }
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .search-container-list {
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-container-list input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            min-height: 44px;
+        }
+
+        .search-container-list input:focus {
+            border-color: #667eea;
+        }
+
+        .search-icon-list {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .section-title {
+                font-size: 16px;
+            }
+            .search-container-list {
+                width: 100%;
+                max-width: 100%;
+            }
+            .search-container-list input {
+                padding: 10px 35px 10px 12px;
+                font-size: 16px;
+            }
+            .tags-create {
+                flex-direction: column;
+            }
+            .tags-create button {
+                width: 100%;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .action-buttons .btn-action {
+                width: 100%;
+            }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: #667eea;
+            color: white;
+            min-height: 44px;
+            touch-action: manipulation;
+        }
+
+        .btn-action:hover {
+            background: #5568d3;
+        }
+
+        @media (max-width: 768px) {
+            .btn-action {
+                padding: 12px 16px;
+                font-size: 14px;
+                flex: 1;
+            }
+        }
+
+        .tags-container {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .tags-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .tags-create {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tags-create input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .tags-create input:focus {
+            border-color: #667eea;
+        }
+
+        .tags-create button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .tags-create button:hover {
+            background: #5568d3;
+        }
+
+        .tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag-item {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            border: 2px solid #667eea;
+            color: #667eea;
+            transition: all 0.3s;
+        }
+
+        .tag-item:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .diary-list {
+            max-height: 600px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        @media (max-width: 768px) {
+            .diary-list {
+                max-height: 500px;
+                padding: 10px;
+            }
+        }
+
+        .diary-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .diary-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .diary-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .diary-item-edit-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+            min-height: 32px;
+            touch-action: manipulation;
+            z-index: 10;
+        }
+
+        .diary-item-edit-btn:hover {
+            background: #5568d3;
+        }
+
+        @media (max-width: 768px) {
+            .diary-item {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            .diary-item-edit-btn {
+                padding: 8px 14px;
+                font-size: 13px;
+                min-height: 36px;
+            }
+        }
+
+        .diary-item-date {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .diary-item-content {
+            font-size: 16px;
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .diary-item-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .diary-item-tag {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .highlight {
+            background: yellow;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.dark-mode .container {
+            background: #1e1e2e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .header {
+            background: linear-gradient(135deg, #2d2d44 0%, #3d3d5c 100%);
+        }
+
+        body.dark-mode .section-title {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .date-container input {
+            background: #2d2d44;
+            border-color: #4a4a6a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .date-container input:focus {
+            border-color: #667eea;
+        }
+
+        body.dark-mode .textarea-container textarea {
+            background: #2d2d44;
+            border-color: #4a4a6a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .textarea-container textarea:focus {
+            border-color: #667eea;
+        }
+
+        body.dark-mode .textarea-container textarea::placeholder {
+            color: #888;
+        }
+
+        body.dark-mode .tags-container {
+            background: #2d2d44;
+        }
+
+        body.dark-mode .tags-title {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .tags-create input {
+            background: #1e1e2e;
+            border-color: #4a4a6a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .tags-create input:focus {
+            border-color: #667eea;
+        }
+
+        body.dark-mode .tags-create input::placeholder {
+            color: #888;
+        }
+
+        body.dark-mode .tag-item {
+            background: #2d2d44;
+            border-color: #667eea;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .tag-item:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        body.dark-mode .diary-list {
+            background: #2d2d44;
+        }
+
+        body.dark-mode .diary-item {
+            background: #2d2d44;
+            border-left-color: #667eea;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .diary-item:hover {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        body.dark-mode .diary-item-date {
+            color: #b0b0b0;
+        }
+
+        body.dark-mode .diary-item-content {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .search-container-list input {
+            background: #2d2d44;
+            border-color: #4a4a6a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .search-container-list input:focus {
+            border-color: #667eea;
+        }
+
+        body.dark-mode .search-container-list input::placeholder {
+            color: #888;
+        }
+
+        body.dark-mode .empty-state {
+            color: #888;
+        }
+
+        body.dark-mode .modal-content {
+            background: #2d2d44;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-content h2 {
+            color: #667eea;
+        }
+
+        body.dark-mode .modal-content input {
+            background: #1e1e2e;
+            border-color: #4a4a6a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .modal-content input:focus {
+            border-color: #667eea;
+        }
+
+        body.dark-mode .modal-content input::placeholder {
+            color: #888;
+        }
+
+        body.dark-mode .btn-secondary {
+            background: #4a4a6a;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .btn-secondary:hover {
+            background: #5a5a7a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📔 我的日記</h1>
+            <div class="header-buttons">
+                <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()">🌙 深色模式</button>
+                <button class="settings-btn" onclick="showSettings()">⚙️ 設定</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="diary-writing-section">
+                <div class="diary-section">
+                    <div class="section-title">寫日記</div>
+                    <div class="date-container">
+                        <input type="date" id="dateInput">
+                    </div>
+                    <div class="textarea-container">
+                        <textarea id="diaryInput" placeholder="開始寫下今天的心情..."></textarea>
+                    </div>
+                <div class="action-buttons">
+                    <button class="btn-action" id="saveBtn" onclick="saveDiary()">💾 儲存</button>
+                    <button class="btn-action" id="cancelEditBtn" onclick="cancelEdit()" style="display: none; background: #999;">❌ 取消編輯</button>
+                    <button class="btn-action" id="deleteBtn" onclick="deleteDiary()" style="display: none; background: #dc3545;">🗑️ 刪除日記</button>
+                    <button class="btn-action" onclick="translateDiary()">🌐 翻譯成英文</button>
+                </div>
+                    <div class="tags-container">
+                        <div class="tags-title">常用標籤 (點擊插入)</div>
+                        <div class="tags-create">
+                            <input type="text" id="newTagInput" placeholder="輸入新標籤名稱（不含#）" onkeypress="if(event.key==='Enter') createNewTag()">
+                            <button onclick="createNewTag()">➕ 新增標籤</button>
+                        </div>
+                        <div class="tags-list" id="tagsList"></div>
+                    </div>
+                </div>
+
+                <div class="diary-section translation-section" id="translationSection" style="display: none !important;">
+                    <div class="section-title">英文對照</div>
+                    <div class="textarea-container">
+                        <textarea id="translationInput" placeholder="翻譯後的英文內容將顯示在這裡..." readonly></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="diary-section" style="padding: 0 30px 30px;">
+            <div class="section-header">
+                <div class="section-title">日記列表</div>
+                <div class="search-container-list">
+                    <input type="text" id="searchInput" placeholder="搜尋日記內容...">
+                    <span class="search-icon-list">🔍</span>
+                </div>
+            </div>
+            <div class="diary-list" id="diaryList">
+                <div class="empty-state">還沒有日記，開始寫第一篇吧！</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 密碼輸入模態框 -->
+    <div class="password-modal" id="passwordModal">
+        <div class="modal-content">
+            <h2>輸入密碼</h2>
+            <input type="password" id="passwordInput" placeholder="請輸入密碼">
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="checkPassword()">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 設定模態框 -->
+    <div class="settings-modal" id="settingsModal">
+        <div class="modal-content">
+            <h2>設定</h2>
+            <label>修改密碼：</label>
+            <input type="password" id="newPasswordInput" placeholder="新密碼">
+            <input type="password" id="confirmPasswordInput" placeholder="確認新密碼">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeSettings()">取消</button>
+                <button class="btn btn-primary" onclick="savePassword()">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase 配置（如果使用 Supabase，請填入您的配置）
+        const USE_SUPABASE = false; // 設為 true 以啟用 Supabase
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // 例如: 'https://xxxxx.supabase.co'
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // 您的 Supabase anon key
+        
+        // 初始化
+        const DEFAULT_PASSWORD = '0000';
+        let isAuthenticated = false;
+        let diaries = [];
+        let tagUsage = {}; // 記錄標籤使用次數
+        let currentUserId = null; // 當前用戶ID（用於Supabase）
+
+        // 切換深色模式
+        function toggleDarkMode() {
+            const body = document.body;
+            const darkModeBtn = document.getElementById('darkModeBtn');
+            const isDarkMode = body.classList.contains('dark-mode');
+            
+            if (isDarkMode) {
+                body.classList.remove('dark-mode');
+                darkModeBtn.textContent = '🌙 深色模式';
+                localStorage.setItem('darkMode', 'false');
+            } else {
+                body.classList.add('dark-mode');
+                darkModeBtn.textContent = '☀️ 淺色模式';
+                localStorage.setItem('darkMode', 'true');
+            }
+        }
+
+        // 載入深色模式狀態
+        function loadDarkMode() {
+            const savedDarkMode = localStorage.getItem('darkMode');
+            const darkModeBtn = document.getElementById('darkModeBtn');
+            
+            if (savedDarkMode === 'true') {
+                document.body.classList.add('dark-mode');
+                darkModeBtn.textContent = '☀️ 淺色模式';
+            } else {
+                document.body.classList.remove('dark-mode');
+                darkModeBtn.textContent = '🌙 深色模式';
+            }
+        }
+
+        // 頁面載入時檢查密碼
+        window.onload = async function() {
+            checkAuth();
+            setTodayDate();
+            loadDarkMode();
+            // 確保翻譯區域默認隱藏
+            const translationSection = document.getElementById('translationSection');
+            translationSection.classList.remove('show');
+            translationSection.style.display = 'none';
+            await loadDiaries();
+            updateTagsList();
+        };
+
+        // 檢查認證狀態
+        function checkAuth() {
+            const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+            const authStatus = sessionStorage.getItem('diaryAuthenticated');
+            
+            if (authStatus === 'true') {
+                isAuthenticated = true;
+                document.getElementById('passwordModal').style.display = 'none';
+            } else {
+                document.getElementById('passwordModal').style.display = 'flex';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+
+        // 驗證密碼
+        function checkPassword() {
+            const inputPassword = document.getElementById('passwordInput').value;
+            const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+            
+            if (inputPassword === savedPassword) {
+                isAuthenticated = true;
+                sessionStorage.setItem('diaryAuthenticated', 'true');
+                document.getElementById('passwordModal').style.display = 'none';
+                document.getElementById('passwordInput').value = '';
+            } else {
+                alert('密碼錯誤！');
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        }
+
+        // 按Enter鍵確認密碼
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // 顯示設定
+        function showSettings() {
+            if (!isAuthenticated) {
+                alert('請先輸入密碼！');
+                checkAuth();
+                return;
+            }
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        // 關閉設定
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmPasswordInput').value = '';
+        }
+
+        // 儲存密碼
+        function savePassword() {
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+            
+            if (!newPassword) {
+                alert('請輸入新密碼！');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                alert('兩次輸入的密碼不一致！');
+                return;
+            }
+            
+            localStorage.setItem('diaryPassword', newPassword);
+            alert('密碼已更新！');
+            closeSettings();
+        }
+
+        // 設定今日日期（加拿大多倫多時間）
+        function setTodayDate() {
+            try {
+                const now = new Date();
+                
+                // 使用最可靠的方法：toLocaleDateString with en-CA locale
+                // en-CA 格式直接返回 YYYY-MM-DD，最適合用於 date input
+                const torontoDateString = now.toLocaleDateString('en-CA', {
+                    timeZone: 'America/Toronto'
+                });
+                
+                // 驗證格式並設置
+                if (torontoDateString && torontoDateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    document.getElementById('dateInput').value = torontoDateString;
+                    console.log('多倫多日期:', torontoDateString);
+                    return;
+                }
+                
+                // 備用方法：使用 formatToParts（更精確）
+                const formatter = new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'America/Toronto',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+                
+                const parts = formatter.formatToParts(now);
+                if (parts && parts.length > 0) {
+                    const year = parts.find(p => p.type === 'year')?.value;
+                    const month = parts.find(p => p.type === 'month')?.value;
+                    const day = parts.find(p => p.type === 'day')?.value;
+                    
+                    if (year && month && day) {
+                        document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+                        console.log('多倫多日期 (formatToParts):', `${year}-${month}-${day}`);
+                        return;
+                    }
+                }
+                
+                // 最後備用：手動計算（不推薦，但作為最後手段）
+                console.warn('使用備用方法計算多倫多日期');
+                const utcTime = now.getTime();
+                const localOffset = now.getTimezoneOffset() * 60000; // 本地時區偏移（毫秒）
+                const utcTime2 = utcTime + localOffset;
+                
+                // 多倫多時區：12月是標準時間 UTC-5
+                // 但我們需要動態判斷是否為夏令時
+                // 簡化：12月肯定是標準時間 UTC-5
+                const torontoOffset = -5 * 3600000; // UTC-5 = -5小時
+                const torontoTime = new Date(utcTime2 + torontoOffset);
+                
+                const year = torontoTime.getUTCFullYear();
+                const month = String(torontoTime.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(torontoTime.getUTCDate()).padStart(2, '0');
+                
+                document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+                console.log('多倫多日期 (手動計算):', `${year}-${month}-${day}`);
+            } catch (error) {
+                console.error('獲取多倫多時間失敗:', error);
+                // 最後的備用方案：使用當前日期
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+            }
+        }
+
+
+        // Supabase API 函數
+        async function supabaseRequest(table, method = 'GET', data = null, filters = '') {
+            if (!USE_SUPABASE) return null;
+            
+            try {
+                const url = `${SUPABASE_URL}/rest/v1/${table}${filters}`;
+                const options = {
+                    method: method,
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    }
+                };
+                
+                if (data && (method === 'POST' || method === 'PATCH')) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    throw new Error(`Supabase error: ${response.statusText}`);
+                }
+                
+                if (method === 'DELETE') return true;
+                return await response.json();
+            } catch (error) {
+                console.error('Supabase request failed:', error);
+                return null;
+            }
+        }
+
+        // 獲取或創建用戶ID
+        function getUserId() {
+            if (!currentUserId) {
+                let userId = localStorage.getItem('diaryUserId');
+                if (!userId) {
+                    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('diaryUserId', userId);
+                }
+                currentUserId = userId;
+            }
+            return currentUserId;
+        }
+
+        // 載入日記
+        async function loadDiaries() {
+            if (USE_SUPABASE) {
+                try {
+                    const userId = getUserId();
+                    // 從 Supabase 載入日記
+                    const diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${userId}&order=created_at.desc`);
+                    if (diariesData) {
+                        diaries = diariesData.map(d => ({
+                            id: d.id,
+                            date: d.date,
+                            content: d.content,
+                            translation: d.translation || '',
+                            tags: d.tags || [],
+                            createdAt: d.created_at
+                        }));
+                    }
+                    
+                    // 從 Supabase 載入標籤使用次數
+                    const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}`);
+                    if (tagsData) {
+                        tagUsage = {};
+                        tagsData.forEach(t => {
+                            tagUsage[t.tag_name] = t.usage_count;
+                        });
+                    }
+                } catch (error) {
+                    console.error('載入日記失敗:', error);
+                    // 如果 Supabase 失敗，嘗試從 localStorage 載入
+                    const saved = localStorage.getItem('diaries');
+                    if (saved) {
+                        diaries = JSON.parse(saved);
+                    }
+                    const savedTagUsage = localStorage.getItem('tagUsage');
+                    if (savedTagUsage) {
+                        tagUsage = JSON.parse(savedTagUsage);
+                    }
+                }
+            } else {
+                // 使用 localStorage
+                const saved = localStorage.getItem('diaries');
+                if (saved) {
+                    diaries = JSON.parse(saved);
+                }
+                
+                const savedTagUsage = localStorage.getItem('tagUsage');
+                if (savedTagUsage) {
+                    tagUsage = JSON.parse(savedTagUsage);
+                }
+            }
+            
+            renderDiaryList();
+        }
+
+        // 儲存日記
+        async function saveDiary() {
+            if (!isAuthenticated) {
+                alert('請先輸入密碼！');
+                checkAuth();
+                return;
+            }
+
+            const date = document.getElementById('dateInput').value;
+            const content = document.getElementById('diaryInput').value.trim();
+            const translation = document.getElementById('translationInput').value.trim();
+            
+            if (!content) {
+                alert('請輸入日記內容！');
+                return;
+            }
+
+            if (!date) {
+                alert('請選擇日期！');
+                return;
+            }
+
+            // 提取標籤
+            const tags = extractTags(content);
+            
+            // 更新標籤使用次數
+            tags.forEach(tag => {
+                tagUsage[tag] = (tagUsage[tag] || 0) + 1;
+            });
+
+            const userId = getUserId();
+
+            // 檢查是否為編輯模式
+            if (currentEditingId !== null) {
+                // 更新現有日記
+                const existingIndex = diaries.findIndex(d => d.id === currentEditingId);
+                if (existingIndex >= 0) {
+                    const existingDiary = diaries[existingIndex];
+                    const updatedDiary = {
+                        ...existingDiary,
+                        date: date,
+                        content: content,
+                        translation: translation,
+                        tags: tags,
+                        updatedAt: new Date().toISOString()
+                    };
+                    diaries[existingIndex] = updatedDiary;
+                    
+                    // 同步到 Supabase
+                    if (USE_SUPABASE) {
+                        await supabaseRequest('diaries', 'PATCH', {
+                            date: date,
+                            content: content,
+                            translation: translation,
+                            tags: tags
+                        }, `?id=eq.${currentEditingId}`);
+                    }
+                    
+                    currentEditingId = null;
+                }
+            } else {
+                // 創建新的日記條目（允許同一天有多個日記）
+                const diaryEntry = {
+                    id: Date.now(),
+                    date: date,
+                    content: content,
+                    translation: translation,
+                    tags: tags,
+                    createdAt: new Date().toISOString()
+                };
+                diaries.unshift(diaryEntry);
+                
+                // 同步到 Supabase
+                if (USE_SUPABASE) {
+                    const result = await supabaseRequest('diaries', 'POST', {
+                        user_id: userId,
+                        date: date,
+                        content: content,
+                        translation: translation,
+                        tags: tags
+                    });
+                    if (result && result[0]) {
+                        diaryEntry.id = result[0].id;
+                    }
+                }
+            }
+
+            // 更新標籤使用次數到 Supabase
+            if (USE_SUPABASE) {
+                for (const [tagName, count] of Object.entries(tagUsage)) {
+                    // 使用 upsert (如果存在則更新，不存在則插入)
+                    const existing = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}&tag_name=eq.${tagName}`);
+                    if (existing && existing.length > 0) {
+                        // 更新現有記錄
+                        await supabaseRequest('tag_usage', 'PATCH', {
+                            usage_count: count
+                        }, `?user_id=eq.${userId}&tag_name=eq.${tagName}`);
+                    } else {
+                        // 插入新記錄
+                        await supabaseRequest('tag_usage', 'POST', {
+                            user_id: userId,
+                            tag_name: tagName,
+                            usage_count: count
+                        });
+                    }
+                }
+            }
+
+            // 儲存到localStorage（作為備份）
+            localStorage.setItem('diaries', JSON.stringify(diaries));
+            localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
+
+            // 清空輸入框
+            document.getElementById('diaryInput').value = '';
+            document.getElementById('translationInput').value = '';
+            document.getElementById('translationSection').classList.remove('show');
+            document.getElementById('translationSection').style.display = 'none';
+            currentEditingId = null;
+            setTodayDate();
+            
+            // 恢復按鈕狀態
+            document.getElementById('saveBtn').textContent = '💾 儲存';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('deleteBtn').style.display = 'none';
+
+            // 更新顯示
+            renderDiaryList();
+            updateTagsList();
+            
+            alert('日記已儲存！');
+        }
+
+        // 提取標籤（#開頭的詞）
+        function extractTags(content) {
+            const tagRegex = /#(\w+)/g;
+            const tags = [];
+            let match;
+            
+            while ((match = tagRegex.exec(content)) !== null) {
+                tags.push(match[1]);
+            }
+            
+            return [...new Set(tags)]; // 去重
+        }
+
+        // 更新標籤列表
+        function updateTagsList() {
+            const tagsList = document.getElementById('tagsList');
+            tagsList.innerHTML = '';
+
+            // 按使用次數排序
+            const sortedTags = Object.entries(tagUsage)
+                .sort((a, b) => b[1] - a[1])
+                .map(entry => entry[0]);
+
+            sortedTags.forEach(tag => {
+                const tagElement = document.createElement('span');
+                tagElement.className = 'tag-item';
+                tagElement.textContent = `#${tag}`;
+                tagElement.onclick = () => insertTag(tag);
+                tagsList.appendChild(tagElement);
+            });
+
+            if (sortedTags.length === 0) {
+                tagsList.innerHTML = '<span style="color: #999; font-size: 14px;">還沒有標籤，在日記中使用 #標籤名 來建立標籤</span>';
+            }
+        }
+
+        // 插入標籤到日記
+        function insertTag(tag) {
+            const diaryInput = document.getElementById('diaryInput');
+            const cursorPos = diaryInput.selectionStart;
+            const textBefore = diaryInput.value.substring(0, cursorPos);
+            const textAfter = diaryInput.value.substring(cursorPos);
+            
+            // 檢查前面是否有空格，如果沒有則添加
+            const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
+            diaryInput.value = textBefore + spaceBefore + `#${tag} ` + textAfter;
+            
+            // 設置游標位置
+            const newPos = cursorPos + spaceBefore.length + tag.length + 2;
+            diaryInput.setSelectionRange(newPos, newPos);
+            diaryInput.focus();
+        }
+
+        // 創建新標籤
+        function createNewTag() {
+            const newTagInput = document.getElementById('newTagInput');
+            const tagName = newTagInput.value.trim();
+            
+            if (!tagName) {
+                alert('請輸入標籤名稱！');
+                return;
+            }
+
+            // 移除標籤名稱中的#符號（如果用戶輸入了）
+            const cleanTagName = tagName.replace(/^#+/, '');
+            
+            // 驗證標籤名稱（只允許字母、數字、中文）
+            if (!/^[\w\u4e00-\u9fa5]+$/.test(cleanTagName)) {
+                alert('標籤名稱只能包含字母、數字和中文！');
+                return;
+            }
+
+            // 如果標籤已存在，增加使用次數；否則創建新標籤
+            if (tagUsage[cleanTagName]) {
+                tagUsage[cleanTagName] += 1;
+            } else {
+                tagUsage[cleanTagName] = 1;
+            }
+
+            // 保存標籤使用次數
+            localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
+
+            // 更新標籤列表
+            updateTagsList();
+
+            // 清空輸入框
+            newTagInput.value = '';
+            newTagInput.focus();
+
+            // 可選：自動插入到日記中
+            insertTag(cleanTagName);
+        }
+
+        // 移除標籤內容（過濾#標籤）
+        function removeTagsFromContent(content) {
+            // 移除所有 #標籤名 格式的內容
+            return content.replace(/#\w+/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        // 翻譯日記
+        async function translateDiary() {
+            if (!isAuthenticated) {
+                alert('請先輸入密碼！');
+                checkAuth();
+                return;
+            }
+
+            const content = document.getElementById('diaryInput').value.trim();
+            if (!content) {
+                alert('請先輸入要翻譯的內容！');
+                return;
+            }
+
+            // 移除標籤內容後再翻譯
+            const contentWithoutTags = removeTagsFromContent(content);
+            
+            if (!contentWithoutTags) {
+                alert('請輸入除標籤外的內容！');
+                return;
+            }
+
+            const translationInput = document.getElementById('translationInput');
+            const translationSection = document.getElementById('translationSection');
+            
+            translationInput.value = '翻譯中...';
+            translationSection.classList.add('show');
+            translationSection.style.display = 'block';
+
+            try {
+                // 使用免費的翻譯API（MyMemory Translation API）
+                const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(contentWithoutTags)}&langpair=zh|en`);
+                const data = await response.json();
+                
+                if (data.responseData && data.responseData.translatedText) {
+                    translationInput.value = data.responseData.translatedText;
+                } else {
+                    throw new Error('翻譯失敗');
+                }
+            } catch (error) {
+                console.error('翻譯錯誤:', error);
+                // 如果API失敗，使用備用方法（簡單提示）
+                translationInput.value = '';
+                alert('翻譯服務暫時無法使用，請稍後再試。\n\n提示：您也可以手動輸入英文翻譯。');
+            }
+        }
+
+        // 格式化日期字符串為中文日期（避免時區轉換問題）
+        function formatDateString(dateString) {
+            // dateString 格式為 "YYYY-MM-DD"
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString;
+            
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]);
+            const day = parseInt(parts[2]);
+            
+            // 創建一個日期對象用於獲取星期幾
+            const dateObj = new Date(year, month - 1, day);
+            const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const weekday = weekdays[dateObj.getDay()];
+            
+            // 使用阿拉伯數字顯示月份
+            return `${year}年${month}月${day}日 ${weekday}`;
+        }
+
+        // 渲染日記列表
+        function renderDiaryList() {
+            const diaryList = document.getElementById('diaryList');
+            
+            if (diaries.length === 0) {
+                diaryList.innerHTML = '<div class="empty-state">還沒有日記，開始寫第一篇吧！</div>';
+                return;
+            }
+
+            // 按日期排序（最新的在前）- 直接比較字符串即可
+            const sortedDiaries = [...diaries].sort((a, b) => {
+                // 日期字符串 "YYYY-MM-DD" 可以直接按字符串排序
+                return b.date.localeCompare(a.date);
+            });
+
+            diaryList.innerHTML = sortedDiaries.map(diary => {
+                // 使用自定義函數格式化日期，避免時區轉換問題
+                const date = formatDateString(diary.date);
+
+                const tagsHtml = diary.tags.map(tag => 
+                    `<span class="diary-item-tag">#${tag}</span>`
+                ).join('');
+
+                return `
+                    <div class="diary-item">
+                        <div class="diary-item-header">
+                            <div class="diary-item-date">${date}</div>
+                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                        </div>
+                        <div class="diary-item-content">${escapeHtml(diary.content)}</div>
+                        ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
+                        ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 當前編輯的日記ID
+        let currentEditingId = null;
+
+        // 載入日記到編輯區
+        function loadDiary(id) {
+            if (!isAuthenticated) {
+                alert('請先輸入密碼！');
+                checkAuth();
+                return;
+            }
+
+            const diary = diaries.find(d => d.id === id);
+            if (diary) {
+                currentEditingId = id;
+                document.getElementById('dateInput').value = diary.date;
+                document.getElementById('diaryInput').value = diary.content;
+                document.getElementById('translationInput').value = diary.translation || '';
+                
+                // 如果有翻譯內容，顯示翻譯區域
+                if (diary.translation) {
+                    document.getElementById('translationSection').classList.add('show');
+                    document.getElementById('translationSection').style.display = 'block';
+                } else {
+                    document.getElementById('translationSection').classList.remove('show');
+                    document.getElementById('translationSection').style.display = 'none';
+                }
+                
+                // 更新按鈕狀態
+                document.getElementById('saveBtn').textContent = '💾 更新';
+                document.getElementById('cancelEditBtn').style.display = 'block';
+                document.getElementById('deleteBtn').style.display = 'block';
+                
+                // 滾動到編輯區
+                document.getElementById('dateInput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        // 取消編輯
+        function cancelEdit() {
+            currentEditingId = null;
+            document.getElementById('diaryInput').value = '';
+            document.getElementById('translationInput').value = '';
+            document.getElementById('translationSection').classList.remove('show');
+            document.getElementById('translationSection').style.display = 'none';
+            setTodayDate();
+            document.getElementById('saveBtn').textContent = '💾 儲存';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            document.getElementById('deleteBtn').style.display = 'none';
+        }
+
+        // 刪除日記
+        async function deleteDiary() {
+            if (!isAuthenticated) {
+                alert('請先輸入密碼！');
+                checkAuth();
+                return;
+            }
+
+            if (currentEditingId === null) {
+                alert('沒有正在編輯的日記！');
+                return;
+            }
+
+            // 確認刪除
+            if (!confirm('確定要刪除這篇日記嗎？此操作無法復原！')) {
+                return;
+            }
+
+            // 找到要刪除的日記
+            const index = diaries.findIndex(d => d.id === currentEditingId);
+            if (index >= 0) {
+                // 先保存被刪除日記的信息（用於更新標籤使用次數）
+                const deletedDiary = diaries[index];
+                
+                // 從 Supabase 刪除
+                if (USE_SUPABASE) {
+                    await supabaseRequest('diaries', 'DELETE', null, `?id=eq.${currentEditingId}`);
+                }
+                
+                // 從數組中移除
+                diaries.splice(index, 1);
+                
+                // 更新標籤使用次數（減少被刪除日記的標籤使用次數）
+                if (deletedDiary && deletedDiary.tags) {
+                    const userId = getUserId();
+                    deletedDiary.tags.forEach(async tag => {
+                        if (tagUsage[tag] && tagUsage[tag] > 0) {
+                            tagUsage[tag] -= 1;
+                            if (tagUsage[tag] === 0) {
+                                delete tagUsage[tag];
+                                // 從 Supabase 刪除標籤
+                                if (USE_SUPABASE) {
+                                    await supabaseRequest('tag_usage', 'DELETE', null, `?user_id=eq.${userId}&tag_name=eq.${tag}`);
+                                }
+                            } else {
+                                // 更新 Supabase 標籤計數
+                                if (USE_SUPABASE) {
+                                    await supabaseRequest('tag_usage', 'PATCH', {
+                                        usage_count: tagUsage[tag]
+                                    }, `?user_id=eq.${userId}&tag_name=eq.${tag}`);
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // 儲存到localStorage（作為備份）
+                localStorage.setItem('diaries', JSON.stringify(diaries));
+                localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
+                
+                // 清空編輯區域
+                cancelEdit();
+                
+                // 更新顯示
+                renderDiaryList();
+                updateTagsList();
+                
+                alert('日記已刪除！');
+            }
+        }
+
+        // 編輯日記（從日記列表中的編輯按鈕觸發）
+        function editDiary(id, event) {
+            event.stopPropagation(); // 阻止觸發日記項的點擊事件
+            loadDiary(id);
+        }
+
+        // 搜尋功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                renderDiaryList();
+                return;
+            }
+
+            const filteredDiaries = diaries.filter(diary => {
+                return diary.content.toLowerCase().includes(searchTerm) ||
+                       (diary.translation && diary.translation.toLowerCase().includes(searchTerm)) ||
+                       diary.tags.some(tag => tag.toLowerCase().includes(searchTerm));
+            });
+
+            const diaryList = document.getElementById('diaryList');
+            
+            if (filteredDiaries.length === 0) {
+                diaryList.innerHTML = '<div class="empty-state">找不到符合條件的日記</div>';
+                return;
+            }
+
+            // 按日期排序（直接比較字符串）
+            const sortedDiaries = [...filteredDiaries].sort((a, b) => b.date.localeCompare(a.date));
+
+            diaryList.innerHTML = sortedDiaries.map(diary => {
+                // 使用自定義函數格式化日期，避免時區轉換問題
+                const date = formatDateString(diary.date);
+
+                // 高亮搜尋關鍵字
+                let highlightedContent = highlightText(diary.content, searchTerm);
+                let highlightedTranslation = diary.translation ? highlightText(diary.translation, searchTerm) : '';
+
+                const tagsHtml = diary.tags.map(tag => 
+                    `<span class="diary-item-tag">#${tag}</span>`
+                ).join('');
+
+                return `
+                    <div class="diary-item">
+                        <div class="diary-item-header">
+                            <div class="diary-item-date">${date}</div>
+                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                        </div>
+                        <div class="diary-item-content">${highlightedContent}</div>
+                        ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
+                        ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        });
+
+        // 高亮文字
+        function highlightText(text, searchTerm) {
+            if (!searchTerm) return escapeHtml(text);
+            
+            const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
+            return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // 轉義HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 轉義正則表達式特殊字符
+        function escapeRegex(text) {
+            return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+    </script>
+</body>
+</html>
