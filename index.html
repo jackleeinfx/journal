@@ -869,6 +869,10 @@
             checkAuth();
             setTodayDate();
             loadDarkMode();
+            // 如果使用 Supabase，同步用戶ID（確保所有設備使用相同的用戶ID）
+            if (USE_SUPABASE) {
+                syncUserId();
+            }
             // 確保翻譯區域默認隱藏
             const translationSection = document.getElementById('translationSection');
             translationSection.classList.remove('show');
@@ -948,6 +952,12 @@
             }
             
             localStorage.setItem('diaryPassword', newPassword);
+            
+            // 如果使用 Supabase，同步用戶ID
+            if (USE_SUPABASE) {
+                syncUserId();
+            }
+            
             alert('密碼已更新！');
             closeSettings();
         }
@@ -1086,16 +1096,60 @@
         }
 
         // 獲取或創建用戶ID
+        // 使用密碼的簡單哈希作為用戶ID，這樣所有使用相同密碼的設備都能看到相同的日記
         function getUserId() {
             if (!currentUserId) {
+                // 嘗試從 localStorage 獲取
                 let userId = localStorage.getItem('diaryUserId');
+                
+                // 如果沒有，嘗試使用密碼生成一個固定的用戶ID
+                if (!userId && USE_SUPABASE) {
+                    const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+                    // 使用簡單的哈希生成固定的用戶ID（基於密碼）
+                    // 這樣所有使用相同密碼的設備都會有相同的用戶ID
+                    let hash = 0;
+                    for (let i = 0; i < savedPassword.length; i++) {
+                        const char = savedPassword.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash = hash & hash; // Convert to 32bit integer
+                    }
+                    userId = 'user_' + Math.abs(hash).toString(36);
+                    localStorage.setItem('diaryUserId', userId);
+                    console.log('[Supabase] Generated user ID from password:', userId);
+                }
+                
+                // 如果還是沒有，生成一個隨機的（僅用於 localStorage 模式）
                 if (!userId) {
                     userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                     localStorage.setItem('diaryUserId', userId);
                 }
+                
                 currentUserId = userId;
             }
             return currentUserId;
+        }
+        
+        // 同步用戶ID（當密碼改變時更新）
+        function syncUserId() {
+            if (USE_SUPABASE) {
+                const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+                let hash = 0;
+                for (let i = 0; i < savedPassword.length; i++) {
+                    const char = savedPassword.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                const newUserId = 'user_' + Math.abs(hash).toString(36);
+                const oldUserId = localStorage.getItem('diaryUserId');
+                
+                if (oldUserId !== newUserId) {
+                    console.log('[Supabase] User ID changed, updating:', oldUserId, '->', newUserId);
+                    localStorage.setItem('diaryUserId', newUserId);
+                    currentUserId = newUserId;
+                    // 重新載入日記
+                    loadDiaries();
+                }
+            }
         }
 
         // 載入日記
@@ -1110,6 +1164,7 @@
                     console.log('[Supabase] Loaded diaries:', diariesData);
                     
                     if (diariesData && Array.isArray(diariesData)) {
+                        // 使用 Supabase 的數據
                         diaries = diariesData.map(d => ({
                             id: d.id,
                             date: d.date,
@@ -1119,6 +1174,9 @@
                             createdAt: d.created_at
                         }));
                         console.log('[Supabase] Processed diaries:', diaries.length);
+                        
+                        // 同步到 localStorage 作為備份
+                        localStorage.setItem('diaries', JSON.stringify(diaries));
                     } else {
                         console.warn('[Supabase] No diaries data or invalid format');
                         diaries = [];
@@ -1134,21 +1192,40 @@
                             tagUsage[t.tag_name] = t.usage_count;
                         });
                         console.log('[Supabase] Processed tags:', Object.keys(tagUsage).length);
+                        
+                        // 同步到 localStorage 作為備份
+                        localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
                     } else {
                         console.warn('[Supabase] No tags data or invalid format');
                         tagUsage = {};
                     }
                 } catch (error) {
                     console.error('[Supabase] 載入日記失敗:', error);
-                    // 如果 Supabase 失敗，嘗試從 localStorage 載入
-                    console.log('[Fallback] Loading from localStorage');
+                    // 如果 Supabase 失敗，嘗試從 localStorage 載入（僅作為備份）
+                    console.log('[Fallback] Loading from localStorage (backup only)');
                     const saved = localStorage.getItem('diaries');
                     if (saved) {
-                        diaries = JSON.parse(saved);
+                        try {
+                            diaries = JSON.parse(saved);
+                            console.log('[Fallback] Loaded', diaries.length, 'diaries from localStorage');
+                        } catch (e) {
+                            console.error('[Fallback] Failed to parse localStorage data:', e);
+                            diaries = [];
+                        }
+                    } else {
+                        diaries = [];
                     }
+                    
                     const savedTagUsage = localStorage.getItem('tagUsage');
                     if (savedTagUsage) {
-                        tagUsage = JSON.parse(savedTagUsage);
+                        try {
+                            tagUsage = JSON.parse(savedTagUsage);
+                        } catch (e) {
+                            console.error('[Fallback] Failed to parse tagUsage:', e);
+                            tagUsage = {};
+                        }
+                    } else {
+                        tagUsage = {};
                     }
                 }
             } else {
