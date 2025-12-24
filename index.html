@@ -1041,15 +1041,46 @@
                     options.body = JSON.stringify(data);
                 }
                 
+                console.log(`[Supabase] ${method} ${table}`, data || filters);
+                
                 const response = await fetch(url, options);
+                
                 if (!response.ok) {
-                    throw new Error(`Supabase error: ${response.statusText}`);
+                    let errorText = '';
+                    try {
+                        errorText = await response.text();
+                    } catch (e) {
+                        errorText = response.statusText;
+                    }
+                    console.error(`[Supabase] Error ${response.status}:`, errorText);
+                    console.error(`[Supabase] Request URL:`, url);
+                    console.error(`[Supabase] Request method:`, method);
+                    console.error(`[Supabase] Request data:`, data);
+                    throw new Error(`Supabase error ${response.status}: ${response.statusText} - ${errorText}`);
                 }
                 
-                if (method === 'DELETE') return true;
-                return await response.json();
+                if (method === 'DELETE') {
+                    console.log(`[Supabase] DELETE successful`);
+                    return true;
+                }
+                
+                // 處理空響應
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const result = await response.json();
+                    console.log(`[Supabase] Response:`, result);
+                    return result;
+                } else {
+                    // 非 JSON 響應（可能是空響應）
+                    const text = await response.text();
+                    console.log(`[Supabase] Non-JSON response:`, text);
+                    return text ? JSON.parse(text) : [];
+                }
             } catch (error) {
-                console.error('Supabase request failed:', error);
+                console.error('[Supabase] Request failed:', error);
+                console.error('URL:', `${SUPABASE_URL}/rest/v1/${table}${filters}`);
+                console.error('Method:', method);
+                console.error('Data:', data);
                 return null;
             }
         }
@@ -1072,9 +1103,13 @@
             if (USE_SUPABASE) {
                 try {
                     const userId = getUserId();
+                    console.log('[Supabase] Loading diaries for user:', userId);
+                    
                     // 從 Supabase 載入日記
                     const diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${userId}&order=created_at.desc`);
-                    if (diariesData) {
+                    console.log('[Supabase] Loaded diaries:', diariesData);
+                    
+                    if (diariesData && Array.isArray(diariesData)) {
                         diaries = diariesData.map(d => ({
                             id: d.id,
                             date: d.date,
@@ -1083,19 +1118,30 @@
                             tags: d.tags || [],
                             createdAt: d.created_at
                         }));
+                        console.log('[Supabase] Processed diaries:', diaries.length);
+                    } else {
+                        console.warn('[Supabase] No diaries data or invalid format');
+                        diaries = [];
                     }
                     
                     // 從 Supabase 載入標籤使用次數
                     const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}`);
-                    if (tagsData) {
+                    console.log('[Supabase] Loaded tags:', tagsData);
+                    
+                    if (tagsData && Array.isArray(tagsData)) {
                         tagUsage = {};
                         tagsData.forEach(t => {
                             tagUsage[t.tag_name] = t.usage_count;
                         });
+                        console.log('[Supabase] Processed tags:', Object.keys(tagUsage).length);
+                    } else {
+                        console.warn('[Supabase] No tags data or invalid format');
+                        tagUsage = {};
                     }
                 } catch (error) {
-                    console.error('載入日記失敗:', error);
+                    console.error('[Supabase] 載入日記失敗:', error);
                     // 如果 Supabase 失敗，嘗試從 localStorage 載入
+                    console.log('[Fallback] Loading from localStorage');
                     const saved = localStorage.getItem('diaries');
                     if (saved) {
                         diaries = JSON.parse(saved);
@@ -1171,12 +1217,17 @@
                     
                     // 同步到 Supabase
                     if (USE_SUPABASE) {
-                        await supabaseRequest('diaries', 'PATCH', {
+                        console.log('[Supabase] Updating diary:', currentEditingId);
+                        const updateResult = await supabaseRequest('diaries', 'PATCH', {
                             date: date,
                             content: content,
-                            translation: translation,
-                            tags: tags
+                            translation: translation || null,
+                            tags: tags.length > 0 ? tags : null
                         }, `?id=eq.${currentEditingId}`);
+                        console.log('[Supabase] Update result:', updateResult);
+                        if (!updateResult) {
+                            console.error('[Supabase] Failed to update diary');
+                        }
                     }
                     
                     currentEditingId = null;
@@ -1195,36 +1246,50 @@
                 
                 // 同步到 Supabase
                 if (USE_SUPABASE) {
+                    console.log('[Supabase] Saving new diary:', { userId, date, content, translation, tags });
                     const result = await supabaseRequest('diaries', 'POST', {
                         user_id: userId,
                         date: date,
                         content: content,
-                        translation: translation,
-                        tags: tags
+                        translation: translation || null,
+                        tags: tags.length > 0 ? tags : null
                     });
-                    if (result && result[0]) {
+                    console.log('[Supabase] Save result:', result);
+                    if (result && Array.isArray(result) && result[0]) {
                         diaryEntry.id = result[0].id;
+                        console.log('[Supabase] Diary saved with ID:', result[0].id);
+                    } else {
+                        console.error('[Supabase] Failed to save diary, result:', result);
                     }
                 }
             }
 
             // 更新標籤使用次數到 Supabase
-            if (USE_SUPABASE) {
+            if (USE_SUPABASE && Object.keys(tagUsage).length > 0) {
+                console.log('[Supabase] Updating tags:', tagUsage);
                 for (const [tagName, count] of Object.entries(tagUsage)) {
-                    // 使用 upsert (如果存在則更新，不存在則插入)
-                    const existing = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}&tag_name=eq.${tagName}`);
-                    if (existing && existing.length > 0) {
-                        // 更新現有記錄
-                        await supabaseRequest('tag_usage', 'PATCH', {
-                            usage_count: count
-                        }, `?user_id=eq.${userId}&tag_name=eq.${tagName}`);
-                    } else {
-                        // 插入新記錄
-                        await supabaseRequest('tag_usage', 'POST', {
-                            user_id: userId,
-                            tag_name: tagName,
-                            usage_count: count
-                        });
+                    try {
+                        // 使用 upsert (如果存在則更新，不存在則插入)
+                        const existing = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}&tag_name=eq.${tagName}`);
+                        if (existing && Array.isArray(existing) && existing.length > 0) {
+                            // 更新現有記錄
+                            console.log(`[Supabase] Updating tag: ${tagName} = ${count}`);
+                            const updateResult = await supabaseRequest('tag_usage', 'PATCH', {
+                                usage_count: count
+                            }, `?user_id=eq.${userId}&tag_name=eq.${tagName}`);
+                            console.log(`[Supabase] Tag update result:`, updateResult);
+                        } else {
+                            // 插入新記錄
+                            console.log(`[Supabase] Inserting new tag: ${tagName} = ${count}`);
+                            const insertResult = await supabaseRequest('tag_usage', 'POST', {
+                                user_id: userId,
+                                tag_name: tagName,
+                                usage_count: count
+                            });
+                            console.log(`[Supabase] Tag insert result:`, insertResult);
+                        }
+                    } catch (error) {
+                        console.error(`[Supabase] Error updating tag ${tagName}:`, error);
                     }
                 }
             }
