@@ -1037,6 +1037,7 @@
 
         // 頁面載入時檢查密碼
         window.onload = async function() {
+            console.log('[Page Load] Starting initialization...');
             checkAuth();
             setTodayDate();
             loadDarkMode();
@@ -1050,6 +1051,10 @@
             translationSection.style.display = 'none';
             await loadDiaries();
             updateTagsList();
+            // 初始化圖片上傳功能
+            console.log('[Page Load] Initializing image upload...');
+            initImageUpload();
+            console.log('[Page Load] Initialization complete');
         };
 
         // 檢查認證狀態
@@ -1431,18 +1436,40 @@
 
         // 初始化圖片上傳功能
         function initImageUpload() {
+            console.log('[Image Upload] Initializing image upload...');
             const imageUploadArea = document.getElementById('imageUploadArea');
             const imageFileInput = document.getElementById('imageFileInput');
             const container = document.querySelector('.container');
             
+            if (!imageUploadArea) {
+                console.error('[Image Upload] imageUploadArea not found!');
+                return;
+            }
+            if (!imageFileInput) {
+                console.error('[Image Upload] imageFileInput not found!');
+                return;
+            }
+            if (!container) {
+                console.error('[Image Upload] container not found!');
+                return;
+            }
+            
+            console.log('[Image Upload] Elements found, setting up event listeners...');
+            
             // 文件選擇
             imageFileInput.addEventListener('change', async (e) => {
+                console.log('[Image Upload] File input changed, files:', e.target.files.length);
                 if (e.target.files.length > 0) {
+                    console.log('[Image Upload] Processing files...');
                     await handleFiles(Array.from(e.target.files));
                     // 清空input，允許重複選擇同一文件
                     e.target.value = '';
+                } else {
+                    console.log('[Image Upload] No files selected');
                 }
             });
+            
+            console.log('[Image Upload] File input event listener added');
             
             // 在整個容器上添加拖拽功能（支持從其他窗口拖拽）
             const handleDragOver = (e) => {
