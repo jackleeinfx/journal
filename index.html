@@ -983,6 +983,113 @@
         body.dark-mode .btn-secondary:hover {
             background: #5a5a7a;
         }
+
+        /* Checklist 樣式 */
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 4px 0;
+            padding: 4px 0;
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .checklist-item-text {
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        .checklist-item.completed .checklist-item-text {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        /* Checklist 搜尋篩選按鈕 */
+        .checklist-filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 0 15px;
+            flex-wrap: wrap;
+        }
+
+        .checklist-filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .checklist-filter-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .checklist-filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        body.dark-mode .checklist-filter-btn {
+            background: #2d2d44;
+            border-color: #667eea;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .checklist-filter-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        body.dark-mode .checklist-filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Checklist 搜尋按鈕 */
+        .checklist-search-btn {
+            padding: 10px 14px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checklist-search-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        body.dark-mode .checklist-search-btn {
+            background: #2d2d44;
+            border-color: #667eea;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .checklist-search-btn:hover {
+            background: #667eea;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -1012,7 +1119,7 @@
                         <div class="image-upload-progress" id="uploadProgress" style="display: none;"></div>
                     </div>
                     <div class="textarea-container">
-                        <textarea id="diaryInput" placeholder="開始寫下今天的心情..."></textarea>
+                        <textarea id="diaryInput" placeholder="開始寫下今天的心情...&#10;&#10;提示：點擊「☐ 添加待辦事項」按鈕來快速添加待辦事項"></textarea>
                     </div>
                 <div class="action-buttons">
                     <button class="btn-action" id="saveBtn" onclick="saveDiary()">💾 儲存</button>
@@ -1025,6 +1132,9 @@
                         <div class="tags-create">
                             <input type="text" id="newTagInput" placeholder="輸入新標籤名稱（不含#）" onkeypress="if(event.key==='Enter') createNewTag()">
                             <button onclick="createNewTag()">➕ 新增標籤</button>
+                        </div>
+                        <div style="margin: 10px 0; display: flex; gap: 8px; align-items: center;">
+                            <button class="btn-action" onclick="insertChecklist()" style="padding: 8px 16px; font-size: 14px;">☐ 添加待辦事項</button>
                         </div>
                         <div class="tags-list" id="tagsList"></div>
                     </div>
@@ -1042,10 +1152,19 @@
         <div class="diary-section" style="padding: 0 30px 30px;">
             <div class="section-header">
                 <div class="section-title">日記列表</div>
-                <div class="search-container-list">
-                    <input type="text" id="searchInput" placeholder="搜尋日記內容...">
-                    <span class="search-icon-list">🔍</span>
+                <div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 500px;">
+                    <button class="checklist-search-btn" onclick="addChecklistSearch('pending')" title="搜尋未完成的待辦事項">☐</button>
+                    <button class="checklist-search-btn" onclick="addChecklistSearch('completed')" title="搜尋已完成的待辦事項">☑</button>
+                    <div class="search-container-list" style="flex: 1;">
+                        <input type="text" id="searchInput" placeholder="搜尋日記內容...">
+                        <span class="search-icon-list">🔍</span>
+                    </div>
                 </div>
+            </div>
+            <div class="checklist-filter-buttons" id="checklistFilterButtons" style="display: none;">
+                <button class="checklist-filter-btn active" onclick="filterChecklist('all')">全部待辦</button>
+                <button class="checklist-filter-btn" onclick="filterChecklist('completed')">已完成</button>
+                <button class="checklist-filter-btn" onclick="filterChecklist('pending')">未完成</button>
             </div>
             <div class="diary-list" id="diaryList">
                 <div class="empty-state">還沒有日記，開始寫第一篇吧！</div>
@@ -1095,6 +1214,7 @@
         let diaryInputActiveTimer = null; // 用於清除活動狀態的定時器
         let lastInsertedTag = null; // 追蹤最後插入的標籤
         let lastInsertedTagPosition = null; // 追蹤最後插入標籤的位置（開始和結束位置）
+        let checklistFilter = 'all'; // checklist 篩選狀態：'all', 'completed', 'pending'
 
         // 切換深色模式
         function toggleDarkMode() {
@@ -2087,6 +2207,54 @@
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
+        // 添加待辦事項搜尋到搜尋欄
+        function addChecklistSearch(type) {
+            const searchInput = document.getElementById('searchInput');
+            const currentSearchValue = searchInput.value;
+            const cursorPos = searchInput.selectionStart || searchInput.value.length;
+            const textBefore = searchInput.value.substring(0, cursorPos);
+            const textAfter = searchInput.value.substring(cursorPos);
+            
+            // 根據類型決定搜尋符號
+            const searchSymbol = type === 'completed' ? '☑' : '☐';
+            const expectedValue = searchSymbol;
+            
+            // 檢查符號是否已經在搜尋欄中
+            const symbolAlreadyExists = currentSearchValue.includes(searchSymbol);
+            
+            // 如果搜尋欄只有這個符號（沒有其他文字），則清除搜索
+            if (currentSearchValue.trim() === expectedValue) {
+                searchInput.value = '';
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+            
+            // 如果符號已經存在於搜尋欄中，則移除它
+            if (symbolAlreadyExists) {
+                // 移除符號（包括前後的空格）
+                let newValue = currentSearchValue;
+                const regex = new RegExp(`\\s*${escapeRegex(searchSymbol)}\\s*`, 'g');
+                newValue = newValue.replace(regex, ' ').trim();
+                searchInput.value = newValue;
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+            
+            // 檢查前面是否需要添加空格
+            const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
+            // 檢查後面是否需要添加空格
+            const spaceAfter = textAfter.length === 0 || textAfter[0] === ' ' ? '' : ' ';
+            
+            searchInput.value = textBefore + spaceBefore + expectedValue + spaceAfter + textAfter;
+            
+            // 設置游標位置到符號後面
+            const newPos = cursorPos + spaceBefore.length + expectedValue.length + spaceAfter.length;
+            searchInput.setSelectionRange(newPos, newPos);
+            
+            // 手動觸發 input 事件，這樣會執行統一的搜尋邏輯
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
         // 更新標籤列表
         function updateTagsList() {
             const tagsList = document.getElementById('tagsList');
@@ -2209,6 +2377,34 @@
             diaryInput.focus();
             
             // 重新設置活動狀態，這樣用戶可以繼續點擊其他標籤插入
+            diaryInputActive = true;
+            if (diaryInputActiveTimer) {
+                clearTimeout(diaryInputActiveTimer);
+            }
+            diaryInputActiveTimer = setTimeout(() => {
+                diaryInputActive = false;
+            }, 5000);
+        }
+
+        // 插入 checklist 到日記
+        function insertChecklist() {
+            const diaryInput = document.getElementById('diaryInput');
+            const cursorPos = diaryInput.selectionStart;
+            const textBefore = diaryInput.value.substring(0, cursorPos);
+            const textAfter = diaryInput.value.substring(cursorPos);
+            
+            // 檢查前面是否需要換行
+            const newlineBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === '\n' ? '' : '\n';
+            const checklistText = newlineBefore + '☐ ';
+            
+            diaryInput.value = textBefore + checklistText + textAfter;
+            
+            // 設置游標位置到符號後面
+            const newPos = cursorPos + newlineBefore.length + 2;
+            diaryInput.setSelectionRange(newPos, newPos);
+            diaryInput.focus();
+            
+            // 重新設置活動狀態
             diaryInputActive = true;
             if (diaryInputActiveTimer) {
                 clearTimeout(diaryInputActiveTimer);
@@ -2376,14 +2572,41 @@
             }
 
             // 按日期排序（最新的在前）- 直接比較字符串即可
-            const sortedDiaries = [...diaries].sort((a, b) => {
+            let sortedDiaries = [...diaries].sort((a, b) => {
                 // 日期字符串 "YYYY-MM-DD" 可以直接按字符串排序
                 return b.date.localeCompare(a.date);
             });
 
+            // 如果顯示 checklist 篩選，應用篩選邏輯
+            const checklistFilterButtons = document.getElementById('checklistFilterButtons');
+            if (checklistFilterButtons && checklistFilterButtons.style.display !== 'none') {
+                sortedDiaries = sortedDiaries.filter(diary => {
+                    if (!hasChecklist(diary.content)) {
+                        return false; // 只顯示有 checklist 的日記
+                    }
+                    
+                    const status = getChecklistStatus(diary.content);
+                    
+                    if (checklistFilter === 'all') {
+                        return true;
+                    } else if (checklistFilter === 'completed') {
+                        // 只顯示所有項目都完成的 checklist
+                        return status.total > 0 && status.completed === status.total;
+                    } else if (checklistFilter === 'pending') {
+                        // 只顯示有未完成項目的 checklist
+                        return status.pending > 0;
+                    }
+                    return true;
+                });
+            }
+
             diaryList.innerHTML = sortedDiaries.map(diary => {
                 // 使用自定義函數格式化日期，避免時區轉換問題
                 const date = formatDateString(diary.date);
+                
+                // 檢查是否有 checklist
+                const hasChecklistItems = hasChecklist(diary.content);
+                const checklistIcon = hasChecklistItems ? ' 📋' : '';
 
                 const tagsHtml = diary.tags.map(tag => 
                     `<span class="diary-item-tag">#${tag}</span>`
@@ -2395,13 +2618,18 @@
                     </div>
                 ` : '';
                 
+                // 轉換 checklist 為可交互的 HTML
+                const contentHtml = hasChecklistItems 
+                    ? convertChecklistToHTML(diary.content, diary.id)
+                    : escapeHtml(diary.content);
+                
                 return `
                     <div class="diary-item">
                         <div class="diary-item-header">
-                            <div class="diary-item-date">${date}</div>
+                            <div class="diary-item-date">${date}${checklistIcon}</div>
                             <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
                         </div>
-                        <div class="diary-item-content">${escapeHtml(diary.content)}</div>
+                        <div class="diary-item-content">${contentHtml}</div>
                         ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
                         ${imagesHtml}
                         ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
@@ -2551,6 +2779,11 @@
             // 如果搜索框被清空，清除標籤搜索
             if (!searchTerm) {
                 currentSearchTag = null;
+                const checklistFilterButtons = document.getElementById('checklistFilterButtons');
+                if (checklistFilterButtons) {
+                    checklistFilterButtons.style.display = 'none';
+                }
+                checklistFilter = 'all'; // 重置篩選
                 renderDiaryList();
                 updateTagsList(); // 更新標籤樣式
                 return;
@@ -2559,6 +2792,21 @@
             // 清除標籤搜索狀態（搜尋框輸入時不再使用特殊標籤搜尋）
             currentSearchTag = null;
             updateTagsList(); // 更新標籤樣式
+
+            // 檢查是否搜尋 checklist（顯示篩選按鈕）
+            const checklistKeywords = ['checklist', '待辦', '待辦清單', '清單', '📋', '☐', '☑', '- [', '- [x]', '- [ ]'];
+            const isSearchingChecklist = checklistKeywords.some(keyword => searchTermLower.includes(keyword) || searchTerm.includes(keyword));
+            const checklistFilterButtons = document.getElementById('checklistFilterButtons');
+            if (isSearchingChecklist) {
+                if (checklistFilterButtons) {
+                    checklistFilterButtons.style.display = 'flex';
+                }
+            } else {
+                if (checklistFilterButtons) {
+                    checklistFilterButtons.style.display = 'none';
+                }
+                checklistFilter = 'all'; // 重置篩選
+            }
 
             // 將搜尋字串按空格分割成多個關鍵字（空格代表 AND）
             const allKeywords = searchTermLower.split(/\s+/).filter(keyword => keyword.length > 0);
@@ -2617,14 +2865,50 @@
             }
 
             // 按日期排序（直接比較字符串）
-            const sortedDiaries = [...filteredDiaries].sort((a, b) => b.date.localeCompare(a.date));
+            let sortedDiaries = [...filteredDiaries].sort((a, b) => b.date.localeCompare(a.date));
+
+            // 如果顯示 checklist 篩選，應用篩選邏輯
+            const checklistFilterButtons = document.getElementById('checklistFilterButtons');
+            if (checklistFilterButtons && checklistFilterButtons.style.display !== 'none') {
+                sortedDiaries = sortedDiaries.filter(diary => {
+                    if (!hasChecklist(diary.content)) {
+                        return false; // 只顯示有 checklist 的日記
+                    }
+                    
+                    const status = getChecklistStatus(diary.content);
+                    
+                    if (checklistFilter === 'all') {
+                        return true;
+                    } else if (checklistFilter === 'completed') {
+                        // 只顯示所有項目都完成的 checklist
+                        return status.total > 0 && status.completed === status.total;
+                    } else if (checklistFilter === 'pending') {
+                        // 只顯示有未完成項目的 checklist
+                        return status.pending > 0;
+                    }
+                    return true;
+                });
+            }
 
             diaryList.innerHTML = sortedDiaries.map(diary => {
                 // 使用自定義函數格式化日期，避免時區轉換問題
                 const date = formatDateString(diary.date);
+                
+                // 檢查是否有 checklist
+                const hasChecklistItems = hasChecklist(diary.content);
+                const checklistIcon = hasChecklistItems ? ' 📋' : '';
 
-                // 高亮搜尋關鍵字（支持多個關鍵字）
-                let highlightedContent = highlightText(diary.content, keywords);
+                // 轉換 checklist 為可交互的 HTML（如果有 checklist）
+                let contentHtml;
+                if (hasChecklistItems) {
+                    // 對於有 checklist 的內容，先轉換 checklist，然後高亮非 checklist 部分
+                    contentHtml = convertChecklistToHTML(diary.content, diary.id);
+                    // 對非 checklist 部分進行高亮（這需要更複雜的處理，暫時先不處理高亮）
+                } else {
+                    // 沒有 checklist，直接高亮
+                    contentHtml = highlightText(diary.content, keywords);
+                }
+                
                 let highlightedTranslation = diary.translation ? highlightText(diary.translation, keywords) : '';
 
                 const tagsHtml = diary.tags.map(tag => 
@@ -2640,10 +2924,10 @@
                 return `
                     <div class="diary-item">
                         <div class="diary-item-header">
-                            <div class="diary-item-date">${date}</div>
+                            <div class="diary-item-date">${date}${checklistIcon}</div>
                             <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
                         </div>
-                        <div class="diary-item-content">${highlightedContent}</div>
+                        <div class="diary-item-content">${contentHtml}</div>
                         ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
                         ${imagesHtml}
                         ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
@@ -2685,6 +2969,158 @@
         // 轉義正則表達式特殊字符
         function escapeRegex(text) {
             return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // 將日記內容中的 checklist 轉換為可交互的 HTML
+        function convertChecklistToHTML(content, diaryId) {
+            // 匹配 ☐ 或 ☑ 符號，也支持舊格式 `- [ ]` 或 `- [x]`
+            const lines = content.split('\n');
+            let html = '';
+            let checklistIndex = 0;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                // 匹配新格式：☐ 或 ☑ 開頭的行
+                let checklistMatch = line.match(/^(\s*)(☐|☑)\s*(.+)$/);
+                // 如果沒有匹配，嘗試舊格式
+                if (!checklistMatch) {
+                    checklistMatch = line.match(/^(\s*)- \[([ x])\]\s*(.+)$/);
+                }
+                
+                if (checklistMatch) {
+                    // 這是 checklist 項目
+                    const indent = checklistMatch[1];
+                    let checked = false;
+                    let text = '';
+                    
+                    // 判斷是新格式還是舊格式
+                    if (checklistMatch[2] === '☑') {
+                        checked = true;
+                        text = checklistMatch[3];
+                    } else if (checklistMatch[2] === '☐') {
+                        checked = false;
+                        text = checklistMatch[3];
+                    } else {
+                        // 舊格式
+                        checked = checklistMatch[2] === 'x';
+                        text = checklistMatch[3];
+                    }
+                    
+                    const checkboxId = `checklist-${diaryId}-${checklistIndex}`;
+                    const checkedAttr = checked ? 'checked' : '';
+                    const completedClass = checked ? 'completed' : '';
+                    
+                    html += `
+                        <div class="checklist-item ${completedClass}">
+                            <input type="checkbox" id="${checkboxId}" ${checkedAttr} 
+                                   onchange="toggleChecklistItem(${diaryId}, ${i}, this.checked)">
+                            <span class="checklist-item-text">${escapeHtml(text)}</span>
+                        </div>
+                    `;
+                    checklistIndex++;
+                } else {
+                    // 普通文字
+                    html += escapeHtml(line);
+                    if (i < lines.length - 1) {
+                        html += '<br>';
+                    }
+                }
+            }
+            
+            return html;
+        }
+
+        // 切換 checklist 項目的完成狀態
+        async function toggleChecklistItem(diaryId, lineIndex, checked) {
+            const diary = diaries.find(d => d.id === diaryId);
+            if (!diary) return;
+            
+            const content = diary.content;
+            const lines = content.split('\n');
+            
+            // 更新指定行的 checklist 狀態
+            if (lineIndex >= 0 && lineIndex < lines.length) {
+                const line = lines[lineIndex];
+                // 先嘗試匹配新格式（☐ 或 ☑）
+                let checklistMatch = line.match(/^(\s*)(☐|☑)\s*(.+)$/);
+                
+                if (checklistMatch) {
+                    // 新格式
+                    const indent = checklistMatch[1];
+                    const text = checklistMatch[3];
+                    const newSymbol = checked ? '☑' : '☐';
+                    lines[lineIndex] = `${indent}${newSymbol} ${text}`;
+                } else {
+                    // 嘗試舊格式
+                    checklistMatch = line.match(/^(\s*)- \[([ x])\]\s*(.+)$/);
+                    if (checklistMatch) {
+                        const indent = checklistMatch[1];
+                        const text = checklistMatch[3];
+                        // 轉換為新格式
+                        const newSymbol = checked ? '☑' : '☐';
+                        lines[lineIndex] = `${indent}${newSymbol} ${text}`;
+                    }
+                }
+            }
+            
+            // 更新日記內容
+            const newContent = lines.join('\n');
+            diary.content = newContent;
+            
+            // 同步到 Supabase
+            if (USE_SUPABASE) {
+                await supabaseRequest('diaries', 'PATCH', {
+                    content: newContent
+                }, `?id=eq.${diaryId}`);
+            }
+            
+            // 儲存到 localStorage
+            localStorage.setItem('diaries', JSON.stringify(diaries));
+            
+            // 重新渲染日記列表
+            renderDiaryList();
+        }
+
+        // Checklist 篩選功能
+        function filterChecklist(filter) {
+            checklistFilter = filter;
+            const buttons = document.querySelectorAll('.checklist-filter-btn');
+            buttons.forEach((btn, index) => {
+                btn.classList.remove('active');
+                if ((filter === 'all' && index === 0) || 
+                    (filter === 'completed' && index === 1) || 
+                    (filter === 'pending' && index === 2)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 重新渲染日記列表
+            renderDiaryList();
+        }
+
+        // 檢查日記是否有 checklist
+        function hasChecklist(content) {
+            // 支持新格式（☐ 或 ☑）和舊格式（- [ ] 或 - [x]）
+            return /^\s*(☐|☑)\s*.+$/m.test(content) || /^\s*- \[[ x]\]\s*.+$/m.test(content);
+        }
+
+        // 檢查日記的 checklist 狀態
+        function getChecklistStatus(content) {
+            // 支持新格式和舊格式
+            const checklistRegex = /^\s*(☐|☑|- \[([ x])\])\s*(.+)$/gm;
+            let match;
+            let total = 0;
+            let completed = 0;
+            
+            while ((match = checklistRegex.exec(content)) !== null) {
+                total++;
+                // 檢查是否完成
+                if (match[1] === '☑' || match[2] === 'x') {
+                    completed++;
+                }
+            }
+            
+            return { total, completed, pending: total - completed };
         }
     </script>
 </body>
