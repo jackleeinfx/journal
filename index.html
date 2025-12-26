@@ -986,24 +986,30 @@
 
         /* Checklist 樣式 */
         .checklist-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            margin: 4px 0;
-            padding: 4px 0;
+            display: inline-flex;
+            align-items: baseline;
+            gap: 4px;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            vertical-align: baseline;
+            text-indent: 0;
         }
 
         .checklist-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             cursor: pointer;
-            margin-top: 2px;
+            margin: 0;
+            padding: 0;
             flex-shrink: 0;
+            vertical-align: middle;
         }
 
         .checklist-item-text {
-            flex: 1;
-            line-height: 1.6;
+            display: inline;
+            line-height: 1.5;
+            vertical-align: baseline;
         }
 
         .checklist-item.completed .checklist-item-text {
@@ -2989,34 +2995,35 @@
                 
                 if (checklistMatch) {
                     // 這是 checklist 項目
-                    const indent = checklistMatch[1];
+                    // 移除所有縮進，讓它貼齊左側
                     let checked = false;
                     let text = '';
                     
                     // 判斷是新格式還是舊格式
                     if (checklistMatch[2] === '☑') {
                         checked = true;
-                        text = checklistMatch[3];
+                        text = checklistMatch[3].trim(); // 移除文字前後的空白
                     } else if (checklistMatch[2] === '☐') {
                         checked = false;
-                        text = checklistMatch[3];
+                        text = checklistMatch[3].trim(); // 移除文字前後的空白
                     } else {
                         // 舊格式
                         checked = checklistMatch[2] === 'x';
-                        text = checklistMatch[3];
+                        text = checklistMatch[3].trim(); // 移除文字前後的空白
                     }
                     
                     const checkboxId = `checklist-${diaryId}-${checklistIndex}`;
                     const checkedAttr = checked ? 'checked' : '';
                     const completedClass = checked ? 'completed' : '';
                     
-                    html += `
-                        <div class="checklist-item ${completedClass}">
-                            <input type="checkbox" id="${checkboxId}" ${checkedAttr} 
-                                   onchange="toggleChecklistItem(${diaryId}, ${i}, this.checked)">
-                            <span class="checklist-item-text">${escapeHtml(text)}</span>
-                        </div>
-                    `;
+                    html += `<div class="checklist-item ${completedClass}">
+<input type="checkbox" id="${checkboxId}" ${checkedAttr} onchange="toggleChecklistItem(${diaryId}, ${i}, this.checked)">
+<span class="checklist-item-text">${escapeHtml(text)}</span>
+</div>`;
+                    // 如果不是最後一行，添加換行
+                    if (i < lines.length - 1) {
+                        html += '<br>';
+                    }
                     checklistIndex++;
                 } else {
                     // 普通文字
@@ -3045,20 +3052,18 @@
                 let checklistMatch = line.match(/^(\s*)(☐|☑)\s*(.+)$/);
                 
                 if (checklistMatch) {
-                    // 新格式
-                    const indent = checklistMatch[1];
-                    const text = checklistMatch[3];
+                    // 新格式 - 移除縮進，貼齊左側
+                    const text = checklistMatch[3].trim(); // 移除文字前後的空白
                     const newSymbol = checked ? '☑' : '☐';
-                    lines[lineIndex] = `${indent}${newSymbol} ${text}`;
+                    lines[lineIndex] = `${newSymbol} ${text}`;
                 } else {
                     // 嘗試舊格式
                     checklistMatch = line.match(/^(\s*)- \[([ x])\]\s*(.+)$/);
                     if (checklistMatch) {
-                        const indent = checklistMatch[1];
-                        const text = checklistMatch[3];
-                        // 轉換為新格式
+                        const text = checklistMatch[3].trim(); // 移除文字前後的空白
+                        // 轉換為新格式，移除縮進
                         const newSymbol = checked ? '☑' : '☐';
-                        lines[lineIndex] = `${indent}${newSymbol} ${text}`;
+                        lines[lineIndex] = `${newSymbol} ${text}`;
                     }
                 }
             }
