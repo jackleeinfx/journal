@@ -2472,7 +2472,8 @@
 
         // 搜尋功能
         document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase().trim();
+            const searchTerm = e.target.value.trim(); // 保留原始大小寫用於顯示
+            const searchTermLower = searchTerm.toLowerCase();
             
             // 如果搜索框被清空，清除標籤搜索
             if (!searchTerm) {
@@ -2482,14 +2483,16 @@
                 return;
             }
 
-            // 如果搜索的是標籤格式（#標籤名），使用標籤搜索
-            if (searchTerm.startsWith('#')) {
-                const tagName = searchTerm.substring(1).toLowerCase();
+            // 如果搜索的是標籤格式（#標籤名），且標籤存在，使用標籤搜索
+            if (searchTermLower.startsWith('#')) {
+                const tagName = searchTermLower.substring(1);
+                // 只有當標籤名不為空且標籤存在時，才使用標籤搜索
                 if (tagName && tagUsage[tagName]) {
                     currentSearchTag = tagName;
                     searchByTag(tagName);
                     return;
                 }
+                // 如果只有 # 或標籤不存在，繼續執行下面的內容搜索
             }
             
             // 清除標籤搜索狀態
@@ -2497,15 +2500,10 @@
             updateTagsList(); // 更新標籤樣式
 
             const filteredDiaries = diaries.filter(diary => {
-                // 如果搜索的是標籤格式，只搜索標籤
-                if (searchTerm.startsWith('#')) {
-                    const tagName = searchTerm.substring(1).toLowerCase();
-                    return diary.tags && diary.tags.some(tag => tag.toLowerCase() === tagName);
-                }
-                // 否則搜索內容、翻譯和標籤
-                return diary.content.toLowerCase().includes(searchTerm) ||
-                       (diary.translation && diary.translation.toLowerCase().includes(searchTerm)) ||
-                       (diary.tags && diary.tags.some(tag => tag.toLowerCase().includes(searchTerm)));
+                // 搜索內容、翻譯和標籤（包括 # 符號）
+                return diary.content.toLowerCase().includes(searchTermLower) ||
+                       (diary.translation && diary.translation.toLowerCase().includes(searchTermLower)) ||
+                       (diary.tags && diary.tags.some(tag => tag.toLowerCase().includes(searchTermLower.substring(1)) || `#${tag.toLowerCase()}`.includes(searchTermLower)));
             });
 
             const diaryList = document.getElementById('diaryList');
