@@ -825,6 +825,12 @@
             background: yellow;
         }
 
+        body.dark-mode .highlight {
+            background: #4a9eff;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -1168,7 +1174,7 @@
                 document.getElementById('passwordModal').style.display = 'none';
                 document.getElementById('passwordInput').value = '';
             } else {
-                alert('密碼錯誤！');
+                showToast('密碼錯誤！', 'error');
                 document.getElementById('passwordInput').value = '';
                 document.getElementById('passwordInput').focus();
             }
@@ -2029,9 +2035,8 @@
             if (currentSearchTag === tag) {
                 currentSearchTag = null;
                 document.getElementById('searchInput').value = '';
-                renderDiaryList();
-                updateTagsList(); // 更新標籤樣式
-                showToast('已清除標籤搜索', 'info');
+                // 觸發 input 事件以執行搜尋邏輯
+                document.getElementById('searchInput').dispatchEvent(new Event('input', { bubbles: true }));
                 return;
             }
 
@@ -2039,52 +2044,11 @@
             currentSearchTag = tag;
             
             // 在搜索框顯示標籤
-            document.getElementById('searchInput').value = `#${tag}`;
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = `#${tag}`;
             
-            // 過濾日記
-            const filteredDiaries = diaries.filter(diary => {
-                return diary.tags && diary.tags.includes(tag);
-            });
-
-            const diaryList = document.getElementById('diaryList');
-            
-            if (filteredDiaries.length === 0) {
-                diaryList.innerHTML = `<div class="empty-state">沒有找到包含標籤 #${tag} 的日記</div>`;
-                updateTagsList(); // 更新標籤樣式
-                return;
-            }
-
-            // 按日期排序
-            const sortedDiaries = [...filteredDiaries].sort((a, b) => b.date.localeCompare(a.date));
-
-            diaryList.innerHTML = sortedDiaries.map(diary => {
-                const date = formatDateString(diary.date);
-                const tagsHtml = diary.tags.map(t => 
-                    `<span class="diary-item-tag ${t === tag ? 'search-tag' : ''}">#${t}</span>`
-                ).join('');
-
-                const imagesHtml = diary.images && diary.images.length > 0 ? `
-                    <div class="diary-item-images">
-                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
-                    </div>
-                ` : '';
-                
-                return `
-                    <div class="diary-item">
-                        <div class="diary-item-header">
-                            <div class="diary-item-date">${date}</div>
-                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
-                        </div>
-                        <div class="diary-item-content">${escapeHtml(diary.content)}</div>
-                        ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
-                        ${imagesHtml}
-                        ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
-                    </div>
-                `;
-            }).join('');
-
-            updateTagsList(); // 更新標籤樣式
-            showToast(`找到 ${filteredDiaries.length} 篇包含標籤 #${tag} 的日記`, 'info');
+            // 手動觸發 input 事件，這樣會執行統一的搜尋邏輯
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         // 更新標籤列表
@@ -2472,7 +2436,7 @@
 
         // 搜尋功能
         document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.trim(); // 保留原始大小寫用於顯示
+            const searchTerm = e.target.value.trim();
             const searchTermLower = searchTerm.toLowerCase();
             
             // 如果搜索框被清空，清除標籤搜索
@@ -2483,71 +2447,36 @@
                 return;
             }
 
-            // 如果搜索的是標籤格式（#標籤名）
-            if (searchTermLower.startsWith('#')) {
-                const tagName = searchTermLower.substring(1);
-                
-                // 如果標籤名不為空
-                if (tagName) {
-                    // 先檢查是否有完全匹配的標籤
-                    if (tagUsage[tagName]) {
-                        currentSearchTag = tagName;
-                        searchByTag(tagName);
-                        return;
-                    }
-                    
-                    // 如果沒有完全匹配，進行模糊搜尋（搜尋包含該標籤名的日記）
-                    // 清除標籤搜索狀態
-                    currentSearchTag = null;
-                    updateTagsList();
-                    
-                    const filteredDiaries = diaries.filter(diary => {
-                        // 搜尋內容中包含 #標籤名 的日記（完整字串，包含 # 符號）
-                        const contentMatch = diary.content.toLowerCase().includes(searchTermLower);
-                        // 搜尋翻譯中包含 #標籤名 的日記（完整字串，包含 # 符號）
-                        const translationMatch = diary.translation && diary.translation.toLowerCase().includes(searchTermLower);
-                        
-                        // 搜尋標籤：支持完全匹配、部分匹配
-                        // 注意：這裡使用 tagName（不包含 #），因為標籤存儲時不包含 # 符號
-                        const tagMatch = diary.tags && diary.tags.some(tag => {
-                            const tagLower = tag.toLowerCase();
-                            // 完全匹配
-                            if (tagLower === tagName) return true;
-                            // 標籤包含搜尋字串（例如：搜尋 "標籤名"，標籤是 "我的標籤名稱"）
-                            if (tagLower.includes(tagName)) return true;
-                            // 標籤以搜尋字串開頭（例如：搜尋 "標籤名"，標籤是 "標籤名稱"）
-                            if (tagLower.startsWith(tagName)) return true;
-                            // 搜尋字串以標籤開頭（例如：搜尋 "標籤名稱"，標籤是 "標籤名"）
-                            if (tagName.startsWith(tagLower)) return true;
-                            return false;
-                        });
-                        
-                        return contentMatch || tagMatch || translationMatch;
-                    });
-                    
-                    renderFilteredDiaries(filteredDiaries, searchTermLower);
-                    return;
-                }
-                
-                // 如果只有 #，繼續執行下面的內容搜索
-            }
-            
-            // 清除標籤搜索狀態
+            // 清除標籤搜索狀態（搜尋框輸入時不再使用特殊標籤搜尋）
             currentSearchTag = null;
             updateTagsList(); // 更新標籤樣式
 
+            // 將搜尋字串按空格分割成多個關鍵字（空格代表 AND）
+            const keywords = searchTermLower.split(/\s+/).filter(keyword => keyword.length > 0);
+
+            // 統一使用普通文字搜尋，一律當成普通字符處理
             const filteredDiaries = diaries.filter(diary => {
-                // 搜索內容、翻譯和標籤（包括 # 符號）
-                return diary.content.toLowerCase().includes(searchTermLower) ||
-                       (diary.translation && diary.translation.toLowerCase().includes(searchTermLower)) ||
-                       (diary.tags && diary.tags.some(tag => tag.toLowerCase().includes(searchTermLower) || `#${tag.toLowerCase()}`.includes(searchTermLower)));
+                // 搜尋日記內容（直接字串匹配，包含 #標籤名 等所有字符）
+                const contentLower = (diary.content || '').toLowerCase();
+                // 搜尋翻譯內容
+                const translationLower = (diary.translation || '').toLowerCase();
+                
+                // 合併內容和翻譯用於搜尋
+                const searchableText = contentLower + ' ' + translationLower;
+                
+                // 檢查是否同時包含所有關鍵字（AND 邏輯）
+                const allKeywordsMatch = keywords.every(keyword => {
+                    return searchableText.includes(keyword);
+                });
+                
+                return allKeywordsMatch;
             });
             
-            renderFilteredDiaries(filteredDiaries, searchTermLower);
+            renderFilteredDiaries(filteredDiaries, keywords);
         });
         
         // 渲染過濾後的日記列表
-        function renderFilteredDiaries(filteredDiaries, searchTerm) {
+        function renderFilteredDiaries(filteredDiaries, keywords) {
 
             const diaryList = document.getElementById('diaryList');
             
@@ -2563,9 +2492,9 @@
                 // 使用自定義函數格式化日期，避免時區轉換問題
                 const date = formatDateString(diary.date);
 
-                // 高亮搜尋關鍵字
-                let highlightedContent = highlightText(diary.content, searchTerm);
-                let highlightedTranslation = diary.translation ? highlightText(diary.translation, searchTerm) : '';
+                // 高亮搜尋關鍵字（支持多個關鍵字）
+                let highlightedContent = highlightText(diary.content, keywords);
+                let highlightedTranslation = diary.translation ? highlightText(diary.translation, keywords) : '';
 
                 const tagsHtml = diary.tags.map(tag => 
                     `<span class="diary-item-tag">#${tag}</span>`
@@ -2592,12 +2521,27 @@
             }).join('');
         }
 
-        // 高亮文字
-        function highlightText(text, searchTerm) {
-            if (!searchTerm) return escapeHtml(text);
+        // 高亮文字（支持多個關鍵字）
+        function highlightText(text, keywords) {
+            if (!keywords || (Array.isArray(keywords) && keywords.length === 0)) {
+                return escapeHtml(text);
+            }
             
-            const regex = new RegExp(`(${escapeRegex(searchTerm)})`, 'gi');
-            return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+            // 如果 keywords 是字符串，轉換為數組
+            const keywordArray = Array.isArray(keywords) ? keywords : [keywords];
+            
+            // 先轉義 HTML
+            let highlightedText = escapeHtml(text);
+            
+            // 對每個關鍵字進行高亮
+            keywordArray.forEach(keyword => {
+                if (keyword && keyword.trim()) {
+                    const regex = new RegExp(`(${escapeRegex(keyword.trim())})`, 'gi');
+                    highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
+                }
+            });
+            
+            return highlightedText;
         }
 
         // 轉義HTML
