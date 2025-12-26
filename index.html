@@ -1093,6 +1093,8 @@
         let uploadedImages = []; // 當前上傳的圖片URL列表
         let diaryInputActive = false; // 追蹤日記輸入框是否最近有活動
         let diaryInputActiveTimer = null; // 用於清除活動狀態的定時器
+        let lastInsertedTag = null; // 追蹤最後插入的標籤
+        let lastInsertedTagPosition = null; // 追蹤最後插入標籤的位置（開始和結束位置）
 
         // 切換深色模式
         function toggleDarkMode() {
@@ -2031,21 +2033,55 @@
 
         // 按標籤搜索日記
         function searchByTag(tag) {
-            // 如果點擊的是當前搜索的標籤，則清除搜索
-            if (currentSearchTag === tag) {
+            const searchInput = document.getElementById('searchInput');
+            const currentSearchValue = searchInput.value;
+            const expectedTagValue = `#${tag}`;
+            const currentSearchValueLower = currentSearchValue.toLowerCase();
+            const expectedTagValueLower = expectedTagValue.toLowerCase();
+            
+            // 檢查標籤是否已經在搜尋欄中
+            const tagAlreadyExists = currentSearchValueLower.includes(expectedTagValueLower);
+            
+            // 如果搜尋欄只有這個標籤（沒有其他文字），則清除搜索
+            if (currentSearchValue.trim() === expectedTagValue || currentSearchValue.trim().toLowerCase() === expectedTagValueLower) {
                 currentSearchTag = null;
-                document.getElementById('searchInput').value = '';
-                // 觸發 input 事件以執行搜尋邏輯
-                document.getElementById('searchInput').dispatchEvent(new Event('input', { bubbles: true }));
+                searchInput.value = '';
+                // 觸發 input 事件以執行搜尋邏輯（清空搜尋）
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+            
+            // 如果標籤已經存在於搜尋欄中，則移除它
+            if (tagAlreadyExists) {
+                // 移除標籤（包括前後的空格）
+                let newValue = currentSearchValue;
+                // 使用正則表達式移除標籤
+                const regex = new RegExp(`\\s*${escapeRegex(expectedTagValue)}\\s*`, 'gi');
+                newValue = newValue.replace(regex, ' ').trim();
+                searchInput.value = newValue;
+                // 觸發 input 事件
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
                 return;
             }
 
             // 設置當前搜索標籤
             currentSearchTag = tag;
             
-            // 在搜索框顯示標籤
-            const searchInput = document.getElementById('searchInput');
-            searchInput.value = `#${tag}`;
+            // 在搜索框現有文字後面添加標籤（用空格分隔）
+            const cursorPos = searchInput.selectionStart || searchInput.value.length;
+            const textBefore = searchInput.value.substring(0, cursorPos);
+            const textAfter = searchInput.value.substring(cursorPos);
+            
+            // 檢查前面是否需要添加空格
+            const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
+            // 檢查後面是否需要添加空格
+            const spaceAfter = textAfter.length === 0 || textAfter[0] === ' ' ? '' : ' ';
+            
+            searchInput.value = textBefore + spaceBefore + expectedTagValue + spaceAfter + textAfter;
+            
+            // 設置游標位置到標籤後面
+            const newPos = cursorPos + spaceBefore.length + expectedTagValue.length + spaceAfter.length;
+            searchInput.setSelectionRange(newPos, newPos);
             
             // 手動觸發 input 事件，這樣會執行統一的搜尋邏輯
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2071,13 +2107,27 @@
                 }
                 tagElement.textContent = `#${tag}`;
                 tagElement.title = '點擊插入到日記（在日記輸入框外點擊則添加到搜尋欄）';
-                // 左鍵點擊：根據日記輸入框是否最近有活動決定行為
+                // 左鍵點擊：根據當前焦點決定行為
                 tagElement.onclick = (e) => {
                     if (e.button === 0 || !e.button) { // 左鍵
-                        // 如果日記輸入框最近有活動，插入標籤到日記；否則添加到搜尋欄
-                        if (diaryInputActive) {
-                            insertTag(tag);
+                        const searchInput = document.getElementById('searchInput');
+                        const diaryInput = document.getElementById('diaryInput');
+                        const activeElement = document.activeElement;
+                        
+                        // 優先檢查搜尋欄是否有焦點
+                        if (activeElement === searchInput) {
+                            // 搜尋欄有焦點，添加到搜尋欄
+                            searchByTag(tag);
+                        } else if (activeElement === diaryInput || diaryInputActive) {
+                            // 日記輸入框有焦點或最近有活動，插入標籤到日記
+                            // 如果點擊的是最後插入的同一個標籤，則刪除它
+                            if (lastInsertedTag === tag && lastInsertedTagPosition !== null) {
+                                removeLastInsertedTag();
+                            } else {
+                                insertTag(tag);
+                            }
                         } else {
+                            // 都沒有焦點，默認添加到搜尋欄
                             searchByTag(tag);
                         }
                     }
@@ -2098,6 +2148,7 @@
         // 初始化日記輸入框活動追蹤
         function initDiaryInputTracking() {
             const diaryInput = document.getElementById('diaryInput');
+            const searchInput = document.getElementById('searchInput');
             if (!diaryInput) return;
             
             // 當輸入框獲得焦點、有輸入、或點擊時，標記為活動狀態
@@ -2114,9 +2165,24 @@
             };
             
             diaryInput.addEventListener('focus', setActive);
-            diaryInput.addEventListener('input', setActive);
+            diaryInput.addEventListener('input', () => {
+                setActive();
+                // 當用戶手動編輯時，清除最後插入標籤的記錄（因為位置可能已經改變）
+                lastInsertedTag = null;
+                lastInsertedTagPosition = null;
+            });
             diaryInput.addEventListener('click', setActive);
             diaryInput.addEventListener('keydown', setActive);
+            
+            // 當搜尋欄獲得焦點時，清除日記輸入框的活動狀態
+            if (searchInput) {
+                searchInput.addEventListener('focus', () => {
+                    diaryInputActive = false;
+                    if (diaryInputActiveTimer) {
+                        clearTimeout(diaryInputActiveTimer);
+                    }
+                });
+            }
         }
 
         // 插入標籤到日記
@@ -2128,14 +2194,57 @@
             
             // 檢查前面是否有空格，如果沒有則添加
             const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
-            diaryInput.value = textBefore + spaceBefore + `#${tag} ` + textAfter;
+            const tagText = spaceBefore + `#${tag} `;
+            diaryInput.value = textBefore + tagText + textAfter;
+            
+            // 記錄插入的標籤和位置
+            const tagStartPos = cursorPos + spaceBefore.length;
+            const tagEndPos = tagStartPos + tag.length + 2; // +2 是 # 和空格
+            lastInsertedTag = tag;
+            lastInsertedTagPosition = { start: tagStartPos, end: tagEndPos };
             
             // 設置游標位置
-            const newPos = cursorPos + spaceBefore.length + tag.length + 2;
+            const newPos = tagEndPos;
             diaryInput.setSelectionRange(newPos, newPos);
             diaryInput.focus();
             
             // 重新設置活動狀態，這樣用戶可以繼續點擊其他標籤插入
+            diaryInputActive = true;
+            if (diaryInputActiveTimer) {
+                clearTimeout(diaryInputActiveTimer);
+            }
+            diaryInputActiveTimer = setTimeout(() => {
+                diaryInputActive = false;
+            }, 5000);
+        }
+
+        // 刪除最後插入的標籤
+        function removeLastInsertedTag() {
+            if (lastInsertedTagPosition === null) return;
+            
+            const diaryInput = document.getElementById('diaryInput');
+            const text = diaryInput.value;
+            const { start, end } = lastInsertedTagPosition;
+            
+            // 刪除標籤（包括前面的空格，如果有的話）
+            // 檢查前面是否有空格需要一起刪除
+            let deleteStart = start;
+            if (start > 0 && text[start - 1] === ' ') {
+                deleteStart = start - 1;
+            }
+            
+            const newText = text.substring(0, deleteStart) + text.substring(end);
+            diaryInput.value = newText;
+            
+            // 設置游標位置到刪除位置
+            diaryInput.setSelectionRange(deleteStart, deleteStart);
+            diaryInput.focus();
+            
+            // 清除記錄
+            lastInsertedTag = null;
+            lastInsertedTagPosition = null;
+            
+            // 重新設置活動狀態
             diaryInputActive = true;
             if (diaryInputActiveTimer) {
                 clearTimeout(diaryInputActiveTimer);
@@ -2452,7 +2561,23 @@
             updateTagsList(); // 更新標籤樣式
 
             // 將搜尋字串按空格分割成多個關鍵字（空格代表 AND）
-            const keywords = searchTermLower.split(/\s+/).filter(keyword => keyword.length > 0);
+            const allKeywords = searchTermLower.split(/\s+/).filter(keyword => keyword.length > 0);
+            
+            // 分離正常關鍵字和排除關鍵字（以 ! 開頭）
+            const includeKeywords = []; // 必須包含的關鍵字
+            const excludeKeywords = []; // 不能包含的關鍵字（以 ! 開頭）
+            
+            allKeywords.forEach(keyword => {
+                if (keyword.startsWith('!')) {
+                    // 移除 ! 前綴
+                    const excludeKeyword = keyword.substring(1);
+                    if (excludeKeyword.length > 0) {
+                        excludeKeywords.push(excludeKeyword);
+                    }
+                } else {
+                    includeKeywords.push(keyword);
+                }
+            });
 
             // 統一使用普通文字搜尋，一律當成普通字符處理
             const filteredDiaries = diaries.filter(diary => {
@@ -2464,15 +2589,21 @@
                 // 合併內容和翻譯用於搜尋
                 const searchableText = contentLower + ' ' + translationLower;
                 
-                // 檢查是否同時包含所有關鍵字（AND 邏輯）
-                const allKeywordsMatch = keywords.every(keyword => {
+                // 檢查是否同時包含所有正常關鍵字（AND 邏輯）
+                const allIncludeMatch = includeKeywords.length === 0 || includeKeywords.every(keyword => {
                     return searchableText.includes(keyword);
                 });
                 
-                return allKeywordsMatch;
+                // 檢查是否不包含任何排除關鍵字（NOT 邏輯）
+                const allExcludeMatch = excludeKeywords.every(keyword => {
+                    return !searchableText.includes(keyword);
+                });
+                
+                return allIncludeMatch && allExcludeMatch;
             });
             
-            renderFilteredDiaries(filteredDiaries, keywords);
+            // 傳遞所有關鍵字用於高亮（只高亮正常關鍵字，不高亮排除關鍵字）
+            renderFilteredDiaries(filteredDiaries, includeKeywords);
         });
         
         // 渲染過濾後的日記列表
