@@ -2483,16 +2483,53 @@
                 return;
             }
 
-            // 如果搜索的是標籤格式（#標籤名），且標籤存在，使用標籤搜索
+            // 如果搜索的是標籤格式（#標籤名）
             if (searchTermLower.startsWith('#')) {
                 const tagName = searchTermLower.substring(1);
-                // 只有當標籤名不為空且標籤存在時，才使用標籤搜索
-                if (tagName && tagUsage[tagName]) {
-                    currentSearchTag = tagName;
-                    searchByTag(tagName);
+                
+                // 如果標籤名不為空
+                if (tagName) {
+                    // 先檢查是否有完全匹配的標籤
+                    if (tagUsage[tagName]) {
+                        currentSearchTag = tagName;
+                        searchByTag(tagName);
+                        return;
+                    }
+                    
+                    // 如果沒有完全匹配，進行模糊搜尋（搜尋包含該標籤名的日記）
+                    // 清除標籤搜索狀態
+                    currentSearchTag = null;
+                    updateTagsList();
+                    
+                    const filteredDiaries = diaries.filter(diary => {
+                        // 搜尋內容中包含 #標籤名 的日記（完整字串，包含 # 符號）
+                        const contentMatch = diary.content.toLowerCase().includes(searchTermLower);
+                        // 搜尋翻譯中包含 #標籤名 的日記（完整字串，包含 # 符號）
+                        const translationMatch = diary.translation && diary.translation.toLowerCase().includes(searchTermLower);
+                        
+                        // 搜尋標籤：支持完全匹配、部分匹配
+                        // 注意：這裡使用 tagName（不包含 #），因為標籤存儲時不包含 # 符號
+                        const tagMatch = diary.tags && diary.tags.some(tag => {
+                            const tagLower = tag.toLowerCase();
+                            // 完全匹配
+                            if (tagLower === tagName) return true;
+                            // 標籤包含搜尋字串（例如：搜尋 "標籤名"，標籤是 "我的標籤名稱"）
+                            if (tagLower.includes(tagName)) return true;
+                            // 標籤以搜尋字串開頭（例如：搜尋 "標籤名"，標籤是 "標籤名稱"）
+                            if (tagLower.startsWith(tagName)) return true;
+                            // 搜尋字串以標籤開頭（例如：搜尋 "標籤名稱"，標籤是 "標籤名"）
+                            if (tagName.startsWith(tagLower)) return true;
+                            return false;
+                        });
+                        
+                        return contentMatch || tagMatch || translationMatch;
+                    });
+                    
+                    renderFilteredDiaries(filteredDiaries, searchTermLower);
                     return;
                 }
-                // 如果只有 # 或標籤不存在，繼續執行下面的內容搜索
+                
+                // 如果只有 #，繼續執行下面的內容搜索
             }
             
             // 清除標籤搜索狀態
@@ -2503,8 +2540,14 @@
                 // 搜索內容、翻譯和標籤（包括 # 符號）
                 return diary.content.toLowerCase().includes(searchTermLower) ||
                        (diary.translation && diary.translation.toLowerCase().includes(searchTermLower)) ||
-                       (diary.tags && diary.tags.some(tag => tag.toLowerCase().includes(searchTermLower.substring(1)) || `#${tag.toLowerCase()}`.includes(searchTermLower)));
+                       (diary.tags && diary.tags.some(tag => tag.toLowerCase().includes(searchTermLower) || `#${tag.toLowerCase()}`.includes(searchTermLower)));
             });
+            
+            renderFilteredDiaries(filteredDiaries, searchTermLower);
+        });
+        
+        // 渲染過濾後的日記列表
+        function renderFilteredDiaries(filteredDiaries, searchTerm) {
 
             const diaryList = document.getElementById('diaryList');
             
@@ -2547,7 +2590,7 @@
                     </div>
                 `;
             }).join('');
-        });
+        }
 
         // 高亮文字
         function highlightText(text, searchTerm) {
