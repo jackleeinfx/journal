@@ -2102,11 +2102,17 @@
                     tagElement.className = 'tag-item';
                 }
                 tagElement.textContent = `#${tag}`;
-                tagElement.title = '點擊搜索此標籤的日記（右鍵點擊插入到日記中）';
-                // 左鍵點擊：搜索標籤
+                tagElement.title = '點擊插入到日記（在日記輸入框外點擊則添加到搜尋欄）';
+                // 左鍵點擊：根據日記輸入框是否有焦點決定行為
                 tagElement.onclick = (e) => {
                     if (e.button === 0 || !e.button) { // 左鍵
-                        searchByTag(tag);
+                        const diaryInput = document.getElementById('diaryInput');
+                        // 如果日記輸入框有焦點，插入標籤到日記；否則添加到搜尋欄
+                        if (document.activeElement === diaryInput) {
+                            insertTag(tag);
+                        } else {
+                            searchByTag(tag);
+                        }
                     }
                 };
                 // 右鍵點擊：插入標籤到日記
