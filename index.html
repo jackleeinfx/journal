@@ -44,6 +44,21 @@
             gap: 10px;
         }
 
+        .header .date-container {
+            margin-bottom: 0;
+        }
+
+        .header .date-container input {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .header .date-container input:focus {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
         .header-buttons {
             display: flex;
             gap: 10px;
@@ -482,21 +497,6 @@
             gap: 10px;
         }
 
-        .section-header-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .section-header-row .section-title {
-            margin-bottom: 0;
-        }
-
-        .section-header-row .date-container {
-            margin-bottom: 0;
-        }
-
         .new-tag-group {
             display: flex;
             gap: 5px;
@@ -548,10 +548,6 @@
         @media (max-width: 768px) {
             .section-title {
                 font-size: 16px;
-            }
-            .section-header-row {
-                flex-wrap: wrap;
-                gap: 10px;
             }
             .new-tag-group {
                 width: 100%;
@@ -1147,6 +1143,9 @@
     <div class="container">
         <div class="header">
             <h1>📔 我的日記</h1>
+            <div class="date-container">
+                <input type="date" id="dateInput">
+            </div>
             <div class="header-buttons">
                 <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()">🌙 深色模式</button>
                 <button class="settings-btn" onclick="showSettings()">⚙️ 設定</button>
@@ -1156,12 +1155,7 @@
         <div class="main-content">
             <div class="diary-writing-section">
                 <div class="diary-section">
-                    <div class="section-header-row">
-                        <div class="section-title">寫日記</div>
-                        <div class="date-container">
-                            <input type="date" id="dateInput">
-                        </div>
-                    </div>
+                    <div class="section-title">寫日記</div>
                     <div class="image-upload-container">
                         <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
                             <div class="image-upload-text">📷 點擊或拖拽圖片上傳</div>
