@@ -1129,9 +1129,9 @@
                     </div>
                 <div class="action-buttons">
                     <button class="btn-action" id="saveBtn" onclick="saveDiary()">💾 儲存</button>
+                    <button class="btn-action" onclick="insertChecklist()">☐ 添加待辦事項</button>
                     <button class="btn-action" id="cancelEditBtn" onclick="cancelEdit()" style="display: none; background: #999;">❌ 取消編輯</button>
                     <button class="btn-action" id="deleteBtn" onclick="deleteDiary()" style="display: none; background: #dc3545;">🗑️ 刪除日記</button>
-                    <button class="btn-action" onclick="translateDiary()">🌐 翻譯成英文</button>
                 </div>
                     <div class="tags-container">
                         <div class="tags-title">常用標籤 (點擊插入)</div>
@@ -1139,8 +1139,8 @@
                             <input type="text" id="newTagInput" placeholder="輸入新標籤名稱（不含#）" onkeypress="if(event.key==='Enter') createNewTag()">
                             <button onclick="createNewTag()">➕ 新增標籤</button>
                         </div>
-                        <div style="margin: 10px 0; display: flex; gap: 8px; align-items: center;">
-                            <button class="btn-action" onclick="insertChecklist()" style="padding: 8px 16px; font-size: 14px;">☐ 添加待辦事項</button>
+                        <div style="margin-bottom: 15px;">
+                            <button class="btn-action" onclick="translateDiary()">🌐 翻譯成英文</button>
                         </div>
                         <div class="tags-list" id="tagsList"></div>
                     </div>
