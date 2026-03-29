@@ -40,7 +40,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
             gap: 10px;
         }
 
@@ -53,7 +52,7 @@
         .header-left {
             display: flex;
             align-items: center;
-            min-width: 220px;
+            flex: 0 0 auto;
         }
 
         .header-left .date-container {
@@ -61,17 +60,28 @@
             width: 220px;
         }
 
+        .header-upload {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-left: auto;
+        }
+
         .dark-mode-btn {
             background: rgba(255,255,255,0.2);
             border: 2px solid white;
             color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 20px;
             transition: all 0.3s;
-            min-height: 44px;
             touch-action: manipulation;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .dark-mode-btn:hover {
@@ -81,8 +91,9 @@
 
         @media (max-width: 768px) {
             .dark-mode-btn {
-                padding: 8px 16px;
-                font-size: 14px;
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
             }
         }
 
@@ -307,6 +318,22 @@
             position: relative;
         }
 
+        .header-upload .image-upload-area {
+            min-height: 40px;
+            padding: 8px 12px;
+            border-style: solid;
+            border-radius: 20px;
+        }
+
+        .header-upload .image-upload-text {
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+
+        .header-upload .image-upload-hint {
+            display: none;
+        }
+
         .image-upload-area:hover {
             background: #e9ecef;
             border-color: #764ba2;
@@ -393,6 +420,19 @@
                 padding: 15px;
             }
 
+            .header-left .date-container {
+                width: 165px;
+            }
+
+            .header-upload .image-upload-area {
+                min-height: 36px;
+                padding: 6px 10px;
+            }
+
+            .header-upload .image-upload-text {
+                font-size: 12px;
+            }
+
             .uploaded-image-item {
                 width: 100px;
                 height: 100px;
@@ -463,6 +503,16 @@
             min-height: 300px;
             outline: none;
             -webkit-appearance: none;
+        }
+
+        #diaryInput {
+            min-height: calc(2 * 1.6em + 30px);
+            height: auto;
+            width: 100%;
+            line-height: 1.6;
+            flex: 0 0 auto;
+            resize: none;
+            overflow-y: hidden;
         }
 
         .textarea-container textarea:focus {
@@ -1110,13 +1160,20 @@
 <body>
     <div class="container">
         <div class="header">
+            <div class="header-buttons">
+                <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()" title="切換深色模式">🌙</button>
+            </div>
             <div class="header-left">
                 <div class="date-container">
                     <input type="date" id="dateInput">
                 </div>
             </div>
-            <div class="header-buttons">
-                <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()">🌙 深色模式</button>
+            <div class="header-upload">
+                <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
+                    <div class="image-upload-text">📷 上傳圖片</div>
+                    <div class="image-upload-hint">支持 JPG、PNG、GIF</div>
+                    <input type="file" id="imageFileInput" accept="image/*" multiple style="display: none;">
+                </div>
             </div>
         </div>
 
@@ -1124,11 +1181,6 @@
             <div class="diary-writing-section">
                 <div class="diary-section">
                     <div class="image-upload-container">
-                        <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
-                            <div class="image-upload-text">📷 點擊或拖拽圖片上傳</div>
-                            <div class="image-upload-hint">支持 JPG、PNG、GIF（將自動壓縮到100KB以下）</div>
-                            <input type="file" id="imageFileInput" accept="image/*" multiple style="display: none;">
-                        </div>
                         <div class="uploaded-images" id="uploadedImages"></div>
                         <div class="image-upload-progress" id="uploadProgress" style="display: none;"></div>
                     </div>
@@ -1218,11 +1270,11 @@
             
             if (isDarkMode) {
                 body.classList.remove('dark-mode');
-                darkModeBtn.textContent = '🌙 深色模式';
+                darkModeBtn.textContent = '🌙';
                 localStorage.setItem('darkMode', 'false');
             } else {
                 body.classList.add('dark-mode');
-                darkModeBtn.textContent = '☀️ 淺色模式';
+                darkModeBtn.textContent = '☀️';
                 localStorage.setItem('darkMode', 'true');
             }
         }
@@ -1234,10 +1286,10 @@
             
             if (savedDarkMode === 'true') {
                 document.body.classList.add('dark-mode');
-                darkModeBtn.textContent = '☀️ 淺色模式';
+                darkModeBtn.textContent = '☀️';
             } else {
                 document.body.classList.remove('dark-mode');
-                darkModeBtn.textContent = '🌙 深色模式';
+                darkModeBtn.textContent = '🌙';
             }
         }
 
@@ -2061,6 +2113,7 @@
 
             // 清空輸入框和圖片
             document.getElementById('diaryInput').value = '';
+            autoResizeDiaryInput();
             document.getElementById('translationInput').value = '';
             document.getElementById('translationSection').classList.remove('show');
             document.getElementById('translationSection').style.display = 'none';
@@ -2291,6 +2344,8 @@
             const diaryInput = document.getElementById('diaryInput');
             const searchInput = document.getElementById('searchInput');
             if (!diaryInput) return;
+
+            autoResizeDiaryInput();
             
             // 當輸入框獲得焦點、有輸入、或點擊時，標記為活動狀態
             const setActive = () => {
@@ -2306,12 +2361,17 @@
             };
             
             diaryInput.addEventListener('focus', setActive);
-            diaryInput.addEventListener('input', () => {
+            const handleDiaryInputChange = () => {
                 setActive();
+                autoResizeDiaryInput();
                 // 當用戶手動編輯時，清除最後插入標籤的記錄（因為位置可能已經改變）
                 lastInsertedTag = null;
                 lastInsertedTagPosition = null;
-            });
+            };
+            diaryInput.addEventListener('input', handleDiaryInputChange);
+            diaryInput.addEventListener('keyup', handleDiaryInputChange);
+            diaryInput.addEventListener('paste', handleDiaryInputChange);
+            diaryInput.addEventListener('change', handleDiaryInputChange);
             diaryInput.addEventListener('click', setActive);
             diaryInput.addEventListener('keydown', setActive);
             
@@ -2326,6 +2386,14 @@
             }
         }
 
+        function autoResizeDiaryInput() {
+            const diaryInput = document.getElementById('diaryInput');
+            if (!diaryInput) return;
+            diaryInput.style.height = '0px';
+            const minHeight = parseFloat(window.getComputedStyle(diaryInput).minHeight) || 0;
+            diaryInput.style.height = `${Math.max(diaryInput.scrollHeight, minHeight)}px`;
+        }
+
         // 插入標籤到日記
         function insertTag(tag) {
             const diaryInput = document.getElementById('diaryInput');
@@ -2337,6 +2405,7 @@
             const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
             const tagText = spaceBefore + `#${tag} `;
             diaryInput.value = textBefore + tagText + textAfter;
+            autoResizeDiaryInput();
             
             // 記錄插入的標籤和位置
             const tagStartPos = cursorPos + spaceBefore.length;
@@ -2371,6 +2440,7 @@
             const checklistText = newlineBefore + '☐ ';
             
             diaryInput.value = textBefore + checklistText + textAfter;
+            autoResizeDiaryInput();
             
             // 設置游標位置到符號後面
             const newPos = cursorPos + newlineBefore.length + 2;
@@ -2404,6 +2474,7 @@
             
             const newText = text.substring(0, deleteStart) + text.substring(end);
             diaryInput.value = newText;
+            autoResizeDiaryInput();
             
             // 設置游標位置到刪除位置
             diaryInput.setSelectionRange(deleteStart, deleteStart);
@@ -2615,6 +2686,7 @@
                 currentEditingId = id;
                 document.getElementById('dateInput').value = diary.date;
                 document.getElementById('diaryInput').value = diary.content;
+                autoResizeDiaryInput();
                 document.getElementById('translationInput').value = diary.translation || '';
                 
                 // 載入圖片
@@ -2644,6 +2716,7 @@
         function cancelEdit() {
             currentEditingId = null;
             document.getElementById('diaryInput').value = '';
+            autoResizeDiaryInput();
             document.getElementById('translationInput').value = '';
             document.getElementById('translationSection').classList.remove('show');
             document.getElementById('translationSection').style.display = 'none';
