@@ -44,21 +44,6 @@
             gap: 10px;
         }
 
-        .header .date-container {
-            margin-bottom: 0;
-        }
-
-        .header .date-container input {
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .header .date-container input:focus {
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-
         .header-buttons {
             display: flex;
             gap: 10px;
@@ -497,26 +482,6 @@
             gap: 10px;
         }
 
-        .new-tag-group {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-
-        .new-tag-group input {
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            width: 150px;
-            height: 44px;
-            outline: none;
-        }
-
-        .new-tag-group input:focus {
-            border-color: #667eea;
-        }
-
         .search-container-list {
             flex: 1;
             max-width: 400px;
@@ -548,12 +513,6 @@
         @media (max-width: 768px) {
             .section-title {
                 font-size: 16px;
-            }
-            .new-tag-group {
-                width: 100%;
-            }
-            .new-tag-group input {
-                flex: 1;
             }
             .search-container-list {
                 width: 100%;
@@ -762,13 +721,17 @@
         }
 
         .diary-list {
+            max-height: 600px;
+            overflow-y: auto;
             padding: 15px;
             background: #f9f9f9;
             border-radius: 8px;
+            -webkit-overflow-scrolling: touch;
         }
 
         @media (max-width: 768px) {
             .diary-list {
+                max-height: 500px;
                 padding: 10px;
             }
         }
@@ -1139,9 +1102,6 @@
     <div class="container">
         <div class="header">
             <h1>📔 我的日記</h1>
-            <div class="date-container">
-                <input type="date" id="dateInput">
-            </div>
             <div class="header-buttons">
                 <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()">🌙 深色模式</button>
                 <button class="settings-btn" onclick="showSettings()">⚙️ 設定</button>
@@ -1152,6 +1112,9 @@
             <div class="diary-writing-section">
                 <div class="diary-section">
                     <div class="section-title">寫日記</div>
+                    <div class="date-container">
+                        <input type="date" id="dateInput">
+                    </div>
                     <div class="image-upload-container">
                         <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
                             <div class="image-upload-text">📷 點擊或拖拽圖片上傳</div>
@@ -1166,19 +1129,19 @@
                     </div>
                 <div class="action-buttons">
                     <button class="btn-action" id="saveBtn" onclick="saveDiary()">💾 儲存</button>
-                    <button class="btn-action" onclick="translateDiary()">🌐 翻譯成英文</button>
-
-                    <div class="new-tag-group">
-                        <input type="text" id="newTagInput" placeholder="新標籤名稱" onkeypress="if(event.key==='Enter') createNewTag()">
-                        <button class="btn-action" onclick="createNewTag()">➕ 新增標籤</button>
-                    </div>
-                    <button class="btn-action" onclick="insertChecklist()">☐ 添加待辦事項</button>
-
                     <button class="btn-action" id="cancelEditBtn" onclick="cancelEdit()" style="display: none; background: #999;">❌ 取消編輯</button>
                     <button class="btn-action" id="deleteBtn" onclick="deleteDiary()" style="display: none; background: #dc3545;">🗑️ 刪除日記</button>
+                    <button class="btn-action" onclick="translateDiary()">🌐 翻譯成英文</button>
                 </div>
                     <div class="tags-container">
                         <div class="tags-title">常用標籤 (點擊插入)</div>
+                        <div class="tags-create">
+                            <input type="text" id="newTagInput" placeholder="輸入新標籤名稱（不含#）" onkeypress="if(event.key==='Enter') createNewTag()">
+                            <button onclick="createNewTag()">➕ 新增標籤</button>
+                        </div>
+                        <div style="margin: 10px 0; display: flex; gap: 8px; align-items: center;">
+                            <button class="btn-action" onclick="insertChecklist()" style="padding: 8px 16px; font-size: 14px;">☐ 添加待辦事項</button>
+                        </div>
                         <div class="tags-list" id="tagsList"></div>
                     </div>
                 </div>
@@ -1259,12 +1222,6 @@
         let lastInsertedTagPosition = null; // 追蹤最後插入標籤的位置（開始和結束位置）
         let checklistFilter = 'all'; // checklist 篩選狀態：'all', 'completed', 'pending'
 
-        // Lazy Loading 變量
-        const BATCH_SIZE = 10;
-        let visibleDiariesCount = BATCH_SIZE;
-        let currentFilteredDiaries = [];
-        let currentSearchKeywords = [];
-
         // 切換深色模式
         function toggleDarkMode() {
             const body = document.body;
@@ -1317,15 +1274,6 @@
             initImageUpload();
             // 初始化日記輸入框活動追蹤
             initDiaryInputTracking();
-
-            // 初始化無限滾動
-            window.addEventListener('scroll', function() {
-                // 當滾動到接近底部時 (剩餘 300px) 加載更多
-                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
-                    appendNextBatch();
-                }
-            });
-
             console.log('[Page Load] Initialization complete');
         };
 
@@ -1399,9 +1347,17 @@
                 return;
             }
             
+            // 保留目前固定 user_id，避免改密碼後讀不到原資料
+            const currentStableUserId = localStorage.getItem('diaryUserId');
+            if (currentStableUserId) {
+                rememberLegacyUserId(currentStableUserId);
+            }
+            const oldPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+            rememberLegacyUserId(hashPasswordToLegacyUserId(oldPassword));
+
             localStorage.setItem('diaryPassword', newPassword);
             
-            // 如果使用 Supabase，同步用戶ID
+            // 如果使用 Supabase，僅更新舊版 ID 回復清單，不改變固定 user_id
             if (USE_SUPABASE) {
                 syncUserId();
             }
@@ -1854,27 +1810,45 @@
             console.log('[Image Preview] Preview updated successfully');
         }
 
-        // 獲取或創建用戶ID
-        // 使用密碼的簡單哈希作為用戶ID，這樣所有使用相同密碼的設備都能看到相同的日記
+        function hashPasswordToLegacyUserId(password) {
+            let hash = 0;
+            for (let i = 0; i < password.length; i++) {
+                const char = password.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'user_' + Math.abs(hash).toString(36);
+        }
+
+        function rememberLegacyUserId(userId) {
+            if (!userId) return;
+            let legacyIds = [];
+            try {
+                legacyIds = JSON.parse(localStorage.getItem('diaryLegacyUserIds') || '[]');
+                if (!Array.isArray(legacyIds)) legacyIds = [];
+            } catch (e) {
+                legacyIds = [];
+            }
+
+            if (!legacyIds.includes(userId)) {
+                legacyIds.push(userId);
+                localStorage.setItem('diaryLegacyUserIds', JSON.stringify(legacyIds));
+            }
+        }
+
+        // 獲取或創建用戶ID（固定ID，不再隨密碼改變）
         function getUserId() {
             if (!currentUserId) {
                 // 嘗試從 localStorage 獲取
                 let userId = localStorage.getItem('diaryUserId');
                 
-                // 如果沒有，嘗試使用密碼生成一個固定的用戶ID
+                // 遷移舊版本：如果沒有固定 ID，先沿用舊版密碼哈希 ID，避免舊資料讀不到
                 if (!userId && USE_SUPABASE) {
                     const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-                    // 使用簡單的哈希生成固定的用戶ID（基於密碼）
-                    // 這樣所有使用相同密碼的設備都會有相同的用戶ID
-                    let hash = 0;
-                    for (let i = 0; i < savedPassword.length; i++) {
-                        const char = savedPassword.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + char;
-                        hash = hash & hash; // Convert to 32bit integer
-                    }
-                    userId = 'user_' + Math.abs(hash).toString(36);
+                    userId = hashPasswordToLegacyUserId(savedPassword);
                     localStorage.setItem('diaryUserId', userId);
-                    console.log('[Supabase] Generated user ID from password:', userId);
+                    rememberLegacyUserId(userId);
+                    console.log('[Supabase] Migrated to stable user ID from legacy password hash:', userId);
                 }
                 
                 // 如果還是沒有，生成一個隨機的（僅用於 localStorage 模式）
@@ -1888,25 +1862,18 @@
             return currentUserId;
         }
         
-        // 同步用戶ID（當密碼改變時更新）
+        // 同步用戶資訊（保留舊版 ID 作為回復來源，不再因密碼而改動固定 user_id）
         function syncUserId() {
             if (USE_SUPABASE) {
                 const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-                let hash = 0;
-                for (let i = 0; i < savedPassword.length; i++) {
-                    const char = savedPassword.charCodeAt(i);
-                    hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash;
-                }
-                const newUserId = 'user_' + Math.abs(hash).toString(36);
-                const oldUserId = localStorage.getItem('diaryUserId');
-                
-                if (oldUserId !== newUserId) {
-                    console.log('[Supabase] User ID changed, updating:', oldUserId, '->', newUserId);
-                    localStorage.setItem('diaryUserId', newUserId);
-                    currentUserId = newUserId;
-                    // 重新載入日記
-                    loadDiaries();
+                const legacyUserId = hashPasswordToLegacyUserId(savedPassword);
+                rememberLegacyUserId(legacyUserId);
+
+                const stableUserId = localStorage.getItem('diaryUserId');
+                if (!stableUserId) {
+                    localStorage.setItem('diaryUserId', legacyUserId);
+                    currentUserId = legacyUserId;
+                    console.log('[Supabase] Initialized stable user ID from legacy hash:', legacyUserId);
                 }
             }
         }
@@ -1919,8 +1886,34 @@
                     console.log('[Supabase] Loading diaries for user:', userId);
                     
                     // 從 Supabase 載入日記
-                    const diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${userId}&order=created_at.desc`);
+                    let activeUserId = userId;
+                    let diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${activeUserId}&order=created_at.desc`);
                     console.log('[Supabase] Loaded diaries:', diariesData);
+
+                    // 回復機制：如果目前 ID 沒資料，嘗試舊版密碼哈希 ID 清單
+                    if (!diariesData || !Array.isArray(diariesData) || diariesData.length === 0) {
+                        let legacyIds = [];
+                        try {
+                            legacyIds = JSON.parse(localStorage.getItem('diaryLegacyUserIds') || '[]');
+                            if (!Array.isArray(legacyIds)) legacyIds = [];
+                        } catch (e) {
+                            legacyIds = [];
+                        }
+
+                        const fallbackIds = legacyIds.filter(id => id && id !== activeUserId);
+                        for (const fallbackId of fallbackIds) {
+                            console.log('[Supabase] Trying legacy user ID fallback:', fallbackId);
+                            const fallbackDiaries = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${fallbackId}&order=created_at.desc`);
+                            if (fallbackDiaries && Array.isArray(fallbackDiaries) && fallbackDiaries.length > 0) {
+                                activeUserId = fallbackId;
+                                diariesData = fallbackDiaries;
+                                localStorage.setItem('diaryUserId', fallbackId);
+                                currentUserId = fallbackId;
+                                console.log('[Supabase] Recovered data by switching to legacy user ID:', fallbackId);
+                                break;
+                            }
+                        }
+                    }
                     
                     if (diariesData && Array.isArray(diariesData)) {
                         // 使用 Supabase 的數據
@@ -1947,7 +1940,7 @@
                     }
                     
                     // 從 Supabase 載入標籤使用次數
-                    const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}`);
+                    const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${activeUserId}`);
                     console.log('[Supabase] Loaded tags:', tagsData);
                     
                     if (tagsData && Array.isArray(tagsData)) {
@@ -2620,115 +2613,11 @@
             return `${year}年${month}月${day}日 ${weekday}`;
         }
 
-        // 生成單個日記的HTML
-        function generateDiaryHTML(diary, keywords = []) {
-            // 使用自定義函數格式化日期，避免時區轉換問題
-            const date = formatDateString(diary.date);
-
-            // 檢查是否有 checklist
-            const hasChecklistItems = hasChecklist(diary.content);
-            const checklistIcon = hasChecklistItems ? ' 📋' : '';
-
-            // 轉換 checklist 為可交互的 HTML（如果有 checklist）
-            let contentHtml;
-            if (hasChecklistItems) {
-                // 對於有 checklist 的內容，先轉換 checklist
-                contentHtml = convertChecklistToHTML(diary.content, diary.id);
-            } else {
-                // 沒有 checklist，直接高亮
-                contentHtml = highlightText(diary.content, keywords);
-            }
-
-            let highlightedTranslation = diary.translation ? highlightText(diary.translation, keywords) : '';
-
-            const tagsHtml = diary.tags.map(tag =>
-                `<span class="diary-item-tag">#${tag}</span>`
-            ).join('');
-
-            const imagesHtml = diary.images && diary.images.length > 0 ? `
-                <div class="diary-item-images">
-                    ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
-                </div>
-            ` : '';
-
-            return `
-                <div class="diary-item">
-                    <div class="diary-item-header">
-                        <div class="diary-item-date">${date}${checklistIcon}</div>
-                        <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
-                    </div>
-                    <div class="diary-item-content">${contentHtml}</div>
-                    ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
-                    ${imagesHtml}
-                    ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
-                </div>
-            `;
-        }
-
-        // 渲染一批日記
-        function renderBatch(reset = false, maintainScroll = false) {
-            const diaryList = document.getElementById('diaryList');
-            let previousScrollTop = 0;
-
-            if (reset) {
-                if (maintainScroll) {
-                    previousScrollTop = window.scrollY;
-                }
-
-                diaryList.innerHTML = '';
-
-                if (!maintainScroll) {
-                    window.scrollTo(0, 0);
-                }
-
-                if (currentFilteredDiaries.length === 0) {
-                    diaryList.innerHTML = '<div class="empty-state">沒有找到符合條件的日記</div>';
-                    return;
-                }
-            }
-
-            // 如果是重置但要保持捲動位置，我們需要渲染從0到當前visibleDiariesCount的所有項目
-            // 否則，我們只渲染新的一批
-            const start = (reset && maintainScroll) ? 0 : (reset ? 0 : Math.max(0, visibleDiariesCount - BATCH_SIZE));
-            const end = Math.min(visibleDiariesCount, currentFilteredDiaries.length);
-
-            if (start >= end && !reset) return;
-
-            const itemsToRender = currentFilteredDiaries.slice(start, end);
-            const html = itemsToRender.map(diary => generateDiaryHTML(diary, currentSearchKeywords)).join('');
-
-            if (reset) {
-                diaryList.innerHTML = html;
-                if (maintainScroll) {
-                    window.scrollTo(0, previousScrollTop);
-                }
-            } else {
-                diaryList.insertAdjacentHTML('beforeend', html);
-            }
-
-            // 如果內容高度不足以捲動，且還有更多日記，自動加載下一批
-            // 這樣可以確保在螢幕較大或日記內容較短時，也能填滿容器以啟用捲動
-            if (visibleDiariesCount < currentFilteredDiaries.length && document.body.offsetHeight <= window.innerHeight) {
-                setTimeout(() => {
-                    if (visibleDiariesCount < currentFilteredDiaries.length && document.body.offsetHeight <= window.innerHeight) {
-                         appendNextBatch();
-                    }
-                }, 50);
-            }
-        }
-
-        // 載入更多日記
-        function appendNextBatch() {
-            if (visibleDiariesCount >= currentFilteredDiaries.length) return;
-
-            visibleDiariesCount += BATCH_SIZE;
-            renderBatch(false);
-        }
-
         // 渲染日記列表
-        function renderDiaryList(maintainState = false) {
+        function renderDiaryList() {
+            const diaryList = document.getElementById('diaryList');
+            
             if (diaries.length === 0) {
-                const diaryList = document.getElementById('diaryList');
                 diaryList.innerHTML = '<div class="empty-state">還沒有日記，開始寫第一篇吧！</div>';
                 return;
             }
@@ -2762,14 +2651,42 @@
                 });
             }
 
-            currentFilteredDiaries = sortedDiaries;
-            currentSearchKeywords = [];
+            diaryList.innerHTML = sortedDiaries.map(diary => {
+                // 使用自定義函數格式化日期，避免時區轉換問題
+                const date = formatDateString(diary.date);
+                
+                // 檢查是否有 checklist
+                const hasChecklistItems = hasChecklist(diary.content);
+                const checklistIcon = hasChecklistItems ? ' 📋' : '';
 
-            if (!maintainState) {
-                visibleDiariesCount = BATCH_SIZE;
-            }
+                const tagsHtml = diary.tags.map(tag => 
+                    `<span class="diary-item-tag">#${tag}</span>`
+                ).join('');
 
-            renderBatch(true, maintainState);
+                const imagesHtml = diary.images && diary.images.length > 0 ? `
+                    <div class="diary-item-images">
+                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
+                    </div>
+                ` : '';
+                
+                // 轉換 checklist 為可交互的 HTML
+                const contentHtml = hasChecklistItems 
+                    ? convertChecklistToHTML(diary.content, diary.id)
+                    : escapeHtml(diary.content);
+                
+                return `
+                    <div class="diary-item">
+                        <div class="diary-item-header">
+                            <div class="diary-item-date">${date}${checklistIcon}</div>
+                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                        </div>
+                        <div class="diary-item-content">${contentHtml}</div>
+                        ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
+                        ${imagesHtml}
+                        ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
         }
 
         // 當前編輯的日記ID
@@ -2907,13 +2824,7 @@
 
         // 搜尋功能
         document.getElementById('searchInput').addEventListener('input', function(e) {
-            performSearch(false);
-        });
-
-        // 執行搜尋邏輯
-        function performSearch(maintainState = false) {
-            const searchInput = document.getElementById('searchInput');
-            const searchTerm = searchInput.value.trim();
+            const searchTerm = e.target.value.trim();
             const searchTermLower = searchTerm.toLowerCase();
             
             // 如果搜索框被清空，清除標籤搜索
@@ -2924,7 +2835,7 @@
                     checklistFilterButtons.style.display = 'none';
                 }
                 checklistFilter = 'all'; // 重置篩選
-                renderDiaryList(maintainState);
+                renderDiaryList();
                 updateTagsList(); // 更新標籤樣式
                 return;
             }
@@ -2991,11 +2902,19 @@
             });
             
             // 傳遞所有關鍵字用於高亮（只高亮正常關鍵字，不高亮排除關鍵字）
-            renderFilteredDiaries(filteredDiaries, includeKeywords, maintainState);
-        }
+            renderFilteredDiaries(filteredDiaries, includeKeywords);
+        });
         
         // 渲染過濾後的日記列表
-        function renderFilteredDiaries(filteredDiaries, keywords, maintainState = false) {
+        function renderFilteredDiaries(filteredDiaries, keywords) {
+
+            const diaryList = document.getElementById('diaryList');
+            
+            if (filteredDiaries.length === 0) {
+                diaryList.innerHTML = '<div class="empty-state">找不到符合條件的日記</div>';
+                return;
+            }
+
             // 按日期排序（直接比較字符串）
             let sortedDiaries = [...filteredDiaries].sort((a, b) => b.date.localeCompare(a.date));
 
@@ -3022,14 +2941,50 @@
                 });
             }
 
-            currentFilteredDiaries = sortedDiaries;
-            currentSearchKeywords = keywords;
+            diaryList.innerHTML = sortedDiaries.map(diary => {
+                // 使用自定義函數格式化日期，避免時區轉換問題
+                const date = formatDateString(diary.date);
+                
+                // 檢查是否有 checklist
+                const hasChecklistItems = hasChecklist(diary.content);
+                const checklistIcon = hasChecklistItems ? ' 📋' : '';
 
-            if (!maintainState) {
-                visibleDiariesCount = BATCH_SIZE;
-            }
+                // 轉換 checklist 為可交互的 HTML（如果有 checklist）
+                let contentHtml;
+                if (hasChecklistItems) {
+                    // 對於有 checklist 的內容，先轉換 checklist，然後高亮非 checklist 部分
+                    contentHtml = convertChecklistToHTML(diary.content, diary.id);
+                    // 對非 checklist 部分進行高亮（這需要更複雜的處理，暫時先不處理高亮）
+                } else {
+                    // 沒有 checklist，直接高亮
+                    contentHtml = highlightText(diary.content, keywords);
+                }
+                
+                let highlightedTranslation = diary.translation ? highlightText(diary.translation, keywords) : '';
 
-            renderBatch(true, maintainState);
+                const tagsHtml = diary.tags.map(tag => 
+                    `<span class="diary-item-tag">#${tag}</span>`
+                ).join('');
+
+                const imagesHtml = diary.images && diary.images.length > 0 ? `
+                    <div class="diary-item-images">
+                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="diary-item">
+                        <div class="diary-item-header">
+                            <div class="diary-item-date">${date}${checklistIcon}</div>
+                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                        </div>
+                        <div class="diary-item-content">${contentHtml}</div>
+                        ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
+                        ${imagesHtml}
+                        ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
         }
 
         // 高亮文字（支持多個關鍵字）
@@ -3172,13 +3127,8 @@
             // 儲存到 localStorage
             localStorage.setItem('diaries', JSON.stringify(diaries));
             
-            // 重新渲染日記列表，但保持當前視圖狀態
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput && searchInput.value.trim().length > 0) {
-                performSearch(true);
-            } else {
-                renderDiaryList(true);
-            }
+            // 重新渲染日記列表
+            renderDiaryList();
         }
 
         // Checklist 篩選功能
