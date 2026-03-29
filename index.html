@@ -1186,6 +1186,11 @@
         let diaries = [];
         let tagUsage = {}; // 記錄標籤使用次數
         let currentUserId = null; // 當前用戶ID（用於Supabase）
+        let activeSupabaseUserId = null; // 真正用於查詢的 user_id（可能是回復後的舊ID）
+        let diariesOffset = 0;
+        let hasMoreDiaries = true;
+        let isLoadingMoreDiaries = false;
+        const DIARIES_PAGE_SIZE = 10;
         let uploadedImages = []; // 當前上傳的圖片URL列表
         let diaryInputActive = false; // 追蹤日記輸入框是否最近有活動
         let diaryInputActiveTimer = null; // 用於清除活動狀態的定時器
@@ -1763,17 +1768,71 @@
             sessionStorage.removeItem('diaryAuthenticated');
         }
 
-        // 載入日記
+        function mapSupabaseDiaries(diariesData) {
+            return diariesData.map(d => ({
+                id: d.id,
+                date: d.date,
+                content: d.content,
+                translation: d.translation || '',
+                tags: d.tags || [],
+                images: d.images || [],
+                createdAt: d.created_at
+            }));
+        }
+
+        function setDiaryListLoadingState(text = '') {
+            const diaryList = document.getElementById('diaryList');
+            if (!diaryList) return;
+            let loadingEl = document.getElementById('diaryLoadingHint');
+            if (!loadingEl) {
+                loadingEl = document.createElement('div');
+                loadingEl.id = 'diaryLoadingHint';
+                loadingEl.className = 'empty-state';
+                loadingEl.style.marginTop = '10px';
+                loadingEl.style.fontSize = '14px';
+                diaryList.parentNode.insertBefore(loadingEl, diaryList.nextSibling);
+            }
+            loadingEl.textContent = text;
+            loadingEl.style.display = text ? 'block' : 'none';
+        }
+
+        async function loadMoreDiaries() {
+            if (!USE_SUPABASE || !activeSupabaseUserId || !hasMoreDiaries || isLoadingMoreDiaries) return;
+            isLoadingMoreDiaries = true;
+            setDiaryListLoadingState('載入更多日記中...');
+            try {
+                const filters = `?user_id=eq.${activeSupabaseUserId}&order=created_at.desc&limit=${DIARIES_PAGE_SIZE}&offset=${diariesOffset}`;
+                const pageData = await supabaseRequest('diaries', 'GET', null, filters);
+                const mapped = (pageData && Array.isArray(pageData)) ? mapSupabaseDiaries(pageData) : [];
+                diaries = diaries.concat(mapped);
+                diariesOffset += mapped.length;
+                hasMoreDiaries = mapped.length === DIARIES_PAGE_SIZE;
+                localStorage.setItem('diaries', JSON.stringify(diaries));
+                renderDiaryList();
+                setDiaryListLoadingState(hasMoreDiaries ? '往下滾動可載入更多' : '已載入全部日記');
+            } catch (error) {
+                console.error('[Supabase] 載入更多日記失敗:', error);
+                setDiaryListLoadingState('載入失敗，請稍後再試');
+            } finally {
+                isLoadingMoreDiaries = false;
+            }
+        }
+
+        // 載入日記（首屏僅載入第一頁）
         async function loadDiaries() {
             if (USE_SUPABASE) {
                 try {
+                    diaries = [];
+                    diariesOffset = 0;
+                    hasMoreDiaries = true;
+                    activeSupabaseUserId = null;
+
                     const userId = getUserId();
-                    console.log('[Supabase] Loading diaries for user:', userId);
+                    console.log('[Supabase] Loading first diary page for user:', userId);
                     
-                    // 從 Supabase 載入日記
                     let activeUserId = userId;
-                    let diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${activeUserId}&order=created_at.desc`);
-                    console.log('[Supabase] Loaded diaries:', diariesData);
+                    let diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${activeUserId}&order=created_at.desc&limit=${DIARIES_PAGE_SIZE}&offset=0`);
+                    console.log('[Supabase] Loaded first page diaries:', diariesData);
 
                     // 回復機制：如果目前 ID 沒資料，嘗試舊版密碼哈希 ID 清單
                     if (!diariesData || !Array.isArray(diariesData) || diariesData.length === 0) {
@@ -1788,7 +1847,7 @@
                         const fallbackIds = legacyIds.filter(id => id && id !== activeUserId);
                         for (const fallbackId of fallbackIds) {
                             console.log('[Supabase] Trying legacy user ID fallback:', fallbackId);
-                            const fallbackDiaries = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${fallbackId}&order=created_at.desc`);
+                            const fallbackDiaries = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${fallbackId}&order=created_at.desc&limit=${DIARIES_PAGE_SIZE}&offset=0`);
                             if (fallbackDiaries && Array.isArray(fallbackDiaries) && fallbackDiaries.length > 0) {
                                 activeUserId = fallbackId;
                                 diariesData = fallbackDiaries;
@@ -1799,31 +1858,13 @@
                             }
                         }
                     }
-                    
-                    if (diariesData && Array.isArray(diariesData)) {
-                        // 使用 Supabase 的數據
-                        diaries = diariesData.map(d => {
-                            const diary = {
-                                id: d.id,
-                                date: d.date,
-                                content: d.content,
-                                translation: d.translation || '',
-                                tags: d.tags || [],
-                                images: d.images || [],
-                                createdAt: d.created_at
-                            };
-                            console.log('[Load] Loaded diary with images:', diary.id, 'images:', diary.images.length);
-                            return diary;
-                        });
-                        console.log('[Supabase] Processed diaries:', diaries.length);
-                        
-                        // 同步到 localStorage 作為備份
-                        localStorage.setItem('diaries', JSON.stringify(diaries));
-                    } else {
-                        console.warn('[Supabase] No diaries data or invalid format');
-                        diaries = [];
-                    }
-                    
+
+                    activeSupabaseUserId = activeUserId;
+                    diaries = (diariesData && Array.isArray(diariesData)) ? mapSupabaseDiaries(diariesData) : [];
+                    diariesOffset = diaries.length;
+                    hasMoreDiaries = diaries.length === DIARIES_PAGE_SIZE;
+                    localStorage.setItem('diaries', JSON.stringify(diaries));
+
                     // 從 Supabase 載入標籤使用次數
                     const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${activeUserId}`);
                     console.log('[Supabase] Loaded tags:', tagsData);
@@ -1833,25 +1874,18 @@
                         tagsData.forEach(t => {
                             tagUsage[t.tag_name] = t.usage_count;
                         });
-                        console.log('[Supabase] Processed tags:', Object.keys(tagUsage).length);
-                        
-                        // 同步到 localStorage 作為備份
                         localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
                     } else {
-                        console.warn('[Supabase] No tags data or invalid format');
                         tagUsage = {};
                     }
                 } catch (error) {
                     console.error('[Supabase] 載入日記失敗:', error);
-                    // 如果 Supabase 失敗，嘗試從 localStorage 載入（僅作為備份）
                     console.log('[Fallback] Loading from localStorage (backup only)');
                     const saved = localStorage.getItem('diaries');
                     if (saved) {
                         try {
                             diaries = JSON.parse(saved);
-                            console.log('[Fallback] Loaded', diaries.length, 'diaries from localStorage');
                         } catch (e) {
-                            console.error('[Fallback] Failed to parse localStorage data:', e);
                             diaries = [];
                         }
                     } else {
@@ -1863,12 +1897,12 @@
                         try {
                             tagUsage = JSON.parse(savedTagUsage);
                         } catch (e) {
-                            console.error('[Fallback] Failed to parse tagUsage:', e);
                             tagUsage = {};
                         }
                     } else {
                         tagUsage = {};
                     }
+                    hasMoreDiaries = false;
                 }
             } else {
                 // 使用 localStorage
@@ -1881,9 +1915,11 @@
                 if (savedTagUsage) {
                     tagUsage = JSON.parse(savedTagUsage);
                 }
+                hasMoreDiaries = false;
             }
             
             renderDiaryList();
+            setDiaryListLoadingState(USE_SUPABASE ? (hasMoreDiaries ? '往下滾動可載入更多' : '已載入全部日記') : '');
         }
 
         // 儲存日記
@@ -2538,7 +2574,7 @@
 
                 const imagesHtml = diary.images && diary.images.length > 0 ? `
                     <div class="diary-item-images">
-                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
+                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" onclick="window.open('${img}', '_blank')">`).join('')}
                     </div>
                 ` : '';
                 
@@ -2698,6 +2734,7 @@
                 checklistFilter = 'all'; // 重置篩選
                 renderDiaryList();
                 updateTagsList(); // 更新標籤樣式
+                setDiaryListLoadingState(USE_SUPABASE ? (hasMoreDiaries ? '往下滾動可載入更多' : '已載入全部日記') : '');
                 return;
             }
 
@@ -2764,6 +2801,17 @@
             
             // 傳遞所有關鍵字用於高亮（只高亮正常關鍵字，不高亮排除關鍵字）
             renderFilteredDiaries(filteredDiaries, includeKeywords);
+            setDiaryListLoadingState('');
+        });
+
+        // 無限滾動：接近頁面底部時載入下一頁日記
+        window.addEventListener('scroll', function() {
+            if (!USE_SUPABASE || !hasMoreDiaries || isLoadingMoreDiaries) return;
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && searchInput.value.trim()) return;
+            if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 300)) {
+                loadMoreDiaries();
+            }
         });
         
         // 渲染過濾後的日記列表
@@ -2829,7 +2877,7 @@
 
                 const imagesHtml = diary.images && diary.images.length > 0 ? `
                     <div class="diary-item-images">
-                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" onclick="window.open('${img}', '_blank')">`).join('')}
+                        ${diary.images.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" onclick="window.open('${img}', '_blank')">`).join('')}
                     </div>
                 ` : '';
                 
