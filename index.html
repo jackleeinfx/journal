@@ -721,17 +721,15 @@
         }
 
         .diary-list {
-            max-height: 600px;
-            overflow-y: auto;
+            max-height: none;
+            overflow-y: visible;
             padding: 15px;
             background: #f9f9f9;
             border-radius: 8px;
-            -webkit-overflow-scrolling: touch;
         }
 
         @media (max-width: 768px) {
             .diary-list {
-                max-height: 500px;
                 padding: 10px;
             }
         }
@@ -1104,7 +1102,6 @@
             <h1>📔 我的日記</h1>
             <div class="header-buttons">
                 <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()">🌙 深色模式</button>
-                <button class="settings-btn" onclick="showSettings()">⚙️ 設定</button>
             </div>
         </div>
 
@@ -1178,31 +1175,6 @@
         </div>
     </div>
 
-    <!-- 密碼輸入模態框 -->
-    <div class="password-modal" id="passwordModal">
-        <div class="modal-content">
-            <h2>輸入密碼</h2>
-            <input type="password" id="passwordInput" placeholder="請輸入密碼">
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="checkPassword()">確認</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 設定模態框 -->
-    <div class="settings-modal" id="settingsModal">
-        <div class="modal-content">
-            <h2>設定</h2>
-            <label>修改密碼：</label>
-            <input type="password" id="newPasswordInput" placeholder="新密碼">
-            <input type="password" id="confirmPasswordInput" placeholder="確認新密碼">
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeSettings()">取消</button>
-                <button class="btn btn-primary" onclick="savePassword()">儲存</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         // Supabase 配置（如果使用 Supabase，請填入您的配置）
         const USE_SUPABASE = true; // 設為 true 以啟用 Supabase
@@ -1210,8 +1182,7 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpdGhoeHFqb3F3ZGV1eGVtbGFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYzMjU1NjEsImV4cCI6MjA4MTkwMTU2MX0.lTd7kfA-lHJsGUcABhyr_-RzINZ-PCiRT5EJGtF635A'; // 您的 Supabase anon key
         
         // 初始化
-        const DEFAULT_PASSWORD = '0000';
-        let isAuthenticated = false;
+        const LEGACY_DEFAULT_PASSWORD = '0000';
         let diaries = [];
         let tagUsage = {}; // 記錄標籤使用次數
         let currentUserId = null; // 當前用戶ID（用於Supabase）
@@ -1253,10 +1224,9 @@
             }
         }
 
-        // 頁面載入時檢查密碼
+        // 頁面載入初始化
         window.onload = async function() {
             console.log('[Page Load] Starting initialization...');
-            checkAuth();
             setTodayDate();
             loadDarkMode();
             // 如果使用 Supabase，同步用戶ID（確保所有設備使用相同的用戶ID）
@@ -1276,95 +1246,6 @@
             initDiaryInputTracking();
             console.log('[Page Load] Initialization complete');
         };
-
-        // 檢查認證狀態
-        function checkAuth() {
-            const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-            const authStatus = sessionStorage.getItem('diaryAuthenticated');
-            
-            if (authStatus === 'true') {
-                isAuthenticated = true;
-                document.getElementById('passwordModal').style.display = 'none';
-            } else {
-                document.getElementById('passwordModal').style.display = 'flex';
-                document.getElementById('passwordInput').focus();
-            }
-        }
-
-        // 驗證密碼
-        function checkPassword() {
-            const inputPassword = document.getElementById('passwordInput').value;
-            const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-            
-            if (inputPassword === savedPassword) {
-                isAuthenticated = true;
-                sessionStorage.setItem('diaryAuthenticated', 'true');
-                document.getElementById('passwordModal').style.display = 'none';
-                document.getElementById('passwordInput').value = '';
-            } else {
-                showToast('密碼錯誤！', 'error');
-                document.getElementById('passwordInput').value = '';
-                document.getElementById('passwordInput').focus();
-            }
-        }
-
-        // 按Enter鍵確認密碼
-        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
-        });
-
-        // 顯示設定
-        function showSettings() {
-            if (!isAuthenticated) {
-                alert('請先輸入密碼！');
-                checkAuth();
-                return;
-            }
-            document.getElementById('settingsModal').style.display = 'flex';
-        }
-
-        // 關閉設定
-        function closeSettings() {
-            document.getElementById('settingsModal').style.display = 'none';
-            document.getElementById('newPasswordInput').value = '';
-            document.getElementById('confirmPasswordInput').value = '';
-        }
-
-        // 儲存密碼
-        function savePassword() {
-            const newPassword = document.getElementById('newPasswordInput').value;
-            const confirmPassword = document.getElementById('confirmPasswordInput').value;
-            
-            if (!newPassword) {
-                alert('請輸入新密碼！');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                alert('兩次輸入的密碼不一致！');
-                return;
-            }
-            
-            // 保留目前固定 user_id，避免改密碼後讀不到原資料
-            const currentStableUserId = localStorage.getItem('diaryUserId');
-            if (currentStableUserId) {
-                rememberLegacyUserId(currentStableUserId);
-            }
-            const oldPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-            rememberLegacyUserId(hashPasswordToLegacyUserId(oldPassword));
-
-            localStorage.setItem('diaryPassword', newPassword);
-            
-            // 如果使用 Supabase，僅更新舊版 ID 回復清單，不改變固定 user_id
-            if (USE_SUPABASE) {
-                syncUserId();
-            }
-            
-            alert('密碼已更新！');
-            closeSettings();
-        }
 
         // 設定今日日期（加拿大多倫多時間）
         function setTodayDate() {
@@ -1844,7 +1725,7 @@
                 
                 // 遷移舊版本：如果沒有固定 ID，先沿用舊版密碼哈希 ID，避免舊資料讀不到
                 if (!userId && USE_SUPABASE) {
-                    const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+                    const savedPassword = localStorage.getItem('diaryPassword') || LEGACY_DEFAULT_PASSWORD;
                     userId = hashPasswordToLegacyUserId(savedPassword);
                     localStorage.setItem('diaryUserId', userId);
                     rememberLegacyUserId(userId);
@@ -1865,7 +1746,7 @@
         // 同步用戶資訊（保留舊版 ID 作為回復來源，不再因密碼而改動固定 user_id）
         function syncUserId() {
             if (USE_SUPABASE) {
-                const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+                const savedPassword = localStorage.getItem('diaryPassword') || LEGACY_DEFAULT_PASSWORD;
                 const legacyUserId = hashPasswordToLegacyUserId(savedPassword);
                 rememberLegacyUserId(legacyUserId);
 
@@ -1876,6 +1757,10 @@
                     console.log('[Supabase] Initialized stable user ID from legacy hash:', legacyUserId);
                 }
             }
+
+            // 密碼功能已移除，清理舊版認證資料
+            localStorage.removeItem('diaryPassword');
+            sessionStorage.removeItem('diaryAuthenticated');
         }
 
         // 載入日記
@@ -2003,12 +1888,6 @@
 
         // 儲存日記
         async function saveDiary() {
-            if (!isAuthenticated) {
-                alert('請先輸入密碼！');
-                checkAuth();
-                return;
-            }
-
             const date = document.getElementById('dateInput').value;
             const content = document.getElementById('diaryInput').value.trim();
             const translation = document.getElementById('translationInput').value.trim();
@@ -2549,12 +2428,6 @@
 
         // 翻譯日記
         async function translateDiary() {
-            if (!isAuthenticated) {
-                alert('請先輸入密碼！');
-                checkAuth();
-                return;
-            }
-
             const content = document.getElementById('diaryInput').value.trim();
             if (!content) {
                 alert('請先輸入要翻譯的內容！');
@@ -2694,12 +2567,6 @@
 
         // 載入日記到編輯區
         function loadDiary(id) {
-            if (!isAuthenticated) {
-                alert('請先輸入密碼！');
-                checkAuth();
-                return;
-            }
-
             const diary = diaries.find(d => d.id === id);
             if (diary) {
                 currentEditingId = id;
@@ -2747,12 +2614,6 @@
 
         // 刪除日記
         async function deleteDiary() {
-            if (!isAuthenticated) {
-                alert('請先輸入密碼！');
-                checkAuth();
-                return;
-            }
-
             if (currentEditingId === null) {
                 alert('沒有正在編輯的日記！');
                 return;
