@@ -1347,9 +1347,17 @@
                 return;
             }
             
+            // 保留目前固定 user_id，避免改密碼後讀不到原資料
+            const currentStableUserId = localStorage.getItem('diaryUserId');
+            if (currentStableUserId) {
+                rememberLegacyUserId(currentStableUserId);
+            }
+            const oldPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
+            rememberLegacyUserId(hashPasswordToLegacyUserId(oldPassword));
+
             localStorage.setItem('diaryPassword', newPassword);
             
-            // 如果使用 Supabase，同步用戶ID
+            // 如果使用 Supabase，僅更新舊版 ID 回復清單，不改變固定 user_id
             if (USE_SUPABASE) {
                 syncUserId();
             }
@@ -1802,27 +1810,45 @@
             console.log('[Image Preview] Preview updated successfully');
         }
 
-        // 獲取或創建用戶ID
-        // 使用密碼的簡單哈希作為用戶ID，這樣所有使用相同密碼的設備都能看到相同的日記
+        function hashPasswordToLegacyUserId(password) {
+            let hash = 0;
+            for (let i = 0; i < password.length; i++) {
+                const char = password.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'user_' + Math.abs(hash).toString(36);
+        }
+
+        function rememberLegacyUserId(userId) {
+            if (!userId) return;
+            let legacyIds = [];
+            try {
+                legacyIds = JSON.parse(localStorage.getItem('diaryLegacyUserIds') || '[]');
+                if (!Array.isArray(legacyIds)) legacyIds = [];
+            } catch (e) {
+                legacyIds = [];
+            }
+
+            if (!legacyIds.includes(userId)) {
+                legacyIds.push(userId);
+                localStorage.setItem('diaryLegacyUserIds', JSON.stringify(legacyIds));
+            }
+        }
+
+        // 獲取或創建用戶ID（固定ID，不再隨密碼改變）
         function getUserId() {
             if (!currentUserId) {
                 // 嘗試從 localStorage 獲取
                 let userId = localStorage.getItem('diaryUserId');
                 
-                // 如果沒有，嘗試使用密碼生成一個固定的用戶ID
+                // 遷移舊版本：如果沒有固定 ID，先沿用舊版密碼哈希 ID，避免舊資料讀不到
                 if (!userId && USE_SUPABASE) {
                     const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-                    // 使用簡單的哈希生成固定的用戶ID（基於密碼）
-                    // 這樣所有使用相同密碼的設備都會有相同的用戶ID
-                    let hash = 0;
-                    for (let i = 0; i < savedPassword.length; i++) {
-                        const char = savedPassword.charCodeAt(i);
-                        hash = ((hash << 5) - hash) + char;
-                        hash = hash & hash; // Convert to 32bit integer
-                    }
-                    userId = 'user_' + Math.abs(hash).toString(36);
+                    userId = hashPasswordToLegacyUserId(savedPassword);
                     localStorage.setItem('diaryUserId', userId);
-                    console.log('[Supabase] Generated user ID from password:', userId);
+                    rememberLegacyUserId(userId);
+                    console.log('[Supabase] Migrated to stable user ID from legacy password hash:', userId);
                 }
                 
                 // 如果還是沒有，生成一個隨機的（僅用於 localStorage 模式）
@@ -1836,25 +1862,18 @@
             return currentUserId;
         }
         
-        // 同步用戶ID（當密碼改變時更新）
+        // 同步用戶資訊（保留舊版 ID 作為回復來源，不再因密碼而改動固定 user_id）
         function syncUserId() {
             if (USE_SUPABASE) {
                 const savedPassword = localStorage.getItem('diaryPassword') || DEFAULT_PASSWORD;
-                let hash = 0;
-                for (let i = 0; i < savedPassword.length; i++) {
-                    const char = savedPassword.charCodeAt(i);
-                    hash = ((hash << 5) - hash) + char;
-                    hash = hash & hash;
-                }
-                const newUserId = 'user_' + Math.abs(hash).toString(36);
-                const oldUserId = localStorage.getItem('diaryUserId');
-                
-                if (oldUserId !== newUserId) {
-                    console.log('[Supabase] User ID changed, updating:', oldUserId, '->', newUserId);
-                    localStorage.setItem('diaryUserId', newUserId);
-                    currentUserId = newUserId;
-                    // 重新載入日記
-                    loadDiaries();
+                const legacyUserId = hashPasswordToLegacyUserId(savedPassword);
+                rememberLegacyUserId(legacyUserId);
+
+                const stableUserId = localStorage.getItem('diaryUserId');
+                if (!stableUserId) {
+                    localStorage.setItem('diaryUserId', legacyUserId);
+                    currentUserId = legacyUserId;
+                    console.log('[Supabase] Initialized stable user ID from legacy hash:', legacyUserId);
                 }
             }
         }
@@ -1867,8 +1886,34 @@
                     console.log('[Supabase] Loading diaries for user:', userId);
                     
                     // 從 Supabase 載入日記
-                    const diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${userId}&order=created_at.desc`);
+                    let activeUserId = userId;
+                    let diariesData = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${activeUserId}&order=created_at.desc`);
                     console.log('[Supabase] Loaded diaries:', diariesData);
+
+                    // 回復機制：如果目前 ID 沒資料，嘗試舊版密碼哈希 ID 清單
+                    if (!diariesData || !Array.isArray(diariesData) || diariesData.length === 0) {
+                        let legacyIds = [];
+                        try {
+                            legacyIds = JSON.parse(localStorage.getItem('diaryLegacyUserIds') || '[]');
+                            if (!Array.isArray(legacyIds)) legacyIds = [];
+                        } catch (e) {
+                            legacyIds = [];
+                        }
+
+                        const fallbackIds = legacyIds.filter(id => id && id !== activeUserId);
+                        for (const fallbackId of fallbackIds) {
+                            console.log('[Supabase] Trying legacy user ID fallback:', fallbackId);
+                            const fallbackDiaries = await supabaseRequest('diaries', 'GET', null, `?user_id=eq.${fallbackId}&order=created_at.desc`);
+                            if (fallbackDiaries && Array.isArray(fallbackDiaries) && fallbackDiaries.length > 0) {
+                                activeUserId = fallbackId;
+                                diariesData = fallbackDiaries;
+                                localStorage.setItem('diaryUserId', fallbackId);
+                                currentUserId = fallbackId;
+                                console.log('[Supabase] Recovered data by switching to legacy user ID:', fallbackId);
+                                break;
+                            }
+                        }
+                    }
                     
                     if (diariesData && Array.isArray(diariesData)) {
                         // 使用 Supabase 的數據
@@ -1895,7 +1940,7 @@
                     }
                     
                     // 從 Supabase 載入標籤使用次數
-                    const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${userId}`);
+                    const tagsData = await supabaseRequest('tag_usage', 'GET', null, `?user_id=eq.${activeUserId}`);
                     console.log('[Supabase] Loaded tags:', tagsData);
                     
                     if (tagsData && Array.isArray(tagsData)) {
