@@ -1183,6 +1183,7 @@
         
         // 初始化
         const LEGACY_DEFAULT_PASSWORD = '0000';
+        const DEFAULT_USER_ID = 'journal_shared_user';
         let diaries = [];
         let tagUsage = {}; // 記錄標籤使用次數
         let currentUserId = null; // 當前用戶ID（用於Supabase）
@@ -1725,20 +1726,15 @@
         // 獲取或創建用戶ID（固定ID，不再隨密碼改變）
         function getUserId() {
             if (!currentUserId) {
-                // 嘗試從 localStorage 獲取
                 let userId = localStorage.getItem('diaryUserId');
-                
-                // 遷移舊版本：如果沒有固定 ID，先沿用舊版密碼哈希 ID，避免舊資料讀不到
-                if (!userId && USE_SUPABASE) {
-                    const savedPassword = localStorage.getItem('diaryPassword') || LEGACY_DEFAULT_PASSWORD;
-                    userId = hashPasswordToLegacyUserId(savedPassword);
+
+                if (USE_SUPABASE) {
+                    // 固定使用共享帳號，避免 user_id 漂移造成資料讀不到
+                    userId = DEFAULT_USER_ID;
                     localStorage.setItem('diaryUserId', userId);
                     rememberLegacyUserId(userId);
-                    console.log('[Supabase] Migrated to stable user ID from legacy password hash:', userId);
-                }
-                
-                // 如果還是沒有，生成一個隨機的（僅用於 localStorage 模式）
-                if (!userId) {
+                } else if (!userId) {
+                    // localStorage 模式才用隨機ID
                     userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
                     localStorage.setItem('diaryUserId', userId);
                 }
@@ -1751,16 +1747,16 @@
         // 同步用戶資訊（保留舊版 ID 作為回復來源，不再因密碼而改動固定 user_id）
         function syncUserId() {
             if (USE_SUPABASE) {
+                // 保留舊版 hash ID 作為回復來源
                 const savedPassword = localStorage.getItem('diaryPassword') || LEGACY_DEFAULT_PASSWORD;
                 const legacyUserId = hashPasswordToLegacyUserId(savedPassword);
                 rememberLegacyUserId(legacyUserId);
 
-                const stableUserId = localStorage.getItem('diaryUserId');
-                if (!stableUserId) {
-                    localStorage.setItem('diaryUserId', legacyUserId);
-                    currentUserId = legacyUserId;
-                    console.log('[Supabase] Initialized stable user ID from legacy hash:', legacyUserId);
-                }
+                // 強制固定到共享 user_id
+                localStorage.setItem('diaryUserId', DEFAULT_USER_ID);
+                currentUserId = DEFAULT_USER_ID;
+                rememberLegacyUserId(DEFAULT_USER_ID);
+                console.log('[Supabase] Using fixed user ID:', DEFAULT_USER_ID);
             }
 
             // 密碼功能已移除，清理舊版認證資料
