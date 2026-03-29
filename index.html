@@ -50,6 +50,17 @@
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            min-width: 220px;
+        }
+
+        .header-left .date-container {
+            margin-bottom: 0;
+            width: 220px;
+        }
+
         .dark-mode-btn {
             background: rgba(255,255,255,0.2);
             border: 2px solid white;
@@ -1099,7 +1110,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📔 我的日記</h1>
+            <div class="header-left">
+                <div class="date-container">
+                    <input type="date" id="dateInput">
+                </div>
+            </div>
             <div class="header-buttons">
                 <button class="dark-mode-btn" id="darkModeBtn" onclick="toggleDarkMode()">🌙 深色模式</button>
             </div>
@@ -1108,10 +1123,6 @@
         <div class="main-content">
             <div class="diary-writing-section">
                 <div class="diary-section">
-                    <div class="section-title">寫日記</div>
-                    <div class="date-container">
-                        <input type="date" id="dateInput">
-                    </div>
                     <div class="image-upload-container">
                         <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageFileInput').click()">
                             <div class="image-upload-text">📷 點擊或拖拽圖片上傳</div>
