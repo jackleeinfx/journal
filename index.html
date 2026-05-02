@@ -816,18 +816,27 @@
             margin-bottom: 8px;
         }
 
+        .diary-item-actions {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
         .diary-item-edit-btn {
             background: #667eea;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 3px 7px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
+            line-height: 1.2;
             transition: all 0.3s;
-            min-height: 32px;
+            min-height: 22px;
             touch-action: manipulation;
             z-index: 10;
+            opacity: 0.9;
         }
 
         .diary-item-edit-btn:hover {
@@ -839,10 +848,14 @@
                 padding: 12px;
                 margin-bottom: 12px;
             }
+            .diary-item-actions {
+                gap: 3px;
+            }
             .diary-item-edit-btn {
-                padding: 8px 14px;
-                font-size: 13px;
-                min-height: 36px;
+                padding: 2px 6px;
+                font-size: 10px;
+                min-height: 20px;
+                border-radius: 4px;
             }
         }
 
@@ -2885,7 +2898,7 @@
                     <div class="diary-item">
                         <div class="diary-item-header">
                             <div class="diary-item-date">${diary.isPinned ? '📌 ' : ''}${date}${checklistIcon}</div>
-                            <div style="display:flex; gap:6px;">
+                            <div class="diary-item-actions">
                                 <button class="diary-item-edit-btn" onclick='togglePinDiary(${JSON.stringify(diary.id)}, event)'>${diary.isPinned ? '📌 取消置頂' : '📌 置頂'}</button>
                                 <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
                             </div>
@@ -3203,7 +3216,7 @@
                     <div class="diary-item">
                         <div class="diary-item-header">
                             <div class="diary-item-date">${diary.isPinned ? '📌 ' : ''}${date}${checklistIcon}</div>
-                            <div style="display:flex; gap:6px;">
+                            <div class="diary-item-actions">
                                 <button class="diary-item-edit-btn" onclick='togglePinDiary(${JSON.stringify(diary.id)}, event)'>${diary.isPinned ? '📌 取消置頂' : '📌 置頂'}</button>
                                 <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
                             </div>
