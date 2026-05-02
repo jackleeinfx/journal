@@ -1253,10 +1253,13 @@
         let isLoadingMoreDiaries = false;
         const DIARIES_PAGE_SIZE = 10;
         const SEARCH_FETCH_PAGE_SIZE = 200;
+        const PINNED_DIARY_IDS_KEY = 'pinnedDiaryIds';
+        const DIARY_DRAFT_KEY = 'diaryDraft';
         let allDiariesSearchCache = null;
         let searchCacheUserId = null;
         let isLoadingSearchCache = false;
         let searchCachePromise = null;
+        let pinnedDiaryIds = {};
         let uploadedImages = []; // 當前上傳的圖片URL列表
         let diaryInputActive = false; // 追蹤日記輸入框是否最近有活動
         let diaryInputActiveTimer = null; // 用於清除活動狀態的定時器
@@ -1298,6 +1301,7 @@
         // 頁面載入初始化
         window.onload = async function() {
             console.log('[Page Load] Starting initialization...');
+            loadPinnedDiaryIds();
             setTodayDate();
             loadDarkMode();
             // 如果使用 Supabase，同步用戶ID（確保所有設備使用相同的用戶ID）
@@ -1315,6 +1319,8 @@
             initImageUpload();
             // 初始化日記輸入框活動追蹤
             initDiaryInputTracking();
+            // 恢復未完成草稿（例如手機切換 App 或誤刷新）
+            restoreDiaryDraftIfNeeded();
             console.log('[Page Load] Initialization complete');
         };
 
@@ -1837,8 +1843,137 @@
                 translation: d.translation || '',
                 tags: d.tags || [],
                 images: d.images || [],
-                createdAt: d.created_at
+                createdAt: d.created_at,
+                isPinned: isDiaryPinned(d.id)
             }));
+        }
+
+        function normalizeDiaryId(id) {
+            return String(id);
+        }
+
+        function loadPinnedDiaryIds() {
+            try {
+                const saved = localStorage.getItem(PINNED_DIARY_IDS_KEY);
+                pinnedDiaryIds = saved ? JSON.parse(saved) : {};
+                if (!pinnedDiaryIds || typeof pinnedDiaryIds !== 'object' || Array.isArray(pinnedDiaryIds)) {
+                    pinnedDiaryIds = {};
+                }
+            } catch (error) {
+                console.warn('載入置頂資料失敗，已重置:', error);
+                pinnedDiaryIds = {};
+            }
+        }
+
+        function persistPinnedDiaryIds() {
+            localStorage.setItem(PINNED_DIARY_IDS_KEY, JSON.stringify(pinnedDiaryIds));
+        }
+
+        function isDiaryPinned(id) {
+            return !!pinnedDiaryIds[normalizeDiaryId(id)];
+        }
+
+        function sortDiariesWithPinnedFirst(items) {
+            return [...items].sort((a, b) => {
+                const pinDiff = (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0);
+                if (pinDiff !== 0) return pinDiff;
+                const dateDiff = (b.date || '').localeCompare(a.date || '');
+                if (dateDiff !== 0) return dateDiff;
+                return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+            });
+        }
+
+        function togglePinDiary(id, event) {
+            if (event) event.stopPropagation();
+            const key = normalizeDiaryId(id);
+            const nextPinned = !isDiaryPinned(id);
+            if (nextPinned) {
+                pinnedDiaryIds[key] = true;
+            } else {
+                delete pinnedDiaryIds[key];
+            }
+            persistPinnedDiaryIds();
+
+            const diaryIndex = diaries.findIndex(d => d.id === id);
+            if (diaryIndex >= 0) {
+                diaries[diaryIndex].isPinned = nextPinned;
+            }
+            localStorage.setItem('diaries', JSON.stringify(diaries));
+            renderDiaryList();
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && searchInput.value.trim()) {
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            showToast(nextPinned ? '已置頂這篇日記' : '已取消置頂', 'success');
+        }
+
+        function saveDiaryDraft() {
+            const dateInput = document.getElementById('dateInput');
+            const diaryInput = document.getElementById('diaryInput');
+            const translationInput = document.getElementById('translationInput');
+            if (!dateInput || !diaryInput || !translationInput) return;
+
+            const draft = {
+                date: dateInput.value,
+                content: diaryInput.value || '',
+                translation: translationInput.value || '',
+                images: Array.isArray(uploadedImages) ? uploadedImages : [],
+                editingId: currentEditingId,
+                updatedAt: new Date().toISOString()
+            };
+
+            const hasMeaningfulDraft = draft.content.trim() || draft.translation.trim() || (draft.images && draft.images.length > 0);
+            if (!hasMeaningfulDraft) {
+                localStorage.removeItem(DIARY_DRAFT_KEY);
+                return;
+            }
+
+            localStorage.setItem(DIARY_DRAFT_KEY, JSON.stringify(draft));
+        }
+
+        function clearDiaryDraft() {
+            localStorage.removeItem(DIARY_DRAFT_KEY);
+        }
+
+        function restoreDiaryDraftIfNeeded() {
+            const diaryInput = document.getElementById('diaryInput');
+            const dateInput = document.getElementById('dateInput');
+            const translationInput = document.getElementById('translationInput');
+            if (!diaryInput || !dateInput || !translationInput) return;
+            if (diaryInput.value.trim()) return;
+
+            let draft = null;
+            try {
+                draft = JSON.parse(localStorage.getItem(DIARY_DRAFT_KEY) || 'null');
+            } catch (error) {
+                draft = null;
+            }
+            if (!draft || typeof draft !== 'object') return;
+
+            const hasMeaningfulDraft = (draft.content && draft.content.trim()) || (draft.translation && draft.translation.trim()) || (Array.isArray(draft.images) && draft.images.length > 0);
+            if (!hasMeaningfulDraft) return;
+
+            if (draft.date) {
+                dateInput.value = draft.date;
+            }
+            diaryInput.value = draft.content || '';
+            translationInput.value = draft.translation || '';
+            uploadedImages = Array.isArray(draft.images) ? draft.images : [];
+            currentEditingId = draft.editingId ?? null;
+            updateImagePreview();
+            autoResizeDiaryInput();
+
+            if (translationInput.value.trim()) {
+                document.getElementById('translationSection').classList.add('show');
+                document.getElementById('translationSection').style.display = 'block';
+            }
+
+            if (currentEditingId !== null) {
+                document.getElementById('saveBtn').textContent = '💾 更新';
+                document.getElementById('cancelEditBtn').style.display = 'block';
+                document.getElementById('deleteBtn').style.display = 'block';
+            }
+            showToast('已恢復未完成草稿', 'info');
         }
 
         function setDiaryListLoadingState(text = '') {
@@ -2016,6 +2151,10 @@
                 hasMoreDiaries = false;
             }
             
+            diaries = diaries.map(diary => ({
+                ...diary,
+                isPinned: isDiaryPinned(diary.id) || !!diary.isPinned
+            }));
             renderDiaryList();
             setDiaryListLoadingState(USE_SUPABASE ? (hasMoreDiaries ? '往下滾動可載入更多' : '已載入全部日記') : '');
         }
@@ -2059,6 +2198,7 @@
                         translation: translation,
                         tags: tags,
                         images: uploadedImages.length > 0 ? uploadedImages : (existingDiary.images || []),
+                        isPinned: existingDiary.isPinned || false,
                         updatedAt: new Date().toISOString()
                     };
                     diaries[existingIndex] = updatedDiary;
@@ -2091,6 +2231,7 @@
                     translation: translation,
                     tags: tags,
                     images: uploadedImages,
+                    isPinned: false,
                     createdAt: new Date().toISOString()
                 };
                 diaries.unshift(diaryEntry);
@@ -2163,6 +2304,7 @@
             updateImagePreview();
             currentEditingId = null;
             setTodayDate();
+            clearDiaryDraft();
             
             // 恢復按鈕狀態
             document.getElementById('saveBtn').textContent = '💾 儲存';
@@ -2385,6 +2527,8 @@
         function initDiaryInputTracking() {
             const diaryInput = document.getElementById('diaryInput');
             const searchInput = document.getElementById('searchInput');
+            const dateInput = document.getElementById('dateInput');
+            const translationInput = document.getElementById('translationInput');
             if (!diaryInput) return;
 
             autoResizeDiaryInput();
@@ -2409,6 +2553,7 @@
                 // 當用戶手動編輯時，清除最後插入標籤的記錄（因為位置可能已經改變）
                 lastInsertedTag = null;
                 lastInsertedTagPosition = null;
+                saveDiaryDraft();
             };
             diaryInput.addEventListener('input', handleDiaryInputChange);
             diaryInput.addEventListener('keyup', handleDiaryInputChange);
@@ -2426,6 +2571,20 @@
                     }
                 });
             }
+
+            if (dateInput) {
+                dateInput.addEventListener('change', saveDiaryDraft);
+            }
+            if (translationInput) {
+                translationInput.addEventListener('input', saveDiaryDraft);
+            }
+            window.addEventListener('beforeunload', saveDiaryDraft);
+            window.addEventListener('pagehide', saveDiaryDraft);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    saveDiaryDraft();
+                }
+            });
         }
 
         function autoResizeDiaryInput() {
@@ -2448,6 +2607,7 @@
             const tagText = spaceBefore + `#${tag} `;
             diaryInput.value = textBefore + tagText + textAfter;
             autoResizeDiaryInput();
+            saveDiaryDraft();
             
             // 記錄插入的標籤和位置
             const tagStartPos = cursorPos + spaceBefore.length;
@@ -2483,6 +2643,7 @@
             
             diaryInput.value = textBefore + checklistText + textAfter;
             autoResizeDiaryInput();
+            saveDiaryDraft();
             
             // 設置游標位置到符號後面
             const newPos = cursorPos + newlineBefore.length + 2;
@@ -2517,6 +2678,7 @@
             const newText = text.substring(0, deleteStart) + text.substring(end);
             diaryInput.value = newText;
             autoResizeDiaryInput();
+            saveDiaryDraft();
             
             // 設置游標位置到刪除位置
             diaryInput.setSelectionRange(deleteStart, deleteStart);
@@ -2651,11 +2813,8 @@
                 return;
             }
 
-            // 按日期排序（最新的在前）- 直接比較字符串即可
-            let sortedDiaries = [...diaries].sort((a, b) => {
-                // 日期字符串 "YYYY-MM-DD" 可以直接按字符串排序
-                return b.date.localeCompare(a.date);
-            });
+            // 置頂優先，其次按日期排序（最新的在前）
+            let sortedDiaries = sortDiariesWithPinnedFirst(diaries);
 
             // 如果顯示 checklist 篩選，應用篩選邏輯
             const checklistFilterButtons = document.getElementById('checklistFilterButtons');
@@ -2706,8 +2865,11 @@
                 return `
                     <div class="diary-item">
                         <div class="diary-item-header">
-                            <div class="diary-item-date">${date}${checklistIcon}</div>
-                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                            <div class="diary-item-date">${diary.isPinned ? '📌 ' : ''}${date}${checklistIcon}</div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="diary-item-edit-btn" onclick='togglePinDiary(${JSON.stringify(diary.id)}, event)'>${diary.isPinned ? '📌 取消置頂' : '📌 置頂'}</button>
+                                <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                            </div>
                         </div>
                         <div class="diary-item-content">${contentHtml}</div>
                         ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
@@ -2751,6 +2913,7 @@
                 
                 // 滾動到編輯區
                 document.getElementById('dateInput').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                saveDiaryDraft();
             }
         }
 
@@ -2768,6 +2931,7 @@
             document.getElementById('saveBtn').textContent = '💾 儲存';
             document.getElementById('cancelEditBtn').style.display = 'none';
             document.getElementById('deleteBtn').style.display = 'none';
+            clearDiaryDraft();
         }
 
         // 刪除日記
@@ -2795,6 +2959,11 @@
                 
                 // 從數組中移除
                 diaries.splice(index, 1);
+                const deletedDiaryId = normalizeDiaryId(currentEditingId);
+                if (pinnedDiaryIds[deletedDiaryId]) {
+                    delete pinnedDiaryIds[deletedDiaryId];
+                    persistPinnedDiaryIds();
+                }
                 
                 // 更新標籤使用次數（減少被刪除日記的標籤使用次數）
                 if (deletedDiary && deletedDiary.tags) {
@@ -2954,8 +3123,8 @@
                 return;
             }
 
-            // 按日期排序（直接比較字符串）
-            let sortedDiaries = [...filteredDiaries].sort((a, b) => b.date.localeCompare(a.date));
+            // 置頂優先，其次按日期排序
+            let sortedDiaries = sortDiariesWithPinnedFirst(filteredDiaries);
 
             // 如果顯示 checklist 篩選，應用篩選邏輯
             const checklistFilterButtons = document.getElementById('checklistFilterButtons');
@@ -3014,8 +3183,11 @@
                 return `
                     <div class="diary-item">
                         <div class="diary-item-header">
-                            <div class="diary-item-date">${date}${checklistIcon}</div>
-                            <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                            <div class="diary-item-date">${diary.isPinned ? '📌 ' : ''}${date}${checklistIcon}</div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="diary-item-edit-btn" onclick='togglePinDiary(${JSON.stringify(diary.id)}, event)'>${diary.isPinned ? '📌 取消置頂' : '📌 置頂'}</button>
+                                <button class="diary-item-edit-btn" onclick="editDiary(${diary.id}, event)">✏️ 編輯</button>
+                            </div>
                         </div>
                         <div class="diary-item-content">${contentHtml}</div>
                         ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
