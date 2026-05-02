@@ -10,9 +10,14 @@ CREATE TABLE IF NOT EXISTS diaries (
   translation TEXT,
   tags TEXT[] DEFAULT '{}',
   images TEXT[] DEFAULT '{}',
+  is_pinned BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 若 diaries 已存在（舊環境），補上置頂欄位
+ALTER TABLE diaries
+ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE;
 
 -- 創建標籤使用次數表
 CREATE TABLE IF NOT EXISTS tag_usage (

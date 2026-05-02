@@ -1844,7 +1844,7 @@
                 tags: d.tags || [],
                 images: d.images || [],
                 createdAt: d.created_at,
-                isPinned: isDiaryPinned(d.id)
+                isPinned: typeof d.is_pinned === 'boolean' ? d.is_pinned : isDiaryPinned(d.id)
             }));
         }
 
@@ -1883,23 +1883,40 @@
             });
         }
 
-        function togglePinDiary(id, event) {
+        async function togglePinDiary(id, event) {
             if (event) event.stopPropagation();
+            const diaryIndex = diaries.findIndex(d => d.id === id);
+            if (diaryIndex < 0) return;
             const key = normalizeDiaryId(id);
-            const nextPinned = !isDiaryPinned(id);
+            const nextPinned = !diaries[diaryIndex].isPinned;
+
+            // 先更新 UI，提升操作即時性
+            diaries[diaryIndex].isPinned = nextPinned;
+            renderDiaryList();
+
+            // 優先同步到 Supabase，確保跨裝置一致
+            if (USE_SUPABASE) {
+                const updateResult = await supabaseRequest('diaries', 'PATCH', {
+                    is_pinned: nextPinned
+                }, `?id=eq.${id}`);
+
+                if (!updateResult) {
+                    // 回滾 UI 狀態並提示需要建立欄位
+                    diaries[diaryIndex].isPinned = !nextPinned;
+                    renderDiaryList();
+                    showToast('置頂同步失敗：請先在 Supabase 新增 is_pinned 欄位', 'error');
+                    return;
+                }
+            }
+
+            // localStorage 仍保留作為離線/備份用途
             if (nextPinned) {
                 pinnedDiaryIds[key] = true;
             } else {
                 delete pinnedDiaryIds[key];
             }
             persistPinnedDiaryIds();
-
-            const diaryIndex = diaries.findIndex(d => d.id === id);
-            if (diaryIndex >= 0) {
-                diaries[diaryIndex].isPinned = nextPinned;
-            }
             localStorage.setItem('diaries', JSON.stringify(diaries));
-            renderDiaryList();
             const searchInput = document.getElementById('searchInput');
             if (searchInput && searchInput.value.trim()) {
                 searchInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2212,7 +2229,8 @@
                             content: content,
                             translation: translation || null,
                             tags: tags.length > 0 ? tags : null,
-                            images: uploadedImages.length > 0 ? uploadedImages : (existingDiary.images || [])
+                            images: uploadedImages.length > 0 ? uploadedImages : (existingDiary.images || []),
+                            is_pinned: !!existingDiary.isPinned
                         }, `?id=eq.${currentEditingId}`);
                         console.log('[Supabase] Update result:', updateResult);
                         if (!updateResult) {
@@ -2245,7 +2263,8 @@
                         content: content,
                         translation: translation || null,
                         tags: tags.length > 0 ? tags : null,
-                        images: uploadedImages.length > 0 ? uploadedImages : []
+                        images: uploadedImages.length > 0 ? uploadedImages : [],
+                        is_pinned: false
                     });
                     console.log('[Supabase] Save result:', result);
                     if (result && Array.isArray(result) && result[0]) {
