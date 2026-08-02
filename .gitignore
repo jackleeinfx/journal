@@ -1,0 +1,7 @@
+# Local secrets / backups — never commit
+*.env
+.env.*
+*credentials*
+*service_role*
+.DS_Store
+Thumbs.db
