@@ -1841,7 +1841,7 @@
             word-break: break-word;
         }
         /* 內容強制純文字外觀（禁止貼上殘留的字色／字體／大小） */
-        .records-note-editor *:not(.life-date):not(.life-toggle-caret) {
+        .records-note-editor *:not(.life-date):not(.life-toggle-caret):not(.life-todo-check) {
             font-family: inherit !important;
             font-size: inherit !important;
             font-weight: inherit !important;
@@ -1940,6 +1940,79 @@
             background: transparent;
             box-decoration-break: clone;
             -webkit-box-decoration-break: clone;
+        }
+        .records-note-editor .life-todo {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin: 2px 0;
+            min-height: 1.7em;
+        }
+        .records-note-editor .life-todo-check {
+            flex: 0 0 auto;
+            width: 1.05em;
+            height: 1.05em;
+            margin-top: 0.32em;
+            border: 2px solid #5b6ee1;
+            border-radius: 3px;
+            background: transparent;
+            box-sizing: border-box;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            color: transparent;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .records-note-editor .life-todo-check:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.18);
+        }
+        .records-note-editor .life-todo[data-checked="1"] .life-todo-check {
+            background: #5b6ee1;
+            border-color: #5b6ee1;
+        }
+        .records-note-editor .life-todo[data-checked="1"] .life-todo-check::after {
+            content: '';
+            position: absolute;
+            left: 0.22em;
+            top: 0.02em;
+            width: 0.28em;
+            height: 0.55em;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .records-note-editor .life-todo-text {
+            flex: 1 1 auto;
+            min-width: 0;
+            outline: none;
+        }
+        .records-note-editor .life-todo[data-checked="1"] .life-todo-text,
+        .records-note-editor .life-todo[data-checked="1"] .life-todo-text * {
+            color: #9aa0b4 !important;
+            text-decoration: line-through !important;
+            -webkit-text-fill-color: #9aa0b4 !important;
+        }
+        .records-note-editor .life-todo[data-checked="1"] .life-todo-text .life-date {
+            background: transparent !important;
+            border-color: #b0b4c0 !important;
+            font-weight: inherit !important;
+        }
+        body.dark-mode .records-note-editor .life-todo-check {
+            border-color: #7c8aef;
+        }
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-check {
+            background: #667eea;
+            border-color: #667eea;
+        }
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-text,
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-text * {
+            color: #7a8094 !important;
+            -webkit-text-fill-color: #7a8094 !important;
+        }
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-text .life-date {
+            border-color: #6b7285 !important;
         }
 
         .header-user {
@@ -3191,6 +3264,7 @@
                         <button type="button" class="hl-swatch blue" data-hl="#1565c0" title="藍框"></button>
                         <button type="button" id="noteClearHlBtn" title="清除選取範圍外框">清除外框</button>
                         <button type="button" id="noteInsertDateBtn">插入日期</button>
+                        <button type="button" id="noteInsertTodoBtn" title="插入可打勾的待辦列（勾選後變灰並劃掉）">待辦勾選</button>
                         <button type="button" id="noteInsertToggleBtn" title="插入可展開／收合的子級區塊">子級摺疊</button>
                         <button type="button" class="primary" id="noteSaveBtn">儲存筆記</button>
                         <span class="records-note-status" id="noteSaveStatus">尚未載入</span>
@@ -3201,7 +3275,7 @@
                         contenteditable="true"
                         role="textbox"
                         aria-multiline="true"
-                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;內容為純文字；選取後可圈選外框；點「子級摺疊」可展開／收合；插入日期後整行會進提醒。"
+                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;內容為純文字；可加待辦勾選、子級摺疊、日期提醒；選取後可圈選外框。"
                     ></div>
                 </div>
             </div>
@@ -3859,11 +3933,12 @@
         function sanitizeNoteHtml(html) {
             const tpl = document.createElement('template');
             tpl.innerHTML = html || '';
-            // 生活紀錄只要結構＋純文字：允許區塊殼與日期／外框／子級，不含粗體斜體等
+            // 生活紀錄只要結構＋純文字：允許區塊殼與日期／外框／子級／待辦，不含粗體斜體等
             const allowed = new Set(['DIV', 'P', 'BR', 'SPAN']);
             const keepClasses = new Set([
                 'life-date', 'life-hl',
-                'life-toggle', 'life-toggle-row', 'life-toggle-caret', 'life-toggle-title', 'life-toggle-body'
+                'life-toggle', 'life-toggle-row', 'life-toggle-caret', 'life-toggle-title', 'life-toggle-body',
+                'life-todo', 'life-todo-check', 'life-todo-text'
             ]);
 
             const cleanStyle = (el) => {
@@ -3911,8 +3986,11 @@
                             || name === 'style'
                             || name === 'data-date'
                             || name === 'data-open'
+                            || name === 'data-checked'
                             || name === 'contenteditable'
                             || name === 'aria-expanded'
+                            || name === 'aria-checked'
+                            || name === 'role'
                         ) return;
                         child.removeAttribute(attr.name);
                     });
@@ -3933,7 +4011,7 @@
                             }
                         }
                     }
-                    if (child.classList.contains('life-toggle-caret')) {
+                    if (child.classList.contains('life-toggle-caret') || child.classList.contains('life-todo-check')) {
                         child.setAttribute('contenteditable', 'false');
                     }
                     walk(child);
@@ -3942,6 +4020,7 @@
             };
             walk(tpl.content);
             repairLifeToggles(tpl.content);
+            repairLifeTodos(tpl.content);
             return tpl.innerHTML;
         }
 
@@ -4082,6 +4161,191 @@
             showToast('已插入子級，可直接編輯標題與內容', 'info');
         }
 
+        function setLifeTodoChecked(todo, checked) {
+            if (!todo) return;
+            const on = !!checked;
+            todo.setAttribute('data-checked', on ? '1' : '0');
+            const box = todo.querySelector(':scope > .life-todo-check');
+            if (box) {
+                box.setAttribute('contenteditable', 'false');
+                box.setAttribute('role', 'checkbox');
+                box.setAttribute('aria-checked', on ? 'true' : 'false');
+            }
+        }
+
+        function repairLifeTodos(root) {
+            if (!root) return;
+            root.querySelectorAll('.life-todo').forEach((todo) => {
+                let check = null;
+                let text = null;
+                [...todo.children].forEach((child) => {
+                    if (child.classList?.contains('life-todo-check')) check = child;
+                    if (child.classList?.contains('life-todo-text')) text = child;
+                });
+                if (!check) {
+                    check = document.createElement('span');
+                    check.className = 'life-todo-check';
+                    todo.insertBefore(check, todo.firstChild);
+                }
+                check.setAttribute('contenteditable', 'false');
+                check.setAttribute('role', 'checkbox');
+                if (!text) {
+                    text = document.createElement('div');
+                    text.className = 'life-todo-text';
+                    while (todo.firstChild && todo.firstChild !== check) {
+                        text.appendChild(todo.firstChild);
+                    }
+                    [...todo.children].forEach((child) => {
+                        if (child === check || child === text) return;
+                        text.appendChild(child);
+                    });
+                    if (!text.childNodes.length) text.innerHTML = '<br>';
+                    todo.appendChild(text);
+                }
+                if (!todo.hasAttribute('data-checked')) todo.setAttribute('data-checked', '0');
+                setLifeTodoChecked(todo, todo.getAttribute('data-checked') === '1');
+            });
+        }
+
+        function createLifeTodoElement(textHtml = '', checked = false) {
+            const todo = document.createElement('div');
+            todo.className = 'life-todo';
+            const check = document.createElement('span');
+            check.className = 'life-todo-check';
+            check.setAttribute('contenteditable', 'false');
+            check.setAttribute('role', 'checkbox');
+            const text = document.createElement('div');
+            text.className = 'life-todo-text';
+            if (textHtml && String(textHtml).trim()) text.innerHTML = textHtml;
+            else text.innerHTML = '<br>';
+            todo.appendChild(check);
+            todo.appendChild(text);
+            setLifeTodoChecked(todo, checked);
+            return todo;
+        }
+
+        function getLifeTodoContext() {
+            const ctx = getNodeFromSelection();
+            if (!ctx) return null;
+            const { editor, sel, range, node } = ctx;
+            const textEl = node.closest?.('.life-todo-text');
+            if (!textEl || !editor.contains(textEl)) return null;
+            const todo = textEl.closest('.life-todo');
+            if (!todo || !editor.contains(todo)) return null;
+            return { kind: 'todo', el: textEl, textEl, todo, editor, sel, range, node };
+        }
+
+        function findConvertibleNoteBlock(range, editor) {
+            if (!range || !editor) return null;
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!node || !editor.contains(node)) return null;
+            if (node.closest?.('.life-todo, .life-toggle, .life-toggle-title, .life-toggle-caret, .life-todo-check')) {
+                return null;
+            }
+            let el = node;
+            while (el && el !== editor && el.parentElement !== editor) {
+                if (el.parentElement?.classList?.contains('life-toggle-body')) break;
+                el = el.parentElement;
+            }
+            if (!el || el === editor) return null;
+            if (el.classList?.contains('life-toggle') || el.classList?.contains('life-todo')) return null;
+            if (el.tagName === 'DIV' || el.tagName === 'P') return el;
+            return null;
+        }
+
+        function insertLifeTodo() {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            restoreNoteSelection();
+            editor.focus();
+            const sel = window.getSelection();
+            const todoCtx = getLifeTodoContext();
+            if (todoCtx?.todo) {
+                const next = createLifeTodoElement('', false);
+                todoCtx.todo.after(next);
+                placeCaretInEmptyBlock(next.querySelector('.life-todo-text'));
+                markNoteDirty();
+                saveNoteSelection();
+                showToast('已新增待辦列', 'info');
+                return;
+            }
+
+            let range = null;
+            if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+                range = sel.getRangeAt(0);
+            }
+
+            const block = findConvertibleNoteBlock(range, editor);
+            if (block) {
+                const html = isVisuallyEmptyBlock(block) ? '' : block.innerHTML;
+                const todo = createLifeTodoElement(html, false);
+                block.replaceWith(todo);
+                const textEl = todo.querySelector('.life-todo-text');
+                placeCaretInEmptyBlock(textEl);
+                // 移到文字末尾
+                if (textEl && sel) {
+                    const end = document.createRange();
+                    end.selectNodeContents(textEl);
+                    end.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(end);
+                }
+                markNoteDirty();
+                saveNoteSelection();
+                showToast('已轉成待辦列，點左側方框可打勾', 'info');
+                return;
+            }
+
+            const todo = createLifeTodoElement('', false);
+            if (range) {
+                range.deleteContents();
+                range.insertNode(todo);
+            } else {
+                editor.appendChild(todo);
+            }
+            placeCaretInEmptyBlock(todo.querySelector('.life-todo-text'));
+            markNoteDirty();
+            saveNoteSelection();
+            showToast('已插入待辦列，點左側方框可打勾', 'info');
+        }
+
+        function handleLifeTodoClick(e) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            const box = e.target.closest?.('.life-todo-check');
+            if (!box || !editor.contains(box)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const todo = box.closest('.life-todo');
+            if (!todo || !editor.contains(todo)) return;
+            const checked = todo.getAttribute('data-checked') === '1';
+            setLifeTodoChecked(todo, !checked);
+            markNoteDirty();
+            saveNoteSelection();
+        }
+
+        function isCaretAtStartOf(el, range) {
+            if (!el || !range || !range.collapsed) return false;
+            const probe = document.createRange();
+            probe.selectNodeContents(el);
+            probe.collapse(true);
+            return range.compareBoundaryPoints(Range.START_TO_START, probe) === 0;
+        }
+
+        function unwrapLifeTodo(todo) {
+            if (!todo || !todo.parentNode) return null;
+            const textEl = todo.querySelector(':scope > .life-todo-text');
+            const line = document.createElement('div');
+            if (textEl && !isVisuallyEmptyBlock(textEl)) {
+                while (textEl.firstChild) line.appendChild(textEl.firstChild);
+            } else {
+                line.innerHTML = '<br>';
+            }
+            todo.replaceWith(line);
+            return line;
+        }
+
         function handleLifeToggleClick(e) {
             const editor = getNoteEditor();
             if (!editor) return;
@@ -4182,7 +4446,7 @@
             const text = (el.textContent || '').replace(/\u200B/g, '').trim();
             if (text) return false;
             // 只有 br / 空白
-            return !el.querySelector('.life-date, .life-hl, img, .life-toggle');
+            return !el.querySelector('.life-date, .life-hl, img, .life-toggle, .life-todo');
         }
 
         function getClosestBlockInBody(node, body) {
@@ -4248,6 +4512,7 @@
             if (node.nodeType === Node.TEXT_NODE) return !String(node.textContent || '').trim();
             if (node.nodeType !== Node.ELEMENT_NODE) return true;
             if (node.classList?.contains('life-date') || node.classList?.contains('life-hl')) return false;
+            if (node.classList?.contains('life-todo') || node.classList?.contains('life-toggle')) return false;
             const tag = node.tagName;
             if (tag !== 'DIV' && tag !== 'P' && tag !== 'SPAN' && tag !== 'BR') {
                 return !(node.textContent || '').replace(/\u200B/g, '').trim();
@@ -4431,8 +4696,26 @@
             const editor = getNoteEditor();
             if (!editor) return;
 
-            // Enter：標題 → 跳出子級後面新行；body 末空行 → 同樣跳出
             if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                const todoCtx = getLifeTodoContext();
+                if (todoCtx?.todo) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (isVisuallyEmptyBlock(todoCtx.textEl)) {
+                        const line = unwrapLifeTodo(todoCtx.todo);
+                        if (line) placeCaretInEmptyBlock(line);
+                    } else {
+                        const next = createLifeTodoElement('', false);
+                        todoCtx.todo.after(next);
+                        placeCaretInEmptyBlock(next.querySelector('.life-todo-text'));
+                    }
+                    repairLifeTodos(editor);
+                    markNoteDirty();
+                    saveNoteSelection();
+                    return;
+                }
+
+                // Enter：標題 → 跳出子級後面新行；body 內 → 在內部加行
                 const ctx = getLifeToggleContext();
                 if (!ctx?.toggle) return;
 
@@ -4462,11 +4745,26 @@
                     markNoteDirty();
                     saveNoteSelection();
                 }
+                return;
+            }
+
+            if (e.key === 'Backspace' && !e.isComposing) {
+                const todoCtx = getLifeTodoContext();
+                if (!todoCtx?.todo || !todoCtx.sel?.isCollapsed) return;
+                if (!isCaretAtStartOf(todoCtx.textEl, todoCtx.range)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const line = unwrapLifeTodo(todoCtx.todo);
+                if (line) placeCaretInEmptyBlock(line);
+                markNoteDirty();
+                saveNoteSelection();
             }
         }
 
         function handleLifeNoteInput() {
-            stabilizeLifeToggles(getNoteEditor());
+            const editor = getNoteEditor();
+            stabilizeLifeToggles(editor);
+            repairLifeTodos(editor);
             markNoteDirty();
         }
 
@@ -5311,6 +5609,11 @@
                 saveNoteSelection();
             });
             document.getElementById('noteInsertToggleBtn')?.addEventListener('click', insertLifeToggle);
+            document.getElementById('noteInsertTodoBtn')?.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                saveNoteSelection();
+            });
+            document.getElementById('noteInsertTodoBtn')?.addEventListener('click', insertLifeTodo);
             document.getElementById('noteDateModalCancel')?.addEventListener('click', closeNoteDateModal);
             document.getElementById('noteDateModalOk')?.addEventListener('click', confirmInsertNoteDate);
             document.getElementById('noteDateModal')?.addEventListener('click', (e) => {
@@ -5325,11 +5628,17 @@
             editor?.addEventListener('beforeinput', handleLifeNoteBeforeInput);
             editor?.addEventListener('input', handleLifeNoteInput);
             editor?.addEventListener('mousedown', (e) => {
-                if (e.target.closest?.('.life-toggle-caret') && editor.contains(e.target)) {
+                if (
+                    (e.target.closest?.('.life-toggle-caret') || e.target.closest?.('.life-todo-check'))
+                    && editor.contains(e.target)
+                ) {
                     e.preventDefault();
                 }
             });
-            editor?.addEventListener('click', handleLifeToggleClick);
+            editor?.addEventListener('click', (e) => {
+                handleLifeToggleClick(e);
+                handleLifeTodoClick(e);
+            });
             editor?.addEventListener('paste', handleLifeNotePaste);
             editor?.addEventListener('blur', () => {
                 if (noteDirty) saveCurrentLifeNote(true);
