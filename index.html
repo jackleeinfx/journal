@@ -1832,12 +1832,25 @@
             border: 1px solid #e0e0e0;
             border-radius: 12px;
             padding: 16px 18px;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
             font-size: 16px;
             line-height: 1.7;
             color: #333;
             outline: none;
             white-space: pre-wrap;
             word-break: break-word;
+        }
+        /* 內容強制純文字外觀（禁止貼上殘留的字色／字體／大小） */
+        .records-note-editor *:not(.life-date):not(.life-toggle-caret) {
+            font-family: inherit !important;
+            font-size: inherit !important;
+            font-weight: inherit !important;
+            font-style: normal !important;
+            color: inherit !important;
+            letter-spacing: inherit !important;
+            text-decoration: none !important;
+            background-color: transparent !important;
+            -webkit-text-fill-color: inherit !important;
         }
         .records-note-editor:focus {
             border-color: #667eea;
@@ -1904,17 +1917,14 @@
         .records-note-editor .life-toggle-title {
             flex: 1 1 auto;
             min-width: 0;
-            font-weight: 700;
-            color: #b42318;
             outline: none;
-        }
-        body.dark-mode .records-note-editor .life-toggle-title {
-            color: #f2a4a0;
         }
         .records-note-editor .life-toggle-body {
             margin: 2px 0 4px 1.4em;
             padding-left: 10px;
             border-left: 1px solid rgba(0, 0, 0, 0.08);
+            color: inherit;
+            font-weight: normal;
         }
         body.dark-mode .records-note-editor .life-toggle-body {
             border-left-color: rgba(255, 255, 255, 0.12);
@@ -3191,7 +3201,7 @@
                         contenteditable="true"
                         role="textbox"
                         aria-multiline="true"
-                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;選取文字後點上方色框可圈選；點「子級摺疊」可做 Notion 式展開／收合；插入日期後整行會進提醒。"
+                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;內容為純文字；選取後可圈選外框；點「子級摺疊」可展開／收合；插入日期後整行會進提醒。"
                     ></div>
                 </div>
             </div>
@@ -3849,50 +3859,96 @@
         function sanitizeNoteHtml(html) {
             const tpl = document.createElement('template');
             tpl.innerHTML = html || '';
-            const allowed = new Set(['DIV', 'P', 'BR', 'SPAN', 'MARK', 'B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI']);
+            // 生活紀錄只要結構＋純文字：允許區塊殼與日期／外框／子級，不含粗體斜體等
+            const allowed = new Set(['DIV', 'P', 'BR', 'SPAN']);
+            const keepClasses = new Set([
+                'life-date', 'life-hl',
+                'life-toggle', 'life-toggle-row', 'life-toggle-caret', 'life-toggle-title', 'life-toggle-body'
+            ]);
+
+            const cleanStyle = (el) => {
+                if (!el.getAttribute('style')) return;
+                if (el.classList.contains('life-hl')) {
+                    const borderColor = el.style.borderColor || '';
+                    el.removeAttribute('style');
+                    if (borderColor) {
+                        el.style.borderColor = borderColor;
+                        el.style.borderStyle = 'solid';
+                        el.style.borderWidth = '2px';
+                        el.style.background = 'transparent';
+                    }
+                    return;
+                }
+                el.removeAttribute('style');
+            };
+
             const walk = (node) => {
-                const children = [...node.childNodes];
-                children.forEach((child) => {
-                    if (child.nodeType === Node.ELEMENT_NODE) {
-                        if (!allowed.has(child.tagName)) {
-                            while (child.firstChild) node.insertBefore(child.firstChild, child);
-                            node.removeChild(child);
-                            return;
-                        }
-                        [...child.attributes].forEach((attr) => {
-                            const name = attr.name.toLowerCase();
-                            if (
-                                name === 'class'
-                                || name === 'style'
-                                || name === 'data-date'
-                                || name === 'data-open'
-                                || name === 'contenteditable'
-                                || name === 'aria-expanded'
-                            ) return;
-                            child.removeAttribute(attr.name);
-                        });
-                        if (child.classList.contains('life-date')) {
-                            child.setAttribute('contenteditable', 'false');
-                            if (!child.getAttribute('data-date')) {
-                                const m = (child.textContent || '').match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-                                if (m) {
-                                    child.setAttribute(
-                                        'data-date',
-                                        `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`
-                                    );
-                                }
+                let child = node.firstChild;
+                while (child) {
+                    const next = child.nextSibling;
+                    if (child.nodeType !== Node.ELEMENT_NODE) {
+                        child = next;
+                        continue;
+                    }
+                    if (!allowed.has(child.tagName)) {
+                        const firstInserted = child.firstChild;
+                        while (child.firstChild) node.insertBefore(child.firstChild, child);
+                        node.removeChild(child);
+                        child = firstInserted || next;
+                        continue;
+                    }
+
+                    if (child.hasAttribute('class')) {
+                        const kept = [...child.classList].filter((c) => keepClasses.has(c));
+                        if (kept.length) child.className = kept.join(' ');
+                        else child.removeAttribute('class');
+                    }
+
+                    [...child.attributes].forEach((attr) => {
+                        const name = attr.name.toLowerCase();
+                        if (
+                            name === 'class'
+                            || name === 'style'
+                            || name === 'data-date'
+                            || name === 'data-open'
+                            || name === 'contenteditable'
+                            || name === 'aria-expanded'
+                        ) return;
+                        child.removeAttribute(attr.name);
+                    });
+
+                    cleanStyle(child);
+
+                    if (child.classList.contains('life-date')) {
+                        child.setAttribute('contenteditable', 'false');
+                        const label = (child.textContent || '').replace(/\s+/g, '');
+                        child.textContent = label;
+                        if (!child.getAttribute('data-date')) {
+                            const m = label.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+                            if (m) {
+                                child.setAttribute(
+                                    'data-date',
+                                    `${m[1]}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`
+                                );
                             }
                         }
-                        if (child.classList.contains('life-toggle-caret')) {
-                            child.setAttribute('contenteditable', 'false');
-                        }
-                        walk(child);
                     }
-                });
+                    if (child.classList.contains('life-toggle-caret')) {
+                        child.setAttribute('contenteditable', 'false');
+                    }
+                    walk(child);
+                    child = next;
+                }
             };
             walk(tpl.content);
             repairLifeToggles(tpl.content);
             return tpl.innerHTML;
+        }
+
+        function handleLifeNoteBeforeInput(e) {
+            const t = e.inputType || '';
+            // 擋掉粗體／斜體／底線／字色等格式指令（Ctrl+B 等）
+            if (t.startsWith('format')) e.preventDefault();
         }
 
         function setLifeToggleOpen(toggle, open) {
@@ -4039,6 +4095,379 @@
             setLifeToggleOpen(toggle, !open);
             markNoteDirty();
             saveNoteSelection();
+        }
+
+        function getNodeFromSelection() {
+            const editor = getNoteEditor();
+            const sel = window.getSelection();
+            if (!editor || !sel || !sel.rangeCount) return null;
+            const range = sel.getRangeAt(0);
+            if (!editor.contains(range.commonAncestorContainer)) return null;
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!node || !editor.contains(node)) return null;
+            return { editor, sel, range, node };
+        }
+
+        function getLifeToggleContext() {
+            const ctx = getNodeFromSelection();
+            if (!ctx) return null;
+            const { editor, sel, range, node } = ctx;
+            const title = node.closest('.life-toggle-title');
+            if (title && editor.contains(title)) {
+                return { kind: 'title', el: title, toggle: title.closest('.life-toggle'), editor, sel, range, node };
+            }
+            const body = node.closest('.life-toggle-body');
+            if (body && editor.contains(body)) {
+                return { kind: 'body', el: body, toggle: body.closest('.life-toggle'), editor, sel, range, node };
+            }
+            return null;
+        }
+
+        function getLifeTogglePasteTarget() {
+            const ctx = getLifeToggleContext();
+            if (ctx) return { kind: ctx.kind, el: ctx.el, toggle: ctx.toggle, range: ctx.range };
+            const base = getNodeFromSelection();
+            if (!base) return null;
+            const { editor, range, node } = base;
+            const toggle = node.closest('.life-toggle');
+            if (toggle && editor.contains(toggle) && !node.closest('.life-toggle-caret')) {
+                let bodyEl = toggle.querySelector(':scope > .life-toggle-body');
+                if (!bodyEl) {
+                    bodyEl = document.createElement('div');
+                    bodyEl.className = 'life-toggle-body';
+                    bodyEl.innerHTML = '<div><br></div>';
+                    toggle.appendChild(bodyEl);
+                }
+                const end = document.createRange();
+                end.selectNodeContents(bodyEl);
+                end.collapse(false);
+                return { kind: 'body', el: bodyEl, toggle, range: end };
+            }
+            return null;
+        }
+
+        function placeCaretInEmptyBlock(block) {
+            const sel = window.getSelection();
+            if (!sel || !block) return;
+            const range = document.createRange();
+            range.selectNodeContents(block);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        function placeCaretAfterNode(node) {
+            const sel = window.getSelection();
+            if (!sel || !node) return;
+            const range = document.createRange();
+            range.setStartAfter(node);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        /** Notion 慣例：在標題按 Enter → 整塊子級之後新建「無關」的新行 */
+        function insertBlockAfterToggle(toggle) {
+            if (!toggle || !toggle.parentNode) return null;
+            const line = document.createElement('div');
+            line.innerHTML = '<br>';
+            toggle.after(line);
+            placeCaretInEmptyBlock(line);
+            return line;
+        }
+
+        function isVisuallyEmptyBlock(el) {
+            if (!el) return true;
+            const text = (el.textContent || '').replace(/\u200B/g, '').trim();
+            if (text) return false;
+            // 只有 br / 空白
+            return !el.querySelector('.life-date, .life-hl, img, .life-toggle');
+        }
+
+        function getClosestBlockInBody(node, body) {
+            let el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+            while (el && el !== body && el.parentElement !== body) {
+                el = el.parentElement;
+            }
+            if (el && el.parentElement === body) return el;
+            if (el === body) return body.lastElementChild || body;
+            return body.lastElementChild || body;
+        }
+
+        function stabilizeLifeToggles(root) {
+            const host = root || getNoteEditor();
+            if (!host) return;
+            repairLifeToggles(host);
+            host.querySelectorAll('.life-toggle').forEach((toggle) => {
+                const row = toggle.querySelector(':scope > .life-toggle-row');
+                const body = toggle.querySelector(':scope > .life-toggle-body');
+                if (!body) return;
+                [...toggle.childNodes].forEach((child) => {
+                    if (child === row || child === body) return;
+                    if (child.nodeType === Node.TEXT_NODE && !String(child.textContent || '').trim()) {
+                        child.remove();
+                        return;
+                    }
+                    body.appendChild(child);
+                });
+                // 標題內不要殘留區塊級元素（Enter 拆壞時）
+                const title = row?.querySelector(':scope > .life-toggle-title');
+                if (title) {
+                    [...title.querySelectorAll('div, p')].forEach((block) => {
+                        const span = document.createElement('span');
+                        while (block.firstChild) span.appendChild(block.firstChild);
+                        block.replaceWith(span);
+                        span.after(document.createTextNode(' '));
+                    });
+                }
+            });
+        }
+
+        function flattenLifeTogglesInContainer(container) {
+            if (!container) return;
+            container.querySelectorAll('.life-toggle').forEach((t) => {
+                const frag = document.createDocumentFragment();
+                const title = t.querySelector(':scope > .life-toggle-row > .life-toggle-title');
+                const body = t.querySelector(':scope > .life-toggle-body');
+                if (title) {
+                    const div = document.createElement('div');
+                    while (title.firstChild) div.appendChild(title.firstChild);
+                    if (!div.childNodes.length) div.appendChild(document.createElement('br'));
+                    frag.appendChild(div);
+                }
+                if (body) {
+                    while (body.firstChild) frag.appendChild(body.firstChild);
+                }
+                t.replaceWith(frag);
+            });
+        }
+
+        function isClipboardEmptyBlockNode(node) {
+            if (!node) return true;
+            if (node.nodeType === Node.TEXT_NODE) return !String(node.textContent || '').trim();
+            if (node.nodeType !== Node.ELEMENT_NODE) return true;
+            if (node.classList?.contains('life-date') || node.classList?.contains('life-hl')) return false;
+            const tag = node.tagName;
+            if (tag !== 'DIV' && tag !== 'P' && tag !== 'SPAN' && tag !== 'BR') {
+                return !(node.textContent || '').replace(/\u200B/g, '').trim();
+            }
+            if (tag === 'BR') return true;
+            return isVisuallyEmptyBlock(node);
+        }
+
+        function trimEmptyBlocksFromContainer(container) {
+            if (!container) return;
+            while (container.firstChild && isClipboardEmptyBlockNode(container.firstChild)) {
+                container.removeChild(container.firstChild);
+            }
+            while (container.lastChild && isClipboardEmptyBlockNode(container.lastChild)) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function extractPlainTextFromClipboard(html, text) {
+            const fromText = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            if (fromText.trim()) return fromText.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!html) return '';
+            const tmp = document.createElement('div');
+            tmp.innerHTML = sanitizeNoteHtml(html);
+            return (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function cleanupEmptySiblingsAroundToggle(toggle, originalPrev, originalNext) {
+            if (!toggle || !toggle.parentNode) return;
+            const parent = toggle.parentNode;
+            // 上方：貼上前～toggle 之間新長出的空白行
+            let n = originalPrev ? originalPrev.nextSibling : parent.firstChild;
+            while (n && n !== toggle) {
+                const next = n.nextSibling;
+                if (isClipboardEmptyBlockNode(n)) n.remove();
+                n = next;
+            }
+            // 下方：toggle～貼上前下一個兄弟之間的空白／被撐出的內容
+            const title = toggle.querySelector(':scope > .life-toggle-row > .life-toggle-title');
+            n = toggle.nextSibling;
+            while (n && n !== originalNext) {
+                const next = n.nextSibling;
+                if (n.nodeType === Node.ELEMENT_NODE && n.classList?.contains('life-toggle')) break;
+                if (isClipboardEmptyBlockNode(n)) {
+                    n.remove();
+                } else if (title && (n.textContent || '').trim()) {
+                    // 標題貼上時被撐到外面的文字收回標題
+                    const t = (n.textContent || '').replace(/\s+/g, ' ').trim();
+                    if (t) title.appendChild(document.createTextNode((title.textContent || '').trim() ? ` ${t}` : t));
+                    n.remove();
+                } else {
+                    break;
+                }
+                n = next;
+            }
+        }
+
+        function buildFragmentFromClipboard(html, text, { inlineOnly = false, flattenToggles = false } = {}) {
+            const frag = document.createDocumentFragment();
+            if (html && html.trim()) {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = sanitizeNoteHtml(html);
+                if (flattenToggles) flattenLifeTogglesInContainer(tmp);
+                tmp.querySelectorAll('font').forEach((el) => {
+                    const span = document.createElement('span');
+                    while (el.firstChild) span.appendChild(el.firstChild);
+                    el.replaceWith(span);
+                });
+                trimEmptyBlocksFromContainer(tmp);
+                if (inlineOnly) {
+                    // 標題禁止插入區塊元素，只取純文字
+                    const plain = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
+                    if (plain) frag.appendChild(document.createTextNode(plain));
+                    return frag;
+                }
+                while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+                return frag;
+            }
+            const normalized = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            if (inlineOnly) {
+                const plain = normalized.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+                if (plain) frag.appendChild(document.createTextNode(plain));
+                return frag;
+            }
+            const lines = normalized.split('\n');
+            // 去掉首尾空行，避免貼上憑空多行
+            while (lines.length && !lines[0].trim()) lines.shift();
+            while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+            if (lines.length <= 1) {
+                frag.appendChild(document.createTextNode(lines[0] || ''));
+                return frag;
+            }
+            lines.forEach((line) => {
+                const div = document.createElement('div');
+                if (line) div.textContent = line;
+                else div.appendChild(document.createElement('br'));
+                frag.appendChild(div);
+            });
+            return frag;
+        }
+
+        function insertFragmentAtRange(range, frag) {
+            if (!range || !frag) return null;
+            range.deleteContents();
+            const last = frag.lastChild;
+            range.insertNode(frag);
+            return last;
+        }
+
+        function reclaimPasteOverflowIntoToggle(toggle, body, stopBeforeNode) {
+            if (!toggle || !body) return;
+            let node = toggle.nextSibling;
+            while (node && node !== stopBeforeNode) {
+                const next = node.nextSibling;
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('life-toggle')) break;
+                if (isClipboardEmptyBlockNode(node)) {
+                    node.remove();
+                } else {
+                    body.appendChild(node);
+                }
+                node = next;
+            }
+            const row = toggle.querySelector(':scope > .life-toggle-row');
+            [...toggle.children].forEach((child) => {
+                if (child === row || child === body) return;
+                body.appendChild(child);
+            });
+        }
+
+        function handleLifeNotePaste(e) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            // 生活紀錄一律純文字貼上（不要顏色／字體／大小）
+            const text = e.clipboardData?.getData('text/plain') || '';
+            if (!text) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const target = getLifeTogglePasteTarget();
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return;
+
+            if (target?.kind === 'title') {
+                const plain = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+                const originalPrev = target.toggle.previousSibling;
+                const originalNext = target.toggle.nextSibling;
+                target.range.deleteContents();
+                if (plain) {
+                    const node = document.createTextNode(plain);
+                    target.range.insertNode(node);
+                    placeCaretAfterNode(node);
+                }
+                cleanupEmptySiblingsAroundToggle(target.toggle, originalPrev, originalNext);
+            } else if (target?.kind === 'body') {
+                setLifeToggleOpen(target.toggle, true);
+                const originalPrev = target.toggle.previousSibling;
+                const stopBefore = target.toggle.nextSibling;
+                const frag = buildFragmentFromClipboard('', text, { inlineOnly: false, flattenToggles: true });
+                const last = insertFragmentAtRange(target.range, frag);
+                reclaimPasteOverflowIntoToggle(target.toggle, target.el, stopBefore);
+                cleanupEmptySiblingsAroundToggle(target.toggle, originalPrev, stopBefore);
+                if (last && editor.contains(last)) placeCaretAfterNode(last);
+            } else {
+                const range = sel.getRangeAt(0);
+                const frag = buildFragmentFromClipboard('', text, { inlineOnly: false, flattenToggles: false });
+                const last = insertFragmentAtRange(range, frag);
+                if (last) placeCaretAfterNode(last);
+            }
+
+            stabilizeLifeToggles(editor);
+            markNoteDirty();
+            saveNoteSelection();
+        }
+
+        function handleLifeNoteKeydown(e) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+
+            // Enter：標題 → 跳出子級後面新行；body 末空行 → 同樣跳出
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+                const ctx = getLifeToggleContext();
+                if (!ctx?.toggle) return;
+
+                if (ctx.kind === 'title') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    insertBlockAfterToggle(ctx.toggle);
+                    stabilizeLifeToggles(editor);
+                    markNoteDirty();
+                    saveNoteSelection();
+                    return;
+                }
+
+                if (ctx.kind === 'body') {
+                    // 子級內容：Enter 一律在內部加行，不跳出（跳出只靠母級標題 Enter）
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const block = getClosestBlockInBody(ctx.node, ctx.el);
+                    const newLine = document.createElement('div');
+                    newLine.innerHTML = '<br>';
+                    if (block && block.parentElement === ctx.el) {
+                        block.after(newLine);
+                    } else {
+                        ctx.el.appendChild(newLine);
+                    }
+                    placeCaretInEmptyBlock(newLine);
+                    markNoteDirty();
+                    saveNoteSelection();
+                }
+            }
+        }
+
+        function handleLifeNoteInput() {
+            stabilizeLifeToggles(getNoteEditor());
+            markNoteDirty();
         }
 
         function fillNoteDateSelects() {
@@ -4892,13 +5321,16 @@
             const editor = getNoteEditor();
             editor?.addEventListener('mouseup', saveNoteSelection);
             editor?.addEventListener('keyup', saveNoteSelection);
-            editor?.addEventListener('input', () => markNoteDirty());
+            editor?.addEventListener('keydown', handleLifeNoteKeydown);
+            editor?.addEventListener('beforeinput', handleLifeNoteBeforeInput);
+            editor?.addEventListener('input', handleLifeNoteInput);
             editor?.addEventListener('mousedown', (e) => {
                 if (e.target.closest?.('.life-toggle-caret') && editor.contains(e.target)) {
                     e.preventDefault();
                 }
             });
             editor?.addEventListener('click', handleLifeToggleClick);
+            editor?.addEventListener('paste', handleLifeNotePaste);
             editor?.addEventListener('blur', () => {
                 if (noteDirty) saveCurrentLifeNote(true);
             });
