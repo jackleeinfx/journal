@@ -1871,6 +1871,57 @@
             color: #e8eaf6;
             border-color: #7986cb;
         }
+        .records-note-editor .life-toggle {
+            margin: 8px 0;
+            border-radius: 6px;
+        }
+        .records-note-editor .life-toggle-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 4px;
+            min-height: 1.7em;
+        }
+        .records-note-editor .life-toggle-caret {
+            flex: 0 0 auto;
+            width: 1.25em;
+            line-height: 1.7;
+            text-align: center;
+            color: #8b909e;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.75em;
+            margin-top: 0.15em;
+        }
+        .records-note-editor .life-toggle-caret:hover {
+            color: #667eea;
+        }
+        body.dark-mode .records-note-editor .life-toggle-caret {
+            color: #a0a6b8;
+        }
+        body.dark-mode .records-note-editor .life-toggle-caret:hover {
+            color: #9aa7ff;
+        }
+        .records-note-editor .life-toggle-title {
+            flex: 1 1 auto;
+            min-width: 0;
+            font-weight: 700;
+            color: #b42318;
+            outline: none;
+        }
+        body.dark-mode .records-note-editor .life-toggle-title {
+            color: #f2a4a0;
+        }
+        .records-note-editor .life-toggle-body {
+            margin: 2px 0 4px 1.4em;
+            padding-left: 10px;
+            border-left: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        body.dark-mode .records-note-editor .life-toggle-body {
+            border-left-color: rgba(255, 255, 255, 0.12);
+        }
+        .records-note-editor .life-toggle[data-open="0"] > .life-toggle-body {
+            display: none;
+        }
         .records-note-editor .life-hl {
             border: 2px solid #e6b800;
             border-radius: 4px;
@@ -3130,6 +3181,7 @@
                         <button type="button" class="hl-swatch blue" data-hl="#1565c0" title="藍框"></button>
                         <button type="button" id="noteClearHlBtn" title="清除選取範圍外框">清除外框</button>
                         <button type="button" id="noteInsertDateBtn">插入日期</button>
+                        <button type="button" id="noteInsertToggleBtn" title="插入可展開／收合的子級區塊">子級摺疊</button>
                         <button type="button" class="primary" id="noteSaveBtn">儲存筆記</button>
                         <span class="records-note-status" id="noteSaveStatus">尚未載入</span>
                     </div>
@@ -3139,7 +3191,7 @@
                         contenteditable="true"
                         role="textbox"
                         aria-multiline="true"
-                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;選取文字後點上方色框可圈選；游標放到要標記的位置後點「插入日期」。"
+                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;選取文字後點上方色框可圈選；點「子級摺疊」可做 Notion 式展開／收合；插入日期後整行會進提醒。"
                     ></div>
                 </div>
             </div>
@@ -3809,7 +3861,14 @@
                         }
                         [...child.attributes].forEach((attr) => {
                             const name = attr.name.toLowerCase();
-                            if (name === 'class' || name === 'style' || name === 'data-date' || name === 'contenteditable') return;
+                            if (
+                                name === 'class'
+                                || name === 'style'
+                                || name === 'data-date'
+                                || name === 'data-open'
+                                || name === 'contenteditable'
+                                || name === 'aria-expanded'
+                            ) return;
                             child.removeAttribute(attr.name);
                         });
                         if (child.classList.contains('life-date')) {
@@ -3824,12 +3883,162 @@
                                 }
                             }
                         }
+                        if (child.classList.contains('life-toggle-caret')) {
+                            child.setAttribute('contenteditable', 'false');
+                        }
                         walk(child);
                     }
                 });
             };
             walk(tpl.content);
+            repairLifeToggles(tpl.content);
             return tpl.innerHTML;
+        }
+
+        function setLifeToggleOpen(toggle, open) {
+            if (!toggle) return;
+            toggle.setAttribute('data-open', open ? '1' : '0');
+            const caret = toggle.querySelector(':scope > .life-toggle-row > .life-toggle-caret');
+            if (caret) {
+                caret.textContent = open ? '▼' : '▶';
+                caret.setAttribute('contenteditable', 'false');
+                caret.setAttribute('aria-expanded', open ? 'true' : 'false');
+            }
+        }
+
+        function collapseAllLifeToggles(root) {
+            const host = root || getNoteEditor();
+            if (!host) return;
+            host.querySelectorAll('.life-toggle').forEach((t) => setLifeToggleOpen(t, false));
+        }
+
+        function repairLifeToggles(root) {
+            if (!root) return;
+            root.querySelectorAll('.life-toggle').forEach((toggle) => {
+                let row = null;
+                let body = null;
+                [...toggle.children].forEach((child) => {
+                    if (child.classList?.contains('life-toggle-row')) row = child;
+                    if (child.classList?.contains('life-toggle-body')) body = child;
+                });
+                if (!row) {
+                    row = document.createElement('div');
+                    row.className = 'life-toggle-row';
+                    const caret = document.createElement('span');
+                    caret.className = 'life-toggle-caret';
+                    caret.setAttribute('contenteditable', 'false');
+                    caret.textContent = '▶';
+                    const title = document.createElement('div');
+                    title.className = 'life-toggle-title';
+                    title.innerHTML = '<br>';
+                    row.appendChild(caret);
+                    row.appendChild(title);
+                    toggle.insertBefore(row, toggle.firstChild);
+                }
+                if (!body) {
+                    body = document.createElement('div');
+                    body.className = 'life-toggle-body';
+                    body.innerHTML = '<div><br></div>';
+                    toggle.appendChild(body);
+                }
+                let caret = row.querySelector(':scope > .life-toggle-caret');
+                if (!caret) {
+                    caret = document.createElement('span');
+                    caret.className = 'life-toggle-caret';
+                    row.insertBefore(caret, row.firstChild);
+                }
+                caret.setAttribute('contenteditable', 'false');
+                if (!row.querySelector(':scope > .life-toggle-title')) {
+                    const title = document.createElement('div');
+                    title.className = 'life-toggle-title';
+                    title.innerHTML = '<br>';
+                    row.appendChild(title);
+                }
+                if (!toggle.hasAttribute('data-open')) toggle.setAttribute('data-open', '0');
+                setLifeToggleOpen(toggle, toggle.getAttribute('data-open') === '1');
+            });
+        }
+
+        function createLifeToggleElement(titleHtml = '') {
+            const toggle = document.createElement('div');
+            toggle.className = 'life-toggle';
+            toggle.setAttribute('data-open', '0');
+            const row = document.createElement('div');
+            row.className = 'life-toggle-row';
+            const caret = document.createElement('span');
+            caret.className = 'life-toggle-caret';
+            caret.setAttribute('contenteditable', 'false');
+            caret.setAttribute('aria-expanded', 'false');
+            caret.textContent = '▶';
+            const title = document.createElement('div');
+            title.className = 'life-toggle-title';
+            if (titleHtml && titleHtml.trim()) title.innerHTML = titleHtml;
+            else title.innerHTML = '<br>';
+            row.appendChild(caret);
+            row.appendChild(title);
+            const body = document.createElement('div');
+            body.className = 'life-toggle-body';
+            body.innerHTML = '<div><br></div>';
+            toggle.appendChild(row);
+            toggle.appendChild(body);
+            return toggle;
+        }
+
+        function insertLifeToggle() {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            restoreNoteSelection();
+            editor.focus();
+            const sel = window.getSelection();
+            let titleHtml = '';
+            let range = null;
+            if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+                range = sel.getRangeAt(0);
+                if (!sel.isCollapsed) {
+                    const frag = range.extractContents();
+                    const wrap = document.createElement('div');
+                    wrap.appendChild(frag);
+                    titleHtml = wrap.innerHTML;
+                }
+            }
+            const toggle = createLifeToggleElement(titleHtml);
+            if (range) {
+                range.insertNode(toggle);
+                const after = document.createRange();
+                const titleEl = toggle.querySelector('.life-toggle-title');
+                if (titleEl) {
+                    after.selectNodeContents(titleEl);
+                    after.collapse(false);
+                } else {
+                    after.setStartAfter(toggle);
+                    after.collapse(true);
+                }
+                sel.removeAllRanges();
+                sel.addRange(after);
+            } else {
+                editor.appendChild(toggle);
+            }
+            setLifeToggleOpen(toggle, true);
+            markNoteDirty();
+            saveNoteSelection();
+            const titleEl = toggle.querySelector('.life-toggle-title');
+            titleEl?.focus?.();
+            showToast('已插入子級，可直接編輯標題與內容', 'info');
+        }
+
+        function handleLifeToggleClick(e) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            const caret = e.target.closest?.('.life-toggle-caret');
+            if (!caret || !editor.contains(caret)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const toggle = caret.closest('.life-toggle');
+            if (!toggle || !editor.contains(toggle)) return;
+            const open = toggle.getAttribute('data-open') === '1';
+            setLifeToggleOpen(toggle, !open);
+            markNoteDirty();
+            saveNoteSelection();
         }
 
         function fillNoteDateSelects() {
@@ -4120,6 +4329,12 @@
             const root = document.createElement('div');
             root.className = 'records-note-editor';
             root.innerHTML = sanitizeNoteHtml(html || '');
+            // 收合的子級也要納入提醒：暫時全部展開再抽日期行
+            root.querySelectorAll('.life-toggle').forEach((t) => {
+                t.setAttribute('data-open', '1');
+                const body = t.querySelector(':scope > .life-toggle-body');
+                if (body) body.style.display = 'block';
+            });
             const lines = [];
             const seen = new Set();
 
@@ -4461,6 +4676,7 @@
                 noteSaveTimer = null;
             }
             editor.innerHTML = note?.content ? sanitizeNoteHtml(note.content) : '';
+            collapseAllLifeToggles(editor);
             setNoteStatus(note?.updated_at ? '已載入' : '空白筆記');
             refreshNoteReminders();
             noteSavedSelection = null;
@@ -4526,11 +4742,19 @@
             }
         }
 
+        function serializeLifeNoteHtml(editor) {
+            const temp = document.createElement('div');
+            temp.innerHTML = editor?.innerHTML || '';
+            // 只收合「要寫入資料庫」的副本；不影響畫面上正在編輯的展開狀態
+            collapseAllLifeToggles(temp);
+            return sanitizeNoteHtml(temp.innerHTML);
+        }
+
         async function saveCurrentLifeNote(silent = false) {
             if (!currentUserId || !recordsSelectedCategoryId) return false;
             const editor = getNoteEditor();
             if (!editor) return false;
-            const content = sanitizeNoteHtml(editor.innerHTML);
+            const content = serializeLifeNoteHtml(editor);
             const existing = lifeNotesByCategory[String(recordsSelectedCategoryId)];
             setNoteStatus('儲存中…');
             let result;
@@ -4554,8 +4778,13 @@
                 return false;
             }
             const saved = Array.isArray(result) ? result[0] : result;
-            lifeNotesByCategory[String(recordsSelectedCategoryId)] = saved;
+            // 記憶體快取用收合後內容；編輯器 DOM 維持使用者當前展開狀態
+            lifeNotesByCategory[String(recordsSelectedCategoryId)] = { ...saved, content };
             noteDirty = false;
+            if (noteSaveTimer) {
+                clearTimeout(noteSaveTimer);
+                noteSaveTimer = null;
+            }
             setNoteStatus('已儲存');
             if (!silent) showToast('筆記已儲存', 'success');
             refreshNoteReminders();
@@ -4648,6 +4877,11 @@
                 saveNoteSelection();
             });
             document.getElementById('noteInsertDateBtn')?.addEventListener('click', openNoteDateModal);
+            document.getElementById('noteInsertToggleBtn')?.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                saveNoteSelection();
+            });
+            document.getElementById('noteInsertToggleBtn')?.addEventListener('click', insertLifeToggle);
             document.getElementById('noteDateModalCancel')?.addEventListener('click', closeNoteDateModal);
             document.getElementById('noteDateModalOk')?.addEventListener('click', confirmInsertNoteDate);
             document.getElementById('noteDateModal')?.addEventListener('click', (e) => {
@@ -4659,6 +4893,12 @@
             editor?.addEventListener('mouseup', saveNoteSelection);
             editor?.addEventListener('keyup', saveNoteSelection);
             editor?.addEventListener('input', () => markNoteDirty());
+            editor?.addEventListener('mousedown', (e) => {
+                if (e.target.closest?.('.life-toggle-caret') && editor.contains(e.target)) {
+                    e.preventDefault();
+                }
+            });
+            editor?.addEventListener('click', handleLifeToggleClick);
             editor?.addEventListener('blur', () => {
                 if (noteDirty) saveCurrentLifeNote(true);
             });
