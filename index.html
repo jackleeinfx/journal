@@ -992,6 +992,15 @@
             color: #888;
             margin: 0;
         }
+        .diary-inline-tags {
+            margin: 0;
+            padding: 10px;
+            background: #eef1fa;
+            border-radius: 10px;
+        }
+        body.dark-mode .diary-inline-tags {
+            background: #2a2a40;
+        }
 
         @media (max-width: 768px) {
             .diary-item {
@@ -1022,6 +1031,58 @@
             margin-bottom: 8px;
             white-space: pre-wrap;
             word-wrap: break-word;
+        }
+
+        .diary-item-body {
+            position: relative;
+        }
+        .diary-item-body.has-more {
+            cursor: pointer;
+        }
+        .diary-item-body.is-collapsed .diary-clamp {
+            max-height: calc(1.6em * 6);
+            overflow: hidden;
+        }
+        /* mask 淡出：不依賴卡片底色（奇偶列／置頂／深色模式皆適用） */
+        .diary-item-body.is-collapsed.has-more .diary-clamp {
+            -webkit-mask-image: linear-gradient(to bottom, #000 42%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 42%, transparent 100%);
+        }
+        .diary-item-body.is-collapsed .diary-clamp .diary-item-content {
+            margin-bottom: 0;
+        }
+        .diary-clamp {
+            position: relative;
+        }
+        .diary-expand-hint {
+            display: none;
+            width: 100%;
+            margin: 6px 0 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            font-size: 12px;
+            line-height: 1;
+            letter-spacing: 0.04em;
+            color: #9aa0b4;
+            text-align: center;
+            user-select: none;
+            pointer-events: none;
+        }
+        .diary-item-body.has-more .diary-expand-hint {
+            display: block;
+        }
+        .diary-expand-hint::before {
+            content: '';
+            display: block;
+            width: 28px;
+            height: 1px;
+            margin: 0 auto 6px;
+            background: currentColor;
+            opacity: 0.35;
+        }
+        body.dark-mode .diary-expand-hint {
+            color: #7f8599;
         }
 
         .diary-item-tags {
@@ -5502,6 +5563,8 @@
         }
 
         async function loadMoreDiaries() {
+            // 就地編輯中若重繪列表，會丟失未存內容並把畫面捲回編輯項頂部
+            if (currentEditingId !== null) return;
             if (!USE_SUPABASE || !activeSupabaseUserId || !hasMoreDiaries || isLoadingMoreDiaries) return;
             isLoadingMoreDiaries = true;
             setDiaryListLoadingState('載入更多日記中...');
@@ -5952,20 +6015,24 @@
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // 更新標籤列表
+        // 更新標籤列表（上方寫作區 + 就地編輯區）
         function updateTagsList() {
-            const tagsList = document.getElementById('tagsList');
-            if (!tagsList) return;
+            const lists = [
+                document.getElementById('tagsList'),
+                document.getElementById('inlineTagsList')
+            ].filter(Boolean);
+            lists.forEach(fillTagsIntoList);
+        }
+
+        function fillTagsIntoList(tagsList) {
             tagsList.innerHTML = '';
 
-            // 按使用次數排序
             const sortedTags = Object.entries(tagUsage)
                 .sort((a, b) => b[1] - a[1])
                 .map(entry => entry[0]);
 
             sortedTags.forEach(tag => {
                 const tagElement = document.createElement('span');
-                // 如果這是當前搜索的標籤，添加特殊樣式
                 if (currentSearchTag === tag) {
                     tagElement.className = 'tag-item search-tag';
                 } else {
@@ -5973,33 +6040,34 @@
                 }
                 tagElement.textContent = `#${tag}`;
                 tagElement.title = '點擊插入到日記（在日記輸入框外點擊則添加到搜尋欄）';
-                // 左鍵點擊：根據當前焦點決定行為
                 tagElement.onclick = (e) => {
-                    if (e.button === 0 || !e.button) { // 左鍵
+                    if (e.button === 0 || !e.button) {
                         const searchInput = document.getElementById('searchInput');
                         const diaryInput = document.getElementById('diaryInput');
                         const inlineDiaryInput = document.getElementById('inlineDiaryInput');
                         const activeElement = document.activeElement;
-                        
-                        // 優先檢查搜尋欄是否有焦點
-                        if (activeElement === searchInput) {
-                            // 搜尋欄有焦點，添加到搜尋欄
+                        const editingInline = currentEditingId !== null && !!inlineDiaryInput;
+                        const fromInlineTags = tagsList.id === 'inlineTagsList';
+
+                        if (activeElement === searchInput && !fromInlineTags && !editingInline) {
                             searchByTag(tag);
-                        } else if (activeElement === diaryInput || activeElement === inlineDiaryInput || diaryInputActive) {
-                            // 日記輸入框有焦點或最近有活動，插入標籤到日記
-                            // 如果點擊的是最後插入的同一個標籤，則刪除它
+                        } else if (
+                            editingInline
+                            || fromInlineTags
+                            || activeElement === diaryInput
+                            || activeElement === inlineDiaryInput
+                            || diaryInputActive
+                        ) {
                             if (lastInsertedTag === tag && lastInsertedTagPosition !== null) {
                                 removeLastInsertedTag();
                             } else {
                                 insertTag(tag);
                             }
                         } else {
-                            // 都沒有焦點，默認添加到搜尋欄
                             searchByTag(tag);
                         }
                     }
                 };
-                // 右鍵點擊：插入標籤到日記
                 tagElement.oncontextmenu = (e) => {
                     e.preventDefault();
                     insertTag(tag);
@@ -6012,19 +6080,22 @@
             addBtn.className = 'tag-item tag-add-btn';
             addBtn.textContent = '＋ 新增標籤';
             addBtn.title = '新增標籤';
-            addBtn.onclick = () => openNewTagComposer();
+            addBtn.onclick = () => openNewTagComposer(tagsList);
             tagsList.appendChild(addBtn);
         }
 
-        function openNewTagComposer() {
-            const tagsList = document.getElementById('tagsList');
+        function openNewTagComposer(targetList = null) {
+            const tagsList = targetList || document.getElementById('tagsList') || document.getElementById('inlineTagsList');
             if (!tagsList) return;
             const existing = tagsList.querySelector('.tag-composer');
             if (existing) {
                 existing.querySelector('input')?.focus();
                 return;
             }
-            const addBtn = tagsList.querySelector('.tag-add-btn');
+            // 關閉另一個列表上可能開著的輸入列
+            updateTagsList();
+            const freshList = document.getElementById(tagsList.id) || tagsList;
+            const addBtn = freshList.querySelector('.tag-add-btn');
             if (addBtn) addBtn.remove();
 
             const wrap = document.createElement('div');
@@ -6034,7 +6105,7 @@
                 <button type="button" class="tag-composer-ok" id="newTagConfirmBtn">確認</button>
                 <button type="button" class="tag-composer-cancel" id="newTagCancelBtn">取消</button>
             `;
-            tagsList.appendChild(wrap);
+            freshList.appendChild(wrap);
 
             const input = wrap.querySelector('#newTagInput');
             const confirmBtn = wrap.querySelector('#newTagConfirmBtn');
@@ -6126,9 +6197,36 @@
         function autoResizeDiaryInput(el = null) {
             const diaryInput = el || getActiveDiaryInputEl();
             if (!diaryInput) return;
+            // 鎖住頁面捲動，避免量高時（先壓高度）把畫面扯走
+            const pageScrollY = window.scrollY || window.pageYOffset || 0;
             diaryInput.style.height = '0px';
             const minHeight = parseFloat(window.getComputedStyle(diaryInput).minHeight) || 0;
-            diaryInput.style.height = `${Math.max(diaryInput.scrollHeight, minHeight)}px`;
+            // +2 避免小數取整造成最後一行被裁、出現內部捲軸
+            const nextHeight = Math.max(diaryInput.scrollHeight + 2, minHeight);
+            diaryInput.style.height = `${nextHeight}px`;
+            if ((window.scrollY || window.pageYOffset || 0) !== pageScrollY) {
+                window.scrollTo(0, pageScrollY);
+            }
+        }
+
+        function expandInlineEditorFully() {
+            const ta = document.getElementById('inlineDiaryInput');
+            if (!ta) return;
+            const pageScrollY = window.scrollY || window.pageYOffset || 0;
+            autoResizeDiaryInput(ta);
+            const translationTa = document.getElementById('inlineTranslationInput');
+            if (translationTa) autoResizeDiaryInput(translationTa);
+            // 版面／字體就緒後再量一次，確保長文完整展開
+            requestAnimationFrame(() => {
+                autoResizeDiaryInput(ta);
+                if (translationTa) autoResizeDiaryInput(translationTa);
+                window.scrollTo(0, pageScrollY);
+                requestAnimationFrame(() => {
+                    autoResizeDiaryInput(ta);
+                    if (translationTa) autoResizeDiaryInput(translationTa);
+                    window.scrollTo(0, pageScrollY);
+                });
+            });
         }
 
         // 插入標籤到日記
@@ -6373,6 +6471,9 @@
                         <div class="diary-inline-editor">
                             <p class="diary-inline-hint">直接修改下方文字，完成後按「儲存更新」</p>
                             <textarea id="inlineDiaryInput" placeholder="編輯日記內容…">${escapeHtml(diary.content || '')}</textarea>
+                            <div class="tags-container diary-inline-tags">
+                                <div class="tags-list" id="inlineTagsList"></div>
+                            </div>
                             <div class="diary-inline-meta">
                                 <input type="date" id="inlineDateInput" value="${escapeHtml(diary.date || '')}">
                                 <button type="button" class="diary-inline-upload" onclick="document.getElementById('inlineImageFileInput').click()">📷 上傳圖片</button>
@@ -6409,6 +6510,9 @@
                 const contentHtml = hasChecklistItems 
                     ? convertChecklistToHTML(diary.content, diary.id)
                     : escapeHtml(diary.content);
+                const translationBlock = diary.translation
+                    ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>`
+                    : '';
                 
                 return `
                     <div class="diary-item${diary.isPinned ? ' diary-item--pinned' : ''}">
@@ -6419,14 +6523,20 @@
                                 <button class="diary-item-edit-btn" onclick='editDiary(${idJson}, event)'>✏️ 編輯</button>
                             </div>
                         </div>
-                        <div class="diary-item-content">${contentHtml}</div>
-                        ${diary.translation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>` : ''}
+                        <div class="diary-item-body is-collapsed" onclick="toggleDiaryExpand(event, this)">
+                            <div class="diary-clamp">
+                                <div class="diary-item-content diary-item-content-main">${contentHtml}</div>
+                                ${translationBlock}
+                            </div>
+                            <span class="diary-expand-hint">展開</span>
+                        </div>
                         ${imagesHtml}
                         ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
                     </div>
                 `;
             }).join('');
 
+            refreshDiaryExpandStates();
             await setupInlineEditorAfterRender();
         }
 
@@ -6435,15 +6545,15 @@
             const ta = document.getElementById('inlineDiaryInput');
             if (!ta) return;
 
-            autoResizeDiaryInput(ta);
-            const onInlineInput = () => autoResizeDiaryInput(ta);
-            ta.addEventListener('input', onInlineInput);
-            ta.addEventListener('focus', () => {
+            const pageScrollY = window.scrollY || window.pageYOffset || 0;
+
+            ta.addEventListener('input', () => {
+                autoResizeDiaryInput(ta);
                 diaryInputActive = true;
                 if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
                 diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
             });
-            ta.addEventListener('input', () => {
+            ta.addEventListener('focus', () => {
                 diaryInputActive = true;
                 if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
                 diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
@@ -6451,7 +6561,6 @@
 
             const translationTa = document.getElementById('inlineTranslationInput');
             if (translationTa) {
-                autoResizeDiaryInput(translationTa);
                 translationTa.addEventListener('input', () => autoResizeDiaryInput(translationTa));
             }
 
@@ -6467,11 +6576,10 @@
             }
 
             await updateInlineImagePreview();
-
-            const item = document.querySelector('.diary-item--editing');
-            if (item) {
-                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
+            updateTagsList();
+            expandInlineEditorFully();
+            // 不呼叫 scrollIntoView；展開後維持使用者當前捲動位置
+            window.scrollTo(0, pageScrollY);
             ta.focus({ preventScroll: true });
         }
 
@@ -6782,6 +6890,9 @@
                         <div class="diary-inline-editor">
                             <p class="diary-inline-hint">直接修改下方文字，完成後按「儲存更新」</p>
                             <textarea id="inlineDiaryInput" placeholder="編輯日記內容…">${escapeHtml(diary.content || '')}</textarea>
+                            <div class="tags-container diary-inline-tags">
+                                <div class="tags-list" id="inlineTagsList"></div>
+                            </div>
                             <div class="diary-inline-meta">
                                 <input type="date" id="inlineDateInput" value="${escapeHtml(diary.date || '')}">
                                 <button type="button" class="diary-inline-upload" onclick="document.getElementById('inlineImageFileInput').click()">📷 上傳圖片</button>
@@ -6833,15 +6944,53 @@
                                 <button class="diary-item-edit-btn" onclick='editDiary(${idJson}, event)'>✏️ 編輯</button>
                             </div>
                         </div>
-                        <div class="diary-item-content">${contentHtml}</div>
-                        ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
+                        <div class="diary-item-body is-collapsed" onclick="toggleDiaryExpand(event, this)">
+                            <div class="diary-clamp">
+                                <div class="diary-item-content diary-item-content-main">${contentHtml}</div>
+                                ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
+                            </div>
+                            <span class="diary-expand-hint">展開</span>
+                        </div>
                         ${imagesHtml}
                         ${tagsHtml ? `<div class="diary-item-tags">${tagsHtml}</div>` : ''}
                     </div>
                 `;
             }).join('');
 
+            refreshDiaryExpandStates();
             await setupInlineEditorAfterRender();
+        }
+
+        function toggleDiaryExpand(event, bodyEl) {
+            if (!bodyEl) return;
+            // 點 checklist／按鈕／連結時不觸發展開
+            if (event.target.closest('input, button, a, label, .checklist-item, .checklist-checkbox')) return;
+            if (!bodyEl.classList.contains('has-more')) return;
+
+            const collapsing = !bodyEl.classList.contains('is-collapsed');
+            bodyEl.classList.toggle('is-collapsed', collapsing);
+            const hint = bodyEl.querySelector('.diary-expand-hint');
+            if (hint) hint.textContent = collapsing ? '展開' : '收合';
+        }
+
+        function refreshDiaryExpandStates() {
+            document.querySelectorAll('.diary-item-body').forEach((body) => {
+                const clamp = body.querySelector('.diary-clamp');
+                const hint = body.querySelector('.diary-expand-hint');
+                if (!clamp) return;
+
+                // 先以收合狀態量是否超過 6 行
+                body.classList.add('is-collapsed');
+                const overflowed = clamp.scrollHeight > clamp.clientHeight + 2;
+                if (overflowed) {
+                    body.classList.add('has-more');
+                    if (hint) hint.textContent = '展開';
+                } else {
+                    body.classList.remove('has-more');
+                    body.classList.remove('is-collapsed');
+                    if (hint) hint.textContent = '';
+                }
+            });
         }
 
         // 高亮文字（支持多個關鍵字）
