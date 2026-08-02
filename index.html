@@ -1943,10 +1943,14 @@
         }
         .records-note-editor .life-todo {
             display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
             align-items: flex-start;
             gap: 8px;
             margin: 2px 0;
             min-height: 1.7em;
+            width: 100%;
+            box-sizing: border-box;
         }
         .records-note-editor .life-todo-check {
             flex: 0 0 auto;
@@ -1988,16 +1992,31 @@
             min-width: 0;
             outline: none;
         }
-        .records-note-editor .life-todo[data-checked="1"] .life-todo-text,
-        .records-note-editor .life-todo[data-checked="1"] .life-todo-text * {
+        /* 勾選只作用於待辦文字列；子級摺疊若誤包進來也強制還原（結構上會再拆開） */
+        .records-note-editor .life-todo[data-checked="1"] > .life-todo-text {
             color: #9aa0b4 !important;
             text-decoration: line-through !important;
             -webkit-text-fill-color: #9aa0b4 !important;
         }
-        .records-note-editor .life-todo[data-checked="1"] .life-todo-text .life-date {
+        .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > .life-date,
+        .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > .life-hl,
+        .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > span {
+            color: #9aa0b4 !important;
+            text-decoration: line-through !important;
+            -webkit-text-fill-color: #9aa0b4 !important;
+        }
+        .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > .life-date {
             background: transparent !important;
             border-color: #b0b4c0 !important;
             font-weight: inherit !important;
+        }
+        .records-note-editor .life-todo .life-toggle,
+        .records-note-editor .life-todo .life-toggle * {
+            text-decoration: none !important;
+        }
+        .records-note-editor .life-todo .life-toggle {
+            color: #333 !important;
+            -webkit-text-fill-color: #333 !important;
         }
         body.dark-mode .records-note-editor .life-todo-check {
             border-color: #7c8aef;
@@ -2006,13 +2025,22 @@
             background: #667eea;
             border-color: #667eea;
         }
-        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-text,
-        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-text * {
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] > .life-todo-text {
             color: #7a8094 !important;
             -webkit-text-fill-color: #7a8094 !important;
         }
-        body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-text .life-date {
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > .life-date,
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > .life-hl,
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > span {
+            color: #7a8094 !important;
+            -webkit-text-fill-color: #7a8094 !important;
+        }
+        body.dark-mode .records-note-editor .life-todo[data-checked="1"] > .life-todo-text > .life-date {
             border-color: #6b7285 !important;
+        }
+        body.dark-mode .records-note-editor .life-todo .life-toggle {
+            color: #eee !important;
+            -webkit-text-fill-color: #eee !important;
         }
 
         .header-user {
@@ -4021,6 +4049,7 @@
             walk(tpl.content);
             repairLifeToggles(tpl.content);
             repairLifeTodos(tpl.content);
+            normalizeLifeBlockNesting(tpl.content);
             return tpl.innerHTML;
         }
 
@@ -4107,8 +4136,27 @@
             caret.textContent = '▶';
             const title = document.createElement('div');
             title.className = 'life-toggle-title';
-            if (titleHtml && titleHtml.trim()) title.innerHTML = titleHtml;
+
+            let safeTitle = String(titleHtml || '');
+            if (/life-todo|life-toggle/i.test(safeTitle)) {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = safeTitle;
+                tmp.querySelectorAll('.life-todo').forEach((todo) => {
+                    const textEl = todo.querySelector(':scope > .life-todo-text');
+                    if (textEl) {
+                        const frag = document.createDocumentFragment();
+                        while (textEl.firstChild) frag.appendChild(textEl.firstChild);
+                        todo.replaceWith(frag);
+                    } else {
+                        todo.remove();
+                    }
+                });
+                tmp.querySelectorAll('.life-toggle, .life-todo-check').forEach((el) => el.remove());
+                safeTitle = tmp.innerHTML;
+            }
+            if (safeTitle && safeTitle.trim()) title.innerHTML = safeTitle;
             else title.innerHTML = '<br>';
+
             row.appendChild(caret);
             row.appendChild(title);
             const body = document.createElement('div');
@@ -4119,23 +4167,81 @@
             return toggle;
         }
 
+        function selectionInsideLifeTodo(editor) {
+            const ctx = getNodeFromSelection();
+            if (!ctx || !editor) return null;
+            const todo = ctx.node.closest?.('.life-todo');
+            return todo && editor.contains(todo) ? todo : null;
+        }
+
+        function rangeIntersectsLifeTodo(range, editor) {
+            if (!range || !editor) return false;
+            try {
+                return [...editor.querySelectorAll('.life-todo')].some((t) => {
+                    try { return range.intersectsNode(t); } catch (e) { return false; }
+                });
+            } catch (e) {
+                return false;
+            }
+        }
+
         function insertLifeToggle() {
             const editor = getNoteEditor();
             if (!editor) return;
             restoreNoteSelection();
             editor.focus();
+            repairLifeTodos(editor);
+            stabilizeLifeToggles(editor);
+            normalizeLifeBlockNesting(editor);
+
+            // 同一行：已有待辦勾選 → 禁止再加子級
+            if (selectionInsideLifeTodo(editor)) {
+                showToast('這一列已是待辦勾選，不能再加子級摺疊', 'error');
+                return;
+            }
+
             const sel = window.getSelection();
             let titleHtml = '';
             let range = null;
             if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
                 range = sel.getRangeAt(0);
-                if (!sel.isCollapsed) {
-                    const frag = range.extractContents();
-                    const wrap = document.createElement('div');
-                    wrap.appendChild(frag);
-                    titleHtml = wrap.innerHTML;
+            }
+
+            if (range) {
+                const container = range.commonAncestorContainer;
+                const host = container.nodeType === Node.ELEMENT_NODE ? container : container.parentElement;
+                if (host?.closest?.('.life-todo')) {
+                    showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
+                    return;
+                }
+                if (!range.collapsed && rangeIntersectsLifeTodo(range, editor)) {
+                    showToast('選取範圍含有待辦勾選，不能轉成子級摺疊', 'error');
+                    return;
                 }
             }
+
+            const block = findConvertibleNoteBlock(range, editor);
+            if (block?.closest?.('.life-todo') || block?.querySelector?.('.life-todo, .life-todo-check')) {
+                showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
+                return;
+            }
+
+            if (range && sel && !sel.isCollapsed) {
+                const frag = range.extractContents();
+                const wrap = document.createElement('div');
+                wrap.appendChild(frag);
+                wrap.querySelectorAll('.life-todo').forEach((todo) => {
+                    const textEl = todo.querySelector(':scope > .life-todo-text');
+                    if (textEl) {
+                        const f = document.createDocumentFragment();
+                        while (textEl.firstChild) f.appendChild(textEl.firstChild);
+                        todo.replaceWith(f);
+                    } else todo.remove();
+                });
+                wrap.querySelectorAll('.life-todo-check, .life-toggle').forEach((el) => el.remove());
+                titleHtml = wrap.innerHTML;
+            }
+
             const toggle = createLifeToggleElement(titleHtml);
             if (range) {
                 range.insertNode(toggle);
@@ -4154,6 +4260,7 @@
                 editor.appendChild(toggle);
             }
             setLifeToggleOpen(toggle, true);
+            normalizeLifeBlockNesting(editor);
             markNoteDirty();
             saveNoteSelection();
             const titleEl = toggle.querySelector('.life-toggle-title');
@@ -4173,9 +4280,68 @@
             }
         }
 
+        /**
+         * Notion 慣例：待辦與子級摺疊是獨立區塊，不可互相包覆。
+         * 若待辦裡出現子級／子級列上出現勾選框，一律拆回平行結構。
+         */
+        function normalizeLifeBlockNesting(root) {
+            if (!root) return;
+
+            // 子級列上誤插入的勾選框直接移除
+            root.querySelectorAll('.life-toggle .life-todo-check').forEach((box) => box.remove());
+
+            // 母級標題裡誤嵌的待辦 → 只留文字，拿掉勾選（同一行互斥）
+            root.querySelectorAll('.life-toggle-title .life-todo').forEach((todo) => {
+                const textEl = todo.querySelector(':scope > .life-todo-text');
+                const frag = document.createDocumentFragment();
+                if (textEl) {
+                    while (textEl.firstChild) frag.appendChild(textEl.firstChild);
+                }
+                todo.replaceWith(frag);
+            });
+
+            // 待辦包住子級 → 把子級整塊移出成兄弟節點
+            [...root.querySelectorAll('.life-todo')].forEach((todo) => {
+                if (!todo.isConnected) return;
+                const textEl = todo.querySelector(':scope > .life-todo-text') || todo;
+                const toggles = [...textEl.querySelectorAll('.life-toggle')];
+                if (!toggles.length) return;
+
+                const checked = todo.getAttribute('data-checked') === '1';
+                let insertAfter = todo;
+                toggles.forEach((toggle) => {
+                    insertAfter.after(toggle);
+                    insertAfter = toggle;
+                });
+
+                // 待辦文字區若已空，拿掉這層待辦殼
+                if (isVisuallyEmptyBlock(textEl)) {
+                    todo.remove();
+                } else {
+                    setLifeTodoChecked(todo, checked);
+                }
+            });
+
+            // 若待辦出現在 toggle-row 這種非法位置，移到該 toggle 後面
+            root.querySelectorAll('.life-toggle-row .life-todo, .life-toggle-caret .life-todo').forEach((todo) => {
+                const toggle = todo.closest('.life-toggle');
+                if (toggle) toggle.after(todo);
+            });
+        }
+
         function repairLifeTodos(root) {
             if (!root) return;
+            normalizeLifeBlockNesting(root);
+
             root.querySelectorAll('.life-todo').forEach((todo) => {
+                if (!todo.isConnected) return;
+
+                // 若整個待辦其實只是包著子級，normalize 後可能已拆；再保險一次
+                if (todo.querySelector(':scope > .life-toggle, :scope > .life-todo-text > .life-toggle')) {
+                    normalizeLifeBlockNesting(todo.parentNode || root);
+                    if (!todo.isConnected) return;
+                }
+
                 let check = null;
                 let text = null;
                 [...todo.children].forEach((child) => {
@@ -4189,22 +4355,41 @@
                 }
                 check.setAttribute('contenteditable', 'false');
                 check.setAttribute('role', 'checkbox');
+
                 if (!text) {
                     text = document.createElement('div');
                     text.className = 'life-todo-text';
-                    while (todo.firstChild && todo.firstChild !== check) {
-                        text.appendChild(todo.firstChild);
-                    }
-                    [...todo.children].forEach((child) => {
+                    [...todo.childNodes].forEach((child) => {
                         if (child === check || child === text) return;
+                        // 子級不可吸進待辦文字
+                        if (child.nodeType === Node.ELEMENT_NODE && child.classList?.contains('life-toggle')) {
+                            todo.after(child);
+                            return;
+                        }
                         text.appendChild(child);
                     });
                     if (!text.childNodes.length) text.innerHTML = '<br>';
                     todo.appendChild(text);
+                } else {
+                    // 文字區內若還有子級，移出
+                    [...text.querySelectorAll(':scope > .life-toggle')].forEach((t) => todo.after(t));
                 }
+
+                // 多餘直接子節點（非 check/text）清出去
+                [...todo.children].forEach((child) => {
+                    if (child === check || child === text) return;
+                    if (child.classList?.contains('life-toggle')) {
+                        todo.after(child);
+                    } else {
+                        text.appendChild(child);
+                    }
+                });
+
                 if (!todo.hasAttribute('data-checked')) todo.setAttribute('data-checked', '0');
                 setLifeTodoChecked(todo, todo.getAttribute('data-checked') === '1');
             });
+
+            normalizeLifeBlockNesting(root);
         }
 
         function createLifeTodoElement(textHtml = '', checked = false) {
@@ -4216,8 +4401,18 @@
             check.setAttribute('role', 'checkbox');
             const text = document.createElement('div');
             text.className = 'life-todo-text';
-            if (textHtml && String(textHtml).trim()) text.innerHTML = textHtml;
+
+            // 禁止把子級 HTML 塞進待辦文字
+            let safeHtml = String(textHtml || '');
+            if (/life-toggle|life-todo/i.test(safeHtml)) {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = safeHtml;
+                tmp.querySelectorAll('.life-toggle, .life-todo').forEach((el) => el.remove());
+                safeHtml = tmp.innerHTML;
+            }
+            if (safeHtml && safeHtml.trim()) text.innerHTML = safeHtml;
             else text.innerHTML = '<br>';
+
             todo.appendChild(check);
             todo.appendChild(text);
             setLifeTodoChecked(todo, checked);
@@ -4228,21 +4423,41 @@
             const ctx = getNodeFromSelection();
             if (!ctx) return null;
             const { editor, sel, range, node } = ctx;
+            // 在子級標題列上不算待辦上下文（避免 Enter／轉換搞壞摺疊）
+            if (node.closest?.('.life-toggle-title, .life-toggle-caret')) return null;
             const textEl = node.closest?.('.life-todo-text');
             if (!textEl || !editor.contains(textEl)) return null;
+            // 待辦若還錯誤包著子級，不當有效上下文
+            if (textEl.querySelector('.life-toggle')) return null;
             const todo = textEl.closest('.life-todo');
             if (!todo || !editor.contains(todo)) return null;
             return { kind: 'todo', el: textEl, textEl, todo, editor, sel, range, node };
         }
 
+        function wrapBareTextAsBlock(editor, textNode) {
+            if (!editor || !textNode || textNode.parentNode !== editor) return null;
+            const div = document.createElement('div');
+            editor.insertBefore(div, textNode);
+            div.appendChild(textNode);
+            return div;
+        }
+
         function findConvertibleNoteBlock(range, editor) {
             if (!range || !editor) return null;
             let node = range.commonAncestorContainer;
-            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-            if (!node || !editor.contains(node)) return null;
-            if (node.closest?.('.life-todo, .life-toggle, .life-toggle-title, .life-toggle-caret, .life-todo-check')) {
-                return null;
+            if (node.nodeType === Node.TEXT_NODE) {
+                if (node.parentNode === editor) {
+                    return wrapBareTextAsBlock(editor, node);
+                }
+                node = node.parentElement;
             }
+            if (!node || !editor.contains(node)) return null;
+
+            // 子級摺疊本體／標題不可轉成待辦（Notion：兩種獨立 block）
+            if (node.closest?.('.life-toggle-title, .life-toggle-caret, .life-toggle-row')) return null;
+            if (node.closest?.('.life-toggle') && !node.closest?.('.life-toggle-body')) return null;
+            if (node.closest?.('.life-todo')) return null;
+
             let el = node;
             while (el && el !== editor && el.parentElement !== editor) {
                 if (el.parentElement?.classList?.contains('life-toggle-body')) break;
@@ -4250,8 +4465,20 @@
             }
             if (!el || el === editor) return null;
             if (el.classList?.contains('life-toggle') || el.classList?.contains('life-todo')) return null;
+            if (el.querySelector?.('.life-toggle, .life-todo')) return null;
             if (el.tagName === 'DIV' || el.tagName === 'P') return el;
             return null;
+        }
+
+        function rangeIntersectsLifeToggle(range, editor) {
+            if (!range || !editor) return false;
+            try {
+                return [...editor.querySelectorAll('.life-toggle')].some((t) => {
+                    try { return range.intersectsNode(t); } catch (e) { return false; }
+                });
+            } catch (e) {
+                return false;
+            }
         }
 
         function insertLifeTodo() {
@@ -4259,7 +4486,26 @@
             if (!editor) return;
             restoreNoteSelection();
             editor.focus();
+            repairLifeTodos(editor);
+            stabilizeLifeToggles(editor);
+
             const sel = window.getSelection();
+            const toggleCtx = getLifeToggleContext();
+            if (toggleCtx?.kind === 'title' || selectionInsideLifeToggleTitle(editor)) {
+                showToast('這一列已是子級摺疊，不能再加待辦勾選', 'error');
+                return;
+            }
+
+            // 同一行互斥：選取碰到子級摺疊殼／標題列
+            let range = null;
+            if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+                range = sel.getRangeAt(0);
+            }
+            if (range && !range.collapsed && rangeIntersectsLifeToggle(range, editor)) {
+                showToast('選取範圍含有子級摺疊，不能轉成待辦勾選', 'error');
+                return;
+            }
+
             const todoCtx = getLifeTodoContext();
             if (todoCtx?.todo) {
                 const next = createLifeTodoElement('', false);
@@ -4271,43 +4517,94 @@
                 return;
             }
 
-            let range = null;
-            if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-                range = sel.getRangeAt(0);
-            }
-
             const block = findConvertibleNoteBlock(range, editor);
             if (block) {
+                if (block.querySelector?.('.life-toggle, .life-todo') || block.closest?.('.life-toggle-title, .life-toggle-row')) {
+                    showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
+                    return;
+                }
                 const html = isVisuallyEmptyBlock(block) ? '' : block.innerHTML;
                 const todo = createLifeTodoElement(html, false);
                 block.replaceWith(todo);
                 const textEl = todo.querySelector('.life-todo-text');
-                placeCaretInEmptyBlock(textEl);
-                // 移到文字末尾
                 if (textEl && sel) {
                     const end = document.createRange();
                     end.selectNodeContents(textEl);
                     end.collapse(false);
                     sel.removeAllRanges();
                     sel.addRange(end);
+                } else {
+                    placeCaretInEmptyBlock(textEl);
                 }
+                repairLifeTodos(editor);
                 markNoteDirty();
                 saveNoteSelection();
                 showToast('已轉成待辦列，點左側方框可打勾', 'info');
                 return;
             }
 
+            // 在子級「內容」中：可另開一列待辦（不是母級同一行）
+            if (toggleCtx?.kind === 'body' && range) {
+                const bodyBlock = getClosestBlockInBody(toggleCtx.node, toggleCtx.el);
+                if (bodyBlock?.classList?.contains('life-todo') || bodyBlock?.closest?.('.life-todo')) {
+                    const host = bodyBlock.closest('.life-todo') || bodyBlock;
+                    const next = createLifeTodoElement('', false);
+                    host.after(next);
+                    placeCaretInEmptyBlock(next.querySelector('.life-todo-text'));
+                } else if (bodyBlock?.classList?.contains('life-toggle')) {
+                    showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
+                    return;
+                } else {
+                    const todo = createLifeTodoElement('', false);
+                    if (bodyBlock && bodyBlock.parentElement === toggleCtx.el) bodyBlock.after(todo);
+                    else toggleCtx.el.appendChild(todo);
+                    placeCaretInEmptyBlock(todo.querySelector('.life-todo-text'));
+                }
+                repairLifeTodos(editor);
+                markNoteDirty();
+                saveNoteSelection();
+                showToast('已在子級內容插入待辦列', 'info');
+                return;
+            }
+
             const todo = createLifeTodoElement('', false);
             if (range) {
-                range.deleteContents();
-                range.insertNode(todo);
+                if (!range.collapsed) range.collapse(true);
+                const host = range.commonAncestorContainer?.nodeType === Node.ELEMENT_NODE
+                    ? range.commonAncestorContainer
+                    : range.commonAncestorContainer?.parentElement;
+                if (host?.closest?.('.life-toggle-title, .life-toggle-row, .life-toggle-caret')) {
+                    showToast('這一列已是子級摺疊，不能再加待辦勾選', 'error');
+                    return;
+                }
+                const ancestorToggle = host?.closest?.('.life-toggle');
+                const inBody = host?.closest?.('.life-toggle-body');
+                if (ancestorToggle && editor.contains(ancestorToggle) && !inBody) {
+                    showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
+                    return;
+                }
+                if (inBody) {
+                    const bodyBlock = getClosestBlockInBody(host, inBody);
+                    if (bodyBlock && bodyBlock.parentElement === inBody) bodyBlock.after(todo);
+                    else inBody.appendChild(todo);
+                } else {
+                    range.insertNode(todo);
+                }
             } else {
                 editor.appendChild(todo);
             }
             placeCaretInEmptyBlock(todo.querySelector('.life-todo-text'));
+            repairLifeTodos(editor);
             markNoteDirty();
             saveNoteSelection();
             showToast('已插入待辦列，點左側方框可打勾', 'info');
+        }
+
+        function selectionInsideLifeToggleTitle(editor) {
+            const ctx = getNodeFromSelection();
+            if (!ctx || !editor) return false;
+            const title = ctx.node.closest?.('.life-toggle-title, .life-toggle-row, .life-toggle-caret');
+            return !!(title && editor.contains(title) && !ctx.node.closest?.('.life-toggle-body'));
         }
 
         function handleLifeTodoClick(e) {
@@ -4319,6 +4616,13 @@
             e.stopPropagation();
             const todo = box.closest('.life-todo');
             if (!todo || !editor.contains(todo)) return;
+            // 誤嵌在子級上的勾選：先拆結構再忽略
+            if (todo.querySelector('.life-toggle') || box.closest('.life-toggle-row')) {
+                normalizeLifeBlockNesting(editor);
+                repairLifeTodos(editor);
+                markNoteDirty();
+                return;
+            }
             const checked = todo.getAttribute('data-checked') === '1';
             setLifeTodoChecked(todo, !checked);
             markNoteDirty();
@@ -4338,10 +4642,15 @@
             const textEl = todo.querySelector(':scope > .life-todo-text');
             const line = document.createElement('div');
             if (textEl && !isVisuallyEmptyBlock(textEl)) {
-                while (textEl.firstChild) line.appendChild(textEl.firstChild);
-            } else {
-                line.innerHTML = '<br>';
+                while (textEl.firstChild) {
+                    if (textEl.firstChild.classList?.contains?.('life-toggle')) {
+                        todo.after(textEl.firstChild);
+                        continue;
+                    }
+                    line.appendChild(textEl.firstChild);
+                }
             }
+            if (!line.childNodes.length) line.innerHTML = '<br>';
             todo.replaceWith(line);
             return line;
         }
@@ -4439,6 +4748,51 @@
             toggle.after(line);
             placeCaretInEmptyBlock(line);
             return line;
+        }
+
+        /**
+         * 刪除子級摺疊殼，保留 body 內原有內容（移到外面當一般區塊）。
+         * 母級標題已空時由 Backspace 觸發。
+         */
+        function unwrapLifeToggleKeepChildren(toggle) {
+            if (!toggle || !toggle.parentNode) return null;
+            const body = toggle.querySelector(':scope > .life-toggle-body');
+            const frag = document.createDocumentFragment();
+            let first = null;
+
+            if (body) {
+                while (body.firstChild) {
+                    if (!first) first = body.firstChild;
+                    frag.appendChild(body.firstChild);
+                }
+            }
+
+            if (!frag.childNodes.length) {
+                const line = document.createElement('div');
+                line.innerHTML = '<br>';
+                frag.appendChild(line);
+                first = line;
+            }
+
+            toggle.replaceWith(frag);
+            return first;
+        }
+
+        function placeCaretAtStartOfNode(node) {
+            const sel = window.getSelection();
+            if (!sel || !node) return;
+            const target = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+            if (!target) return;
+            // 待辦列：游標進文字區
+            const textEl = target.classList?.contains('life-todo')
+                ? target.querySelector(':scope > .life-todo-text')
+                : (target.classList?.contains('life-todo-text') ? target : null);
+            const block = textEl || target;
+            const range = document.createRange();
+            range.selectNodeContents(block);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
         }
 
         function isVisuallyEmptyBlock(el) {
@@ -4750,14 +5104,29 @@
 
             if (e.key === 'Backspace' && !e.isComposing) {
                 const todoCtx = getLifeTodoContext();
-                if (!todoCtx?.todo || !todoCtx.sel?.isCollapsed) return;
-                if (!isCaretAtStartOf(todoCtx.textEl, todoCtx.range)) return;
-                e.preventDefault();
-                e.stopPropagation();
-                const line = unwrapLifeTodo(todoCtx.todo);
-                if (line) placeCaretInEmptyBlock(line);
-                markNoteDirty();
-                saveNoteSelection();
+                if (todoCtx?.todo && todoCtx.sel?.isCollapsed && isCaretAtStartOf(todoCtx.textEl, todoCtx.range)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const line = unwrapLifeTodo(todoCtx.todo);
+                    if (line) placeCaretInEmptyBlock(line);
+                    markNoteDirty();
+                    saveNoteSelection();
+                    return;
+                }
+
+                // 母級標題刪到空後再按 Backspace → 拆掉子級系統，保留子級內文字
+                const ctx = getLifeToggleContext();
+                if (ctx?.kind === 'title' && ctx.sel?.isCollapsed && isVisuallyEmptyBlock(ctx.el)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const first = unwrapLifeToggleKeepChildren(ctx.toggle);
+                    if (first) placeCaretAtStartOfNode(first);
+                    stabilizeLifeToggles(editor);
+                    repairLifeTodos(editor);
+                    normalizeLifeBlockNesting(editor);
+                    markNoteDirty();
+                    saveNoteSelection();
+                }
             }
         }
 
@@ -4765,6 +5134,7 @@
             const editor = getNoteEditor();
             stabilizeLifeToggles(editor);
             repairLifeTodos(editor);
+            normalizeLifeBlockNesting(editor);
             markNoteDirty();
         }
 
