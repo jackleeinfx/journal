@@ -1748,6 +1748,20 @@
             color: #444;
             min-height: 36px;
         }
+        .records-note-toolbar button.note-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            width: 36px;
+            padding: 0;
+        }
+        .records-note-toolbar button.note-tool-btn .note-tool-ico {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+            display: block;
+        }
         .records-note-toolbar button:hover { background: #eef0f8; }
         .records-note-toolbar button.primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1841,7 +1855,7 @@
             word-break: break-word;
         }
         /* 內容強制純文字外觀（禁止貼上殘留的字色／字體／大小） */
-        .records-note-editor *:not(.life-date):not(.life-toggle-caret):not(.life-todo-check) {
+        .records-note-editor *:not(.life-date):not(.life-toggle-caret):not(.life-todo-check):not(.life-image) {
             font-family: inherit !important;
             font-size: inherit !important;
             font-weight: inherit !important;
@@ -1890,29 +1904,54 @@
         }
         .records-note-editor .life-toggle-row {
             display: flex;
-            align-items: flex-start;
-            gap: 4px;
+            align-items: center;
+            gap: 6px;
             min-height: 1.7em;
         }
         .records-note-editor .life-toggle-caret {
             flex: 0 0 auto;
-            width: 1.25em;
-            line-height: 1.7;
-            text-align: center;
-            color: #8b909e;
+            width: 22px;
+            height: 22px;
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
             cursor: pointer;
             user-select: none;
-            font-size: 0.75em;
-            margin-top: 0.15em;
+            color: #8b93a8;
+            background: transparent;
+            font-size: 16px;
+            line-height: 1;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .records-note-editor .life-toggle-caret::before {
+            content: '';
+            display: block;
+            box-sizing: border-box;
+            width: 8px;
+            height: 8px;
+            border-top: 2.5px solid currentColor;
+            border-right: 2.5px solid currentColor;
+            transform: rotate(45deg);
+            transform-origin: center;
+            transition: transform 0.18s ease;
+            margin: 0 0 0 1px;
+        }
+        .records-note-editor .life-toggle[data-open="1"] > .life-toggle-row > .life-toggle-caret::before {
+            transform: rotate(135deg);
+            margin: -2px 0 0 0;
         }
         .records-note-editor .life-toggle-caret:hover {
             color: #667eea;
+            background: rgba(102, 126, 234, 0.12);
         }
         body.dark-mode .records-note-editor .life-toggle-caret {
             color: #a0a6b8;
         }
         body.dark-mode .records-note-editor .life-toggle-caret:hover {
             color: #9aa7ff;
+            background: rgba(154, 167, 255, 0.14);
         }
         .records-note-editor .life-toggle-title {
             flex: 1 1 auto;
@@ -1954,12 +1993,12 @@
         }
         .records-note-editor .life-todo-check {
             flex: 0 0 auto;
-            width: 1.05em;
-            height: 1.05em;
-            margin-top: 0.32em;
-            border: 2px solid #5b6ee1;
-            border-radius: 3px;
-            background: transparent;
+            width: 1.15em;
+            height: 1.15em;
+            margin-top: 0.28em;
+            border: 1.5px solid #9aa3c7;
+            border-radius: 5px;
+            background: #fff;
             box-sizing: border-box;
             cursor: pointer;
             user-select: none;
@@ -1967,25 +2006,31 @@
             color: transparent;
             font-size: 16px;
             line-height: 1;
+            transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
         }
         .records-note-editor .life-todo-check:hover {
             border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.18);
+            background: rgba(102, 126, 234, 0.08);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
         }
         .records-note-editor .life-todo[data-checked="1"] .life-todo-check {
-            background: #5b6ee1;
-            border-color: #5b6ee1;
+            background: linear-gradient(145deg, #7c8ef7 0%, #5b6ee1 100%);
+            border-color: transparent;
+            box-shadow: 0 1px 3px rgba(91, 110, 225, 0.35);
         }
         .records-note-editor .life-todo[data-checked="1"] .life-todo-check::after {
             content: '';
             position: absolute;
-            left: 0.22em;
-            top: 0.02em;
+            left: 50%;
+            top: 45%;
             width: 0.28em;
-            height: 0.55em;
+            height: 0.5em;
             border: solid #fff;
             border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
+            transform: translate(-50%, -55%) rotate(45deg);
+        }
+        .records-note-editor .life-todo[data-checked="1"] .life-todo-check:hover {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2), 0 1px 3px rgba(91, 110, 225, 0.35);
         }
         .records-note-editor .life-todo-text {
             flex: 1 1 auto;
@@ -2020,10 +2065,14 @@
         }
         body.dark-mode .records-note-editor .life-todo-check {
             border-color: #7c8aef;
+            background: rgba(255, 255, 255, 0.04);
+        }
+        body.dark-mode .records-note-editor .life-todo-check:hover {
+            background: rgba(124, 138, 239, 0.16);
         }
         body.dark-mode .records-note-editor .life-todo[data-checked="1"] .life-todo-check {
-            background: #667eea;
-            border-color: #667eea;
+            background: linear-gradient(145deg, #7c8aef 0%, #667eea 100%);
+            border-color: transparent;
         }
         body.dark-mode .records-note-editor .life-todo[data-checked="1"] > .life-todo-text {
             color: #7a8094 !important;
@@ -2043,7 +2092,75 @@
             -webkit-text-fill-color: #eee !important;
         }
 
-        .header-user {
+        /* 生活紀錄：圖片行（約 3 行高，與文字／子級／待辦隔離） */
+        .records-note-editor .life-image-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 8px;
+            margin: 8px 0;
+            padding: 4px;
+            min-height: calc(1.7em * 3);
+            border: 1px dashed transparent;
+            border-radius: 8px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .records-note-editor .life-image-row.is-selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.06);
+        }
+        body.dark-mode .records-note-editor .life-image-row.is-selected {
+            border-color: #8b9cf7;
+            background: rgba(102, 126, 234, 0.12);
+        }
+        .records-note-editor .life-image {
+            height: calc(1.7em * 3) !important;
+            width: auto !important;
+            max-width: min(100%, 280px);
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: zoom-in;
+            display: block;
+            flex: 0 0 auto;
+            background: #f0f0f0 !important;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
+        }
+        .records-note-editor .life-image.is-selected {
+            box-shadow: 0 0 0 2px #667eea;
+        }
+        body.dark-mode .records-note-editor .life-image {
+            background: #2a2a3a !important;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        body.dark-mode .records-note-editor .life-image.is-selected {
+            box-shadow: 0 0 0 2px #8b9cf7;
+        }
+
+        .life-image-lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            background: rgba(0, 0, 0, 0.88);
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            cursor: zoom-out;
+        }
+        .life-image-lightbox.show {
+            display: flex;
+        }
+        .life-image-lightbox img {
+            max-width: min(96vw, 1400px);
+            max-height: 94vh;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 4px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.45);
+            cursor: zoom-out;
+        }
             display: flex;
             align-items: center;
             gap: 8px;
@@ -3291,9 +3408,19 @@
                         <button type="button" class="hl-swatch pink" data-hl="#c2185b" title="粉框"></button>
                         <button type="button" class="hl-swatch blue" data-hl="#1565c0" title="藍框"></button>
                         <button type="button" id="noteClearHlBtn" title="清除選取範圍外框">清除外框</button>
-                        <button type="button" id="noteInsertDateBtn">插入日期</button>
-                        <button type="button" id="noteInsertTodoBtn" title="插入可打勾的待辦列（勾選後變灰並劃掉）">待辦勾選</button>
-                        <button type="button" id="noteInsertToggleBtn" title="插入可展開／收合的子級區塊">子級摺疊</button>
+                        <button type="button" id="noteInsertDateBtn" class="note-tool-btn" title="插入日期" aria-label="插入日期">
+                            <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm12 8H5v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9ZM5 7h14V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v0Z"/></svg>
+                        </button>
+                        <button type="button" id="noteInsertTodoBtn" class="note-tool-btn" title="待辦勾選" aria-label="待辦勾選">
+                            <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3H7Zm0 2h10a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm8.7 4.3a1 1 0 0 0-1.4 0L10.5 13.1l-1.8-1.8a1 1 0 0 0-1.4 1.4l2.5 2.5a1 1 0 0 0 1.4 0l4.5-4.5a1 1 0 0 0 0-1.4Z"/></svg>
+                        </button>
+                        <button type="button" id="noteInsertToggleBtn" class="note-tool-btn" title="子級摺疊" aria-label="子級摺疊">
+                            <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.3 6.3a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 1 1-1.4-1.4L13.58 12 9.3 7.7a1 1 0 0 1 0-1.4Z"/></svg>
+                        </button>
+                        <button type="button" id="noteInsertImageBtn" class="note-tool-btn" title="插入圖片" aria-label="插入圖片">
+                            <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 12H5V7h14v10zm-9.5-7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM6 15l3-4 2 2.5L14 9l4 6H6z"/></svg>
+                        </button>
+                        <input type="file" id="noteImageFileInput" accept="image/*" multiple hidden>
                         <button type="button" class="primary" id="noteSaveBtn">儲存筆記</button>
                         <span class="records-note-status" id="noteSaveStatus">尚未載入</span>
                     </div>
@@ -3303,11 +3430,15 @@
                         contenteditable="true"
                         role="textbox"
                         aria-multiline="true"
-                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;內容為純文字；可加待辦勾選、子級摺疊、日期提醒；選取後可圈選外框。"
+                        data-placeholder="在這裡寫這個分類的長期筆記…&#10;內容為純文字；可加圖片、待辦勾選、子級摺疊、日期提醒；選取後可圈選外框。"
                     ></div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="lifeImageLightbox" class="life-image-lightbox" aria-hidden="true" title="再點一次關閉">
+        <img id="lifeImageLightboxImg" alt="預覽">
     </div>
 
     <script>
@@ -3398,6 +3529,8 @@
         let noteDirty = false;
         let noteSaveTimer = null;
         let noteSavedSelection = null;
+        let noteImeComposing = false; // 注音／拼音等組字中，勿拆子級或重整 DOM
+        let noteSelectedLifeImage = null; // 目前選到的那一張圖（Backspace／Delete 刪這張）
 
         function toDateInputValue(dateObj) {
             const y = dateObj.getFullYear();
@@ -3961,13 +4094,20 @@
         function sanitizeNoteHtml(html) {
             const tpl = document.createElement('template');
             tpl.innerHTML = html || '';
-            // 生活紀錄只要結構＋純文字：允許區塊殼與日期／外框／子級／待辦，不含粗體斜體等
-            const allowed = new Set(['DIV', 'P', 'BR', 'SPAN']);
+            // 生活紀錄：結構＋純文字＋圖片行；不含粗體斜體等
+            const allowed = new Set(['DIV', 'P', 'BR', 'SPAN', 'IMG']);
             const keepClasses = new Set([
                 'life-date', 'life-hl',
                 'life-toggle', 'life-toggle-row', 'life-toggle-caret', 'life-toggle-title', 'life-toggle-body',
-                'life-todo', 'life-todo-check', 'life-todo-text'
+                'life-todo', 'life-todo-check', 'life-todo-text',
+                'life-image-row', 'life-image'
             ]);
+
+            const isSafeImageSrc = (src) => {
+                const s = String(src || '').trim();
+                return /^data:image\/(png|jpe?g|gif|webp);base64,/i.test(s)
+                    || /^https:\/\//i.test(s);
+            };
 
             const cleanStyle = (el) => {
                 if (!el.getAttribute('style')) return;
@@ -3993,6 +4133,27 @@
                         child = next;
                         continue;
                     }
+
+                    // 圖片：只保留安全 src，並歸類為 life-image
+                    if (child.tagName === 'IMG') {
+                        const src = child.getAttribute('src') || '';
+                        if (!isSafeImageSrc(src)) {
+                            child.remove();
+                            child = next;
+                            continue;
+                        }
+                        child.className = 'life-image';
+                        child.setAttribute('draggable', 'false');
+                        child.setAttribute('alt', child.getAttribute('alt') || '');
+                        [...child.attributes].forEach((attr) => {
+                            const name = attr.name.toLowerCase();
+                            if (name === 'src' || name === 'alt' || name === 'class' || name === 'draggable') return;
+                            child.removeAttribute(attr.name);
+                        });
+                        child = next;
+                        continue;
+                    }
+
                     if (!allowed.has(child.tagName)) {
                         const firstInserted = child.firstChild;
                         while (child.firstChild) node.insertBefore(child.firstChild, child);
@@ -4015,15 +4176,21 @@
                             || name === 'data-date'
                             || name === 'data-open'
                             || name === 'data-checked'
+                            || name === 'data-life-note-clip'
                             || name === 'contenteditable'
                             || name === 'aria-expanded'
                             || name === 'aria-checked'
                             || name === 'role'
+                            || name === 'draggable'
                         ) return;
                         child.removeAttribute(attr.name);
                     });
 
                     cleanStyle(child);
+
+                    if (child.classList.contains('life-image-row')) {
+                        child.setAttribute('contenteditable', 'false');
+                    }
 
                     if (child.classList.contains('life-date')) {
                         child.setAttribute('contenteditable', 'false');
@@ -4049,6 +4216,7 @@
             walk(tpl.content);
             repairLifeToggles(tpl.content);
             repairLifeTodos(tpl.content);
+            normalizeLifeImageRows(tpl.content);
             normalizeLifeBlockNesting(tpl.content);
             return tpl.innerHTML;
         }
@@ -4057,6 +4225,34 @@
             const t = e.inputType || '';
             // 擋掉粗體／斜體／底線／字色等格式指令（Ctrl+B 等）
             if (t.startsWith('format')) e.preventDefault();
+
+            // 注音／IME 組字時會冒出 deleteContentBackward，不可當成「拆掉子級」
+            if (e.isComposing || noteImeComposing) return;
+            if (t.includes('Composition') || t === 'insertCompositionText' || t === 'deleteByComposition' || t === 'deleteCompositionText') {
+                return;
+            }
+
+            // 圖片行禁止輸入文字
+            const editor = getNoteEditor();
+            if (editor && getSelectedLifeImageRow(editor) && (t.startsWith('insert') || t === 'insertText' || t === 'insertParagraph')) {
+                e.preventDefault();
+            }
+        }
+
+        function handleLifeNoteCompositionStart() {
+            noteImeComposing = true;
+        }
+
+        function handleLifeNoteCompositionEnd() {
+            noteImeComposing = false;
+            // 組字結束後再整理結構
+            const editor = getNoteEditor();
+            if (!editor) return;
+            stabilizeLifeToggles(editor);
+            repairLifeTodos(editor);
+            normalizeLifeBlockNesting(editor);
+            markNoteDirty();
+            saveNoteSelection();
         }
 
         function setLifeToggleOpen(toggle, open) {
@@ -4064,9 +4260,11 @@
             toggle.setAttribute('data-open', open ? '1' : '0');
             const caret = toggle.querySelector(':scope > .life-toggle-row > .life-toggle-caret');
             if (caret) {
-                caret.textContent = open ? '▼' : '▶';
+                caret.textContent = '';
                 caret.setAttribute('contenteditable', 'false');
                 caret.setAttribute('aria-expanded', open ? 'true' : 'false');
+                caret.setAttribute('aria-label', open ? '收合子級' : '展開子級');
+                caret.title = open ? '收合' : '展開';
             }
         }
 
@@ -4091,7 +4289,7 @@
                     const caret = document.createElement('span');
                     caret.className = 'life-toggle-caret';
                     caret.setAttribute('contenteditable', 'false');
-                    caret.textContent = '▶';
+                    caret.textContent = '';
                     const title = document.createElement('div');
                     title.className = 'life-toggle-title';
                     title.innerHTML = '<br>';
@@ -4133,7 +4331,7 @@
             caret.className = 'life-toggle-caret';
             caret.setAttribute('contenteditable', 'false');
             caret.setAttribute('aria-expanded', 'false');
-            caret.textContent = '▶';
+            caret.textContent = '';
             const title = document.createElement('div');
             title.className = 'life-toggle-title';
 
@@ -4190,6 +4388,7 @@
             if (!editor) return;
             restoreNoteSelection();
             editor.focus();
+            if (guardAgainstImageRowInteraction(editor, '子級摺疊')) return;
             repairLifeTodos(editor);
             stabilizeLifeToggles(editor);
             normalizeLifeBlockNesting(editor);
@@ -4287,8 +4486,31 @@
         function normalizeLifeBlockNesting(root) {
             if (!root) return;
 
-            // 子級列上誤插入的勾選框直接移除
-            root.querySelectorAll('.life-toggle .life-todo-check').forEach((box) => box.remove());
+            // 只清「母級標題列」上的誤插勾選；子級內容裡的待辦勾選必須保留
+            root.querySelectorAll(
+                '.life-toggle-row .life-todo-check, .life-toggle-title .life-todo-check, .life-toggle-caret .life-todo-check'
+            ).forEach((box) => box.remove());
+
+            // 圖片行與子級／待辦／外框互斥：誤嵌的圖片整行移出
+            root.querySelectorAll('.life-todo .life-image-row, .life-toggle .life-image-row, .life-hl .life-image-row').forEach((row) => {
+                const host = row.closest('.life-todo, .life-toggle, .life-hl');
+                if (host) host.after(row);
+            });
+            root.querySelectorAll('.life-todo img.life-image, .life-toggle-title img, .life-toggle-row img, .life-hl img.life-image').forEach((img) => {
+                const host = img.closest('.life-todo, .life-toggle, .life-hl');
+                if (!host) return;
+                const row = document.createElement('div');
+                row.className = 'life-image-row';
+                row.setAttribute('contenteditable', 'false');
+                host.after(row);
+                row.appendChild(img);
+            });
+            // 圖片行內誤嵌的待辦／子級／日期／外框 → 移到圖片行後面
+            root.querySelectorAll('.life-image-row').forEach((row) => {
+                [...row.querySelectorAll('.life-todo, .life-toggle, .life-date, .life-hl')].forEach((el) => {
+                    row.after(el);
+                });
+            });
 
             // 母級標題裡誤嵌的待辦 → 只留文字，拿掉勾選（同一行互斥）
             root.querySelectorAll('.life-toggle-title .life-todo').forEach((todo) => {
@@ -4314,7 +4536,6 @@
                     insertAfter = toggle;
                 });
 
-                // 待辦文字區若已空，拿掉這層待辦殼
                 if (isVisuallyEmptyBlock(textEl)) {
                     todo.remove();
                 } else {
@@ -4387,6 +4608,7 @@
 
                 if (!todo.hasAttribute('data-checked')) todo.setAttribute('data-checked', '0');
                 setLifeTodoChecked(todo, todo.getAttribute('data-checked') === '1');
+                normalizeLifeTodoSingleLine(todo);
             });
 
             normalizeLifeBlockNesting(root);
@@ -4419,12 +4641,470 @@
             return todo;
         }
 
+        /* ========== 生活紀錄圖片行 ========== */
+
+        function createLifeImageEl(src) {
+            const img = document.createElement('img');
+            img.className = 'life-image';
+            img.src = src;
+            img.alt = '';
+            img.draggable = false;
+            return img;
+        }
+
+        function createLifeImageRow(srcList = []) {
+            const row = document.createElement('div');
+            row.className = 'life-image-row';
+            row.setAttribute('contenteditable', 'false');
+            (Array.isArray(srcList) ? srcList : [srcList]).forEach((src) => {
+                if (src) row.appendChild(createLifeImageEl(src));
+            });
+            return row;
+        }
+
+        function normalizeLifeImageRows(root) {
+            if (!root) return;
+            // 裸 img → 包成圖片行
+            [...root.querySelectorAll('img')].forEach((img) => {
+                if (img.closest?.('.life-image-row')) {
+                    img.classList.add('life-image');
+                    img.draggable = false;
+                    return;
+                }
+                if (!img.classList.contains('life-image') && !img.getAttribute('src')) {
+                    img.remove();
+                    return;
+                }
+                img.className = 'life-image';
+                img.draggable = false;
+                const row = createLifeImageRow();
+                img.replaceWith(row);
+                row.appendChild(img);
+            });
+
+            root.querySelectorAll('.life-image-row').forEach((row) => {
+                row.setAttribute('contenteditable', 'false');
+                [...row.childNodes].forEach((child) => {
+                    if (child.nodeType === Node.ELEMENT_NODE && child.tagName === 'IMG') {
+                        const keepSelected = child.classList.contains('is-selected') || child === noteSelectedLifeImage;
+                        child.className = 'life-image';
+                        child.draggable = false;
+                        if (keepSelected) {
+                            child.classList.add('is-selected');
+                            noteSelectedLifeImage = child;
+                        }
+                        return;
+                    }
+                    // 圖片行禁止文字與其餘結構
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        child.remove();
+                        return;
+                    }
+                    if (child.nodeType === Node.ELEMENT_NODE) {
+                        row.after(child);
+                    } else {
+                        child.remove?.();
+                    }
+                });
+                if (!row.querySelector('img.life-image, img')) row.remove();
+            });
+        }
+
+        function clearLifeImageSelection(editor) {
+            const host = editor || getNoteEditor();
+            host?.querySelectorAll('.life-image-row.is-selected, .life-image.is-selected').forEach((el) => {
+                el.classList.remove('is-selected');
+            });
+            noteSelectedLifeImage = null;
+        }
+
+        function selectLifeImageRow(row, img = null) {
+            const editor = getNoteEditor();
+            if (!row || !editor?.contains(row)) return;
+            clearLifeImageSelection(editor);
+            row.classList.add('is-selected');
+            if (img && row.contains(img)) {
+                img.classList.add('is-selected');
+                noteSelectedLifeImage = img;
+            } else {
+                noteSelectedLifeImage = null;
+            }
+            // 游標放在圖片列「後面」，不要 selectNode(整列)，否則會變成刪「整列／最後一張」
+            try {
+                const sel = window.getSelection();
+                const range = document.createRange();
+                range.setStartAfter(row);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                noteSavedSelection = range.cloneRange();
+            } catch (e) { /* ignore */ }
+            editor.focus({ preventScroll: true });
+        }
+
+        function getSelectedLifeImageRow(editor) {
+            const host = editor || getNoteEditor();
+            if (!host) return null;
+
+            // 優先：明確點選的那一張
+            if (noteSelectedLifeImage && host.contains(noteSelectedLifeImage)) {
+                const row = noteSelectedLifeImage.closest('.life-image-row');
+                if (row && host.contains(row)) {
+                    return { row, img: noteSelectedLifeImage };
+                }
+            }
+
+            const img = host.querySelector('.life-image.is-selected');
+            if (img) {
+                const row = img.closest('.life-image-row');
+                if (row && host.contains(row)) return { row, img };
+            }
+
+            const row = host.querySelector('.life-image-row.is-selected');
+            if (row && host.contains(row)) {
+                // 只選到列、沒指定某張 → img 為 null（刪整列，而非默默刪最後一張）
+                return { row, img: null };
+            }
+            return null;
+        }
+
+        function selectionTouchesLifeImage(editor) {
+            if (noteSelectedLifeImage && editor?.contains(noteSelectedLifeImage)) return true;
+            if (editor?.querySelector?.('.life-image-row.is-selected, .life-image.is-selected')) return true;
+            const ctx = getNodeFromSelection();
+            if (ctx?.node?.closest?.('.life-image-row, .life-image')) return true;
+            const sel = window.getSelection();
+            if (!sel?.rangeCount || !editor) return false;
+            try {
+                const range = sel.getRangeAt(0);
+                return [...editor.querySelectorAll('.life-image-row')].some((r) => {
+                    try { return range.intersectsNode(r); } catch (e) { return false; }
+                });
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function guardAgainstImageRowInteraction(editor, actionLabel) {
+            if (selectionTouchesLifeImage(editor)) {
+                showToast(`圖片行不能使用${actionLabel}`, 'error');
+                return true;
+            }
+            return false;
+        }
+
+        function openLifeImageLightbox(src) {
+            const box = document.getElementById('lifeImageLightbox');
+            const img = document.getElementById('lifeImageLightboxImg');
+            if (!box || !img || !src) return;
+            img.src = src;
+            box.classList.add('show');
+            box.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeLifeImageLightbox() {
+            const box = document.getElementById('lifeImageLightbox');
+            const img = document.getElementById('lifeImageLightboxImg');
+            if (!box) return;
+            box.classList.remove('show');
+            box.setAttribute('aria-hidden', 'true');
+            if (img) img.removeAttribute('src');
+        }
+
+        function toggleLifeImageLightbox(src) {
+            const box = document.getElementById('lifeImageLightbox');
+            if (box?.classList.contains('show')) closeLifeImageLightbox();
+            else openLifeImageLightbox(src);
+        }
+
+        function handleLifeImageClick(e) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            const img = e.target.closest?.('img.life-image');
+            if (img && editor.contains(img)) {
+                e.preventDefault();
+                e.stopPropagation();
+                const row = img.closest('.life-image-row');
+                selectLifeImageRow(row, img);
+                toggleLifeImageLightbox(img.getAttribute('src') || img.src);
+                return;
+            }
+            const row = e.target.closest?.('.life-image-row');
+            if (row && editor.contains(row)) {
+                e.preventDefault();
+                e.stopPropagation();
+                selectLifeImageRow(row);
+            }
+        }
+
+        async function blobToDataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        async function fileToNoteImageDataUrl(file) {
+            const blob = await compressImage(file, 120);
+            return blobToDataUrl(blob);
+        }
+
+        function findBlockForImageInsert(editor) {
+            const sel = window.getSelection();
+            if (!sel?.rangeCount || !editor) return null;
+            const range = sel.getRangeAt(0);
+            if (!editor.contains(range.commonAncestorContainer)) return null;
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!node) return null;
+            if (node.closest?.('.life-image-row')) return node.closest('.life-image-row');
+            if (node.closest?.('.life-todo')) return node.closest('.life-todo');
+            if (node.closest?.('.life-toggle')) return node.closest('.life-toggle');
+            let block = node;
+            while (block && block !== editor && block.parentElement !== editor) {
+                block = block.parentElement;
+            }
+            return block && block !== editor ? block : null;
+        }
+
+        async function insertLifeImagesFromFiles(files) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            const list = [...(files || [])].filter((f) => f && /^image\//i.test(f.type));
+            if (!list.length) {
+                showToast('請選擇圖片檔', 'error');
+                return;
+            }
+
+            restoreNoteSelection();
+            editor.focus();
+
+            // 子級／待辦內禁止插入圖片
+            const blocked = getNodeFromSelection()?.node?.closest?.('.life-todo, .life-toggle, .life-hl');
+            const selectedRow = getSelectedLifeImageRow(editor)?.row;
+            if (blocked && !selectedRow) {
+                showToast('圖片不能放在待辦、子級或外框裡', 'error');
+                return;
+            }
+
+            setNoteStatus('壓縮圖片中…');
+            const srcs = [];
+            try {
+                for (const file of list) {
+                    srcs.push(await fileToNoteImageDataUrl(file));
+                }
+            } catch (err) {
+                setNoteStatus('');
+                showToast('圖片處理失敗', 'error');
+                return;
+            }
+
+            let row = selectedRow;
+            if (!row) {
+                const block = findBlockForImageInsert(editor);
+                if (block?.classList?.contains('life-image-row')) {
+                    row = block;
+                } else if (block && isVisuallyEmptyBlock(block) && !block.classList.contains('life-todo') && !block.classList.contains('life-toggle')) {
+                    row = createLifeImageRow();
+                    block.replaceWith(row);
+                } else if (block) {
+                    row = createLifeImageRow();
+                    block.after(row);
+                } else {
+                    row = createLifeImageRow();
+                    editor.appendChild(row);
+                }
+            }
+
+            srcs.forEach((src) => row.appendChild(createLifeImageEl(src)));
+            normalizeLifeImageRows(editor);
+            normalizeLifeBlockNesting(editor);
+            selectLifeImageRow(row, row.querySelector('img.life-image:last-of-type'));
+            markNoteDirty();
+            setNoteStatus('未儲存');
+            showToast(srcs.length > 1 ? `已插入 ${srcs.length} 張圖片` : '已插入圖片', 'success');
+        }
+
+        function insertLineAfterImageRow(row) {
+            if (!row?.parentNode) return null;
+            const line = document.createElement('div');
+            line.innerHTML = '<br>';
+            row.after(line);
+            clearLifeImageSelection(getNoteEditor());
+            placeCaretInEmptyBlock(line);
+            return line;
+        }
+
+        async function deleteSelectedLifeImage(editor, { skipConfirm = false } = {}) {
+            const picked = getSelectedLifeImageRow(editor);
+            if (!picked?.row) return false;
+            const { row, img } = picked;
+            const imgs = [...row.querySelectorAll('img.life-image, img')];
+
+            // 有明確選到的圖 → 刪那張；只有選列 → 刪整列
+            let targets = [];
+            if (img && row.contains(img)) {
+                targets = [img];
+            } else if (imgs.length) {
+                targets = imgs.slice();
+            } else {
+                targets = [];
+            }
+
+            const willRemoveRow = targets.length === 0 || targets.length >= imgs.length;
+
+            if (!skipConfirm) {
+                const ok = await askConfirm(
+                    willRemoveRow
+                        ? '確定刪除這個圖片行？刪除後無法復原。'
+                        : '確定刪除這張圖片？',
+                    '刪除圖片'
+                );
+                if (!ok) {
+                    selectLifeImageRow(row, img && row.contains(img) ? img : null);
+                    return false;
+                }
+            }
+
+            if (!targets.length) {
+                row.remove();
+                clearLifeImageSelection(editor);
+                return true;
+            }
+
+            const primary = targets[0];
+            const prev = primary.previousElementSibling;
+            const next = primary.nextElementSibling;
+            targets.forEach((t) => t.remove());
+
+            if (!row.querySelector('img')) {
+                const line = document.createElement('div');
+                line.innerHTML = '<br>';
+                row.replaceWith(line);
+                clearLifeImageSelection(editor);
+                placeCaretInEmptyBlock(line);
+            } else {
+                const nextImg = (next?.isConnected && next.tagName === 'IMG' ? next : null)
+                    || (prev?.isConnected && prev.tagName === 'IMG' ? prev : null)
+                    || row.querySelector('img.life-image');
+                selectLifeImageRow(row, nextImg);
+            }
+            return true;
+        }
+
+        /** 下一行開頭 Backspace：刪上一圖片列「最後一張」前先對到該張並詢問 */
+        async function handleBackspaceIntoImageRow(editor) {
+            const sel = window.getSelection();
+            if (!editor || !sel?.isCollapsed || !sel.rangeCount) return false;
+            const range = sel.getRangeAt(0);
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!node || node.closest?.('.life-image-row')) return false;
+
+            let block = node;
+            while (block && block !== editor && block.parentElement !== editor) {
+                block = block.parentElement;
+            }
+            if (!block || block === editor) return false;
+            if (!isCaretAtStartOf(block, range)) return false;
+
+            const prev = block.previousSibling;
+            if (!prev || prev.nodeType !== Node.ELEMENT_NODE || !prev.classList?.contains('life-image-row')) {
+                return false;
+            }
+            const lastImg = prev.querySelector('img.life-image:last-of-type');
+            if (!lastImg) {
+                const ok = await askConfirm('確定刪除這個圖片行？刪除後無法復原。', '刪除圖片');
+                if (!ok) return true;
+                prev.remove();
+                clearLifeImageSelection(editor);
+                return true;
+            }
+            selectLifeImageRow(prev, lastImg);
+            await deleteSelectedLifeImage(editor);
+            return true;
+        }
+
+        function handleLifeImageKeydown(e, editor) {
+            if (!editor) return false;
+            const picked = getSelectedLifeImageRow(editor);
+            const hasImageSelection = !!(picked || noteSelectedLifeImage || editor.querySelector('.life-image-row.is-selected'));
+
+            if (e.key === 'Enter' && !e.shiftKey && hasImageSelection) {
+                e.preventDefault();
+                e.stopPropagation();
+                const row = picked?.row || editor.querySelector('.life-image-row.is-selected');
+                if (row) insertLineAfterImageRow(row);
+                return true;
+            }
+
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                if (hasImageSelection && (picked || getSelectedLifeImageRow(editor))) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    deleteSelectedLifeImage(editor).then((did) => {
+                        if (did) markNoteDirty();
+                        saveNoteSelection();
+                    });
+                    return true;
+                }
+                if (e.key === 'Backspace') {
+                    const sel = window.getSelection();
+                    if (sel?.isCollapsed && sel.rangeCount) {
+                        const range = sel.getRangeAt(0);
+                        let node = range.commonAncestorContainer;
+                        if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                        let block = node;
+                        while (block && block !== editor && block.parentElement !== editor) {
+                            block = block.parentElement;
+                        }
+                        const prev = block?.previousSibling;
+                        if (
+                            block
+                            && block !== editor
+                            && isCaretAtStartOf(block, range)
+                            && prev?.classList?.contains('life-image-row')
+                        ) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleBackspaceIntoImageRow(editor).then((did) => {
+                                if (did) markNoteDirty();
+                                saveNoteSelection();
+                            });
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // 圖片列／某張圖選取中：禁止打字
+            if (hasImageSelection && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                showToast('圖片行只能放圖片，請先按 Enter 換到下一行', 'info');
+                return true;
+            }
+            return false;
+        }
+
+        function openNoteImagePicker() {
+            const editor = getNoteEditor();
+            saveNoteSelection();
+            if (editor && getNodeFromSelection()?.node?.closest?.('.life-todo, .life-toggle') && !getSelectedLifeImageRow(editor)) {
+                showToast('圖片不能放在待辦或子級裡', 'error');
+                return;
+            }
+            document.getElementById('noteImageFileInput')?.click();
+        }
+
         function getLifeTodoContext() {
             const ctx = getNodeFromSelection();
             if (!ctx) return null;
             const { editor, sel, range, node } = ctx;
-            // 在子級標題列上不算待辦上下文（避免 Enter／轉換搞壞摺疊）
-            if (node.closest?.('.life-toggle-title, .life-toggle-caret')) return null;
+            // 在子級標題列／圖片行上不算待辦上下文
+            if (node.closest?.('.life-toggle-title, .life-toggle-caret, .life-image-row')) return null;
             const textEl = node.closest?.('.life-todo-text');
             if (!textEl || !editor.contains(textEl)) return null;
             // 待辦若還錯誤包著子級，不當有效上下文
@@ -4442,6 +5122,111 @@
             return div;
         }
 
+        /** 計算 range 落在 block 內第幾條「視覺行」（以 <br> 分隔，0-based） */
+        function getVisualLineIndexInBlock(block, range) {
+            if (!block || !range) return 0;
+            try {
+                const pre = document.createRange();
+                pre.selectNodeContents(block);
+                pre.setEnd(range.startContainer, range.startOffset);
+                const tmp = document.createElement('div');
+                tmp.appendChild(pre.cloneContents());
+                return tmp.querySelectorAll('br').length;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        /**
+         * 把一個含 <br>／巢狀區塊的容器拆成多個單行 div，原地替換。
+         * 回傳拆出的行陣列。
+         */
+        function splitBlockOnBreaks(block) {
+            if (!block?.parentNode) return block ? [block] : [];
+            const kids = [...block.childNodes];
+            const needsSplit = kids.some((n) =>
+                n.nodeName === 'BR'
+                || (n.nodeType === 1 && (n.tagName === 'DIV' || n.tagName === 'P'))
+            );
+            if (!needsSplit) return [block];
+
+            const parent = block.parentNode;
+            const lines = [];
+            let cur = document.createElement('div');
+
+            const pushCur = () => {
+                if (!cur.childNodes.length) cur.appendChild(document.createElement('br'));
+                lines.push(cur);
+                cur = document.createElement('div');
+            };
+
+            while (block.firstChild) {
+                const child = block.firstChild;
+                if (child.nodeName === 'BR') {
+                    block.removeChild(child);
+                    pushCur();
+                } else if (child.nodeType === 1 && (child.tagName === 'DIV' || child.tagName === 'P')) {
+                    if (cur.childNodes.length) pushCur();
+                    block.removeChild(child);
+                    const line = document.createElement('div');
+                    while (child.firstChild) line.appendChild(child.firstChild);
+                    if (!line.childNodes.length) line.appendChild(document.createElement('br'));
+                    lines.push(line);
+                } else {
+                    cur.appendChild(child);
+                }
+            }
+            if (cur.childNodes.length) pushCur();
+            else if (!lines.length) {
+                cur.appendChild(document.createElement('br'));
+                lines.push(cur);
+            }
+
+            const frag = document.createDocumentFragment();
+            lines.forEach((l) => frag.appendChild(l));
+            parent.insertBefore(frag, block);
+            block.remove();
+            return lines;
+        }
+
+        /**
+         * Notion：待辦只作用在「目前這一列」。
+         * 先把多行拆開，再回傳游標所在的那一列。
+         */
+        function resolveSingleLineBlockAtCaret(range, editor) {
+            if (!range || !editor) return null;
+            let block = findConvertibleNoteBlock(range, editor);
+            if (!block) {
+                let node = range.commonAncestorContainer;
+                if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                if (node === editor) {
+                    const hasBlocks = [...editor.childNodes].some((n) =>
+                        n.nodeType === 1 && (
+                            n.classList?.contains('life-todo')
+                            || n.classList?.contains('life-toggle')
+                            || n.tagName === 'DIV'
+                            || n.tagName === 'P'
+                        )
+                    );
+                    if (!hasBlocks) {
+                        const wrap = document.createElement('div');
+                        while (editor.firstChild) wrap.appendChild(editor.firstChild);
+                        editor.appendChild(wrap);
+                        block = wrap;
+                    }
+                }
+            }
+            if (!block || !editor.contains(block)) return null;
+            if (block.classList?.contains('life-todo') || block.classList?.contains('life-toggle')) return null;
+            if (block.querySelector?.(':scope > .life-toggle, :scope > .life-todo')) return null;
+
+            const lineIdx = getVisualLineIndexInBlock(block, range);
+            const lines = splitBlockOnBreaks(block);
+            if (!lines.length) return null;
+            const idx = Math.max(0, Math.min(lineIdx, lines.length - 1));
+            return lines[idx];
+        }
+
         function findConvertibleNoteBlock(range, editor) {
             if (!range || !editor) return null;
             let node = range.commonAncestorContainer;
@@ -4453,10 +5238,11 @@
             }
             if (!node || !editor.contains(node)) return null;
 
-            // 子級摺疊本體／標題不可轉成待辦（Notion：兩種獨立 block）
+            // 子級標題列 ≠ 待辦列；子級「內容」內的普通行可以轉待辦
             if (node.closest?.('.life-toggle-title, .life-toggle-caret, .life-toggle-row')) return null;
             if (node.closest?.('.life-toggle') && !node.closest?.('.life-toggle-body')) return null;
             if (node.closest?.('.life-todo')) return null;
+            if (node.closest?.('.life-image-row')) return null;
 
             let el = node;
             while (el && el !== editor && el.parentElement !== editor) {
@@ -4464,10 +5250,81 @@
                 el = el.parentElement;
             }
             if (!el || el === editor) return null;
-            if (el.classList?.contains('life-toggle') || el.classList?.contains('life-todo')) return null;
-            if (el.querySelector?.('.life-toggle, .life-todo')) return null;
+            if (el.classList?.contains('life-toggle') || el.classList?.contains('life-todo') || el.classList?.contains('life-image-row')) return null;
+            if (el.querySelector?.(':scope > .life-toggle, :scope > .life-todo, :scope > .life-image-row, :scope > img')) return null;
             if (el.tagName === 'DIV' || el.tagName === 'P') return el;
             return null;
+        }
+
+        /** 待辦文字區只准單行；多行／子級溢出拆到後面當兄弟 */
+        function normalizeLifeTodoSingleLine(todo) {
+            if (!todo?.isConnected) return;
+            const text = todo.querySelector(':scope > .life-todo-text');
+            if (!text) return;
+
+            [...text.querySelectorAll('.life-toggle')].forEach((t) => todo.after(t));
+
+            const nestedBlocks = [...text.children].filter((c) => c.tagName === 'DIV' || c.tagName === 'P');
+            if (nestedBlocks.length) {
+                const first = nestedBlocks[0];
+                while (first.firstChild) text.insertBefore(first.firstChild, first);
+                first.remove();
+                let insertAfter = todo;
+                nestedBlocks.slice(1).forEach((b) => {
+                    const line = document.createElement('div');
+                    while (b.firstChild) line.appendChild(b.firstChild);
+                    if (!line.childNodes.length) line.innerHTML = '<br>';
+                    b.remove();
+                    insertAfter.after(line);
+                    insertAfter = line;
+                });
+            }
+
+            const nodes = [...text.childNodes];
+            const brNodes = nodes.filter((n) => n.nodeName === 'BR');
+            if (!brNodes.length) return;
+
+            // 空待辦只有佔位 <br>：不要拆行，否則每次 Enter／repair 都會在後面長出空白列
+            const meaningful = nodes.filter((n) => {
+                if (n.nodeName === 'BR') return false;
+                if (n.nodeType === Node.TEXT_NODE) return !!(n.textContent || '').replace(/\u200B/g, '').trim();
+                return true;
+            });
+            if (!meaningful.length) {
+                text.innerHTML = '<br>';
+                return;
+            }
+
+            const firstLine = [];
+            const overflow = [];
+            let bucket = firstLine;
+            nodes.forEach((n) => {
+                if (n.nodeName === 'BR') {
+                    bucket = [];
+                    overflow.push(bucket);
+                } else {
+                    bucket.push(n);
+                }
+            });
+            // 去掉結尾因「行末 br」產生的空 bucket（不要變成空白列）
+            while (overflow.length && overflow[overflow.length - 1].length === 0) {
+                overflow.pop();
+            }
+            // 沒有真正的第二行內容就不改 DOM
+            if (!overflow.length) return;
+
+            text.innerHTML = '';
+            if (!firstLine.length) text.appendChild(document.createElement('br'));
+            else firstLine.forEach((n) => text.appendChild(n));
+
+            let insertAfter = todo;
+            overflow.forEach((parts) => {
+                if (!parts.length) return; // 絕不插入純空白列
+                const line = document.createElement('div');
+                parts.forEach((n) => line.appendChild(n));
+                insertAfter.after(line);
+                insertAfter = line;
+            });
         }
 
         function rangeIntersectsLifeToggle(range, editor) {
@@ -4486,6 +5343,7 @@
             if (!editor) return;
             restoreNoteSelection();
             editor.focus();
+            if (guardAgainstImageRowInteraction(editor, '待辦勾選')) return;
             repairLifeTodos(editor);
             stabilizeLifeToggles(editor);
 
@@ -4496,14 +5354,23 @@
                 return;
             }
 
-            // 同一行互斥：選取碰到子級摺疊殼／標題列
             let range = null;
             if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
                 range = sel.getRangeAt(0);
             }
             if (range && !range.collapsed && rangeIntersectsLifeToggle(range, editor)) {
-                showToast('選取範圍含有子級摺疊，不能轉成待辦勾選', 'error');
-                return;
+                // 選取跨到子級標題／整塊時拒絕；純 body 內多行另處理
+                const onlyBody = [...editor.querySelectorAll('.life-toggle')].every((t) => {
+                    try {
+                        if (!range.intersectsNode(t)) return true;
+                        const title = t.querySelector(':scope > .life-toggle-row');
+                        return title ? !range.intersectsNode(title) : true;
+                    } catch (e) { return true; }
+                });
+                if (!onlyBody) {
+                    showToast('選取範圍含有子級摺疊，不能轉成待辦勾選', 'error');
+                    return;
+                }
             }
 
             const todoCtx = getLifeTodoContext();
@@ -4517,15 +5384,17 @@
                 return;
             }
 
-            const block = findConvertibleNoteBlock(range, editor);
-            if (block) {
-                if (block.querySelector?.('.life-toggle, .life-todo') || block.closest?.('.life-toggle-title, .life-toggle-row')) {
+            // 只轉「目前這一視覺行」
+            const lineBlock = resolveSingleLineBlockAtCaret(range, editor);
+            if (lineBlock) {
+                if (lineBlock.querySelector?.('.life-toggle, .life-todo') || lineBlock.closest?.('.life-toggle-title, .life-toggle-row')) {
                     showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
                     return;
                 }
-                const html = isVisuallyEmptyBlock(block) ? '' : block.innerHTML;
+                const html = isVisuallyEmptyBlock(lineBlock) ? '' : lineBlock.innerHTML;
                 const todo = createLifeTodoElement(html, false);
-                block.replaceWith(todo);
+                lineBlock.replaceWith(todo);
+                normalizeLifeTodoSingleLine(todo);
                 const textEl = todo.querySelector('.life-todo-text');
                 if (textEl && sel) {
                     const end = document.createRange();
@@ -4543,7 +5412,7 @@
                 return;
             }
 
-            // 在子級「內容」中：可另開一列待辦（不是母級同一行）
+            // 子級內容裡插空白待辦列（合法巢狀）
             if (toggleCtx?.kind === 'body' && range) {
                 const bodyBlock = getClosestBlockInBody(toggleCtx.node, toggleCtx.el);
                 if (bodyBlock?.classList?.contains('life-todo') || bodyBlock?.closest?.('.life-todo')) {
@@ -4554,6 +5423,12 @@
                 } else if (bodyBlock?.classList?.contains('life-toggle')) {
                     showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
                     return;
+                } else if (bodyBlock && (bodyBlock.tagName === 'DIV' || bodyBlock.tagName === 'P') && !bodyBlock.classList.contains('life-toggle-body')) {
+                    const html = isVisuallyEmptyBlock(bodyBlock) ? '' : bodyBlock.innerHTML;
+                    const todo = createLifeTodoElement(html, false);
+                    bodyBlock.replaceWith(todo);
+                    normalizeLifeTodoSingleLine(todo);
+                    placeCaretInEmptyBlock(todo.querySelector('.life-todo-text'));
                 } else {
                     const todo = createLifeTodoElement('', false);
                     if (bodyBlock && bodyBlock.parentElement === toggleCtx.el) bodyBlock.after(todo);
@@ -4577,8 +5452,8 @@
                     showToast('這一列已是子級摺疊，不能再加待辦勾選', 'error');
                     return;
                 }
-                const ancestorToggle = host?.closest?.('.life-toggle');
                 const inBody = host?.closest?.('.life-toggle-body');
+                const ancestorToggle = host?.closest?.('.life-toggle');
                 if (ancestorToggle && editor.contains(ancestorToggle) && !inBody) {
                     showToast('待辦勾選與子級摺疊不能用在同一行', 'error');
                     return;
@@ -4631,17 +5506,51 @@
 
         function isCaretAtStartOf(el, range) {
             if (!el || !range || !range.collapsed) return false;
-            const probe = document.createRange();
-            probe.selectNodeContents(el);
-            probe.collapse(true);
-            return range.compareBoundaryPoints(Range.START_TO_START, probe) === 0;
+            if (!el.contains(range.startContainer) && range.startContainer !== el) return false;
+            try {
+                const pre = document.createRange();
+                pre.selectNodeContents(el);
+                pre.setEnd(range.startContainer, range.startOffset);
+                const tmp = document.createElement('div');
+                tmp.appendChild(pre.cloneContents());
+                // 開頭：前面沒有可見文字（允許空／只有 br／zwsp）
+                const text = (tmp.textContent || '').replace(/\u200B/g, '').trim();
+                if (text) return false;
+                if (tmp.querySelector('.life-date, .life-hl, .life-todo, .life-toggle, img')) return false;
+                return true;
+            } catch (e) {
+                const probe = document.createRange();
+                probe.selectNodeContents(el);
+                probe.collapse(true);
+                try {
+                    return range.compareBoundaryPoints(Range.START_TO_START, probe) === 0;
+                } catch (e2) {
+                    return false;
+                }
+            }
+        }
+
+        function placeCaretAtEndOfNode(node) {
+            const sel = window.getSelection();
+            if (!sel || !node) return;
+            let target = node;
+            if (node.classList?.contains('life-todo')) {
+                target = node.querySelector(':scope > .life-todo-text') || node;
+            } else if (node.classList?.contains('life-toggle')) {
+                target = node.querySelector(':scope > .life-toggle-row > .life-toggle-title') || node;
+            }
+            const range = document.createRange();
+            range.selectNodeContents(target);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
         }
 
         function unwrapLifeTodo(todo) {
             if (!todo || !todo.parentNode) return null;
             const textEl = todo.querySelector(':scope > .life-todo-text');
             const line = document.createElement('div');
-            if (textEl && !isVisuallyEmptyBlock(textEl)) {
+            if (textEl) {
                 while (textEl.firstChild) {
                     if (textEl.firstChild.classList?.contains?.('life-toggle')) {
                         todo.after(textEl.firstChild);
@@ -4653,6 +5562,55 @@
             if (!line.childNodes.length) line.innerHTML = '<br>';
             todo.replaceWith(line);
             return line;
+        }
+
+        /**
+         * Backspace 在待辦列開頭：
+         * - 空列／有字：都拿掉勾選殼，文字（或空白行）留在原地，游標留在該行
+         */
+        function handleLifeTodoBackspaceAtStart(todoCtx, editor) {
+            const todo = todoCtx.todo;
+            const line = unwrapLifeTodo(todo);
+            if (line) placeCaretAtStartOfNode(line);
+            repairLifeTodos(editor);
+            normalizeLifeBlockNesting(editor);
+        }
+
+        /** 空白列開頭 Backspace → 刪該列並回到上一列末尾（只剩一行時不動） */
+        function handleEmptyLineBackspace(ctxOrNull, editor) {
+            const sel = window.getSelection();
+            if (!editor || !sel?.isCollapsed || !sel.rangeCount) return false;
+            const range = sel.getRangeAt(0);
+            if (!editor.contains(range.commonAncestorContainer)) return false;
+
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!node || node.closest?.('.life-todo-text, .life-todo-check, .life-toggle-title, .life-toggle-caret')) {
+                return false;
+            }
+
+            // 直接掛在 editor 或 toggle-body 下的空白列
+            let block = node;
+            while (block && block !== editor && block.parentElement !== editor && !block.parentElement?.classList?.contains('life-toggle-body')) {
+                block = block.parentElement;
+            }
+            if (!block || block === editor) return false;
+            if (block.classList?.contains('life-todo') || block.classList?.contains('life-toggle')) return false;
+            if (!isVisuallyEmptyBlock(block) || !isCaretAtStartOf(block, range)) return false;
+
+            const prev = block.previousSibling;
+            if (prev) {
+                block.remove();
+                placeCaretAtEndOfNode(prev);
+                return true;
+            }
+            return true; // 唯一空白列：攔截但不亂補
+        }
+
+        /** 子級內容中空白列（沿用同一套） */
+        function handleToggleBodyBackspace(ctx) {
+            if (!ctx || ctx.kind !== 'body') return false;
+            return handleEmptyLineBackspace(ctx, ctx.editor || getNoteEditor());
         }
 
         function handleLifeToggleClick(e) {
@@ -4686,9 +5644,18 @@
             const ctx = getNodeFromSelection();
             if (!ctx) return null;
             const { editor, sel, range, node } = ctx;
+            // 標題列／箭頭都算母級（空標題時游標有時會落在 row）
             const title = node.closest('.life-toggle-title');
+            const chrome = node.closest('.life-toggle-row, .life-toggle-caret');
             if (title && editor.contains(title)) {
                 return { kind: 'title', el: title, toggle: title.closest('.life-toggle'), editor, sel, range, node };
+            }
+            if (chrome && editor.contains(chrome) && !node.closest('.life-toggle-body')) {
+                const toggle = chrome.closest('.life-toggle');
+                const titleEl = toggle?.querySelector(':scope > .life-toggle-row > .life-toggle-title');
+                if (toggle && titleEl) {
+                    return { kind: 'title', el: titleEl, toggle, editor, sel, range, node };
+                }
             }
             const body = node.closest('.life-toggle-body');
             if (body && editor.contains(body)) {
@@ -4751,14 +5718,24 @@
         }
 
         /**
-         * 刪除子級摺疊殼，保留 body 內原有內容（移到外面當一般區塊）。
-         * 母級標題已空時由 Backspace 觸發。
+         * 刪除子級摺疊殼（母級形式），保留：
+         * - 母級標題文字（若有）→ 變成一般列
+         * - 子級 body 內所有內容（待辦／日期／文字等）
          */
         function unwrapLifeToggleKeepChildren(toggle) {
             if (!toggle || !toggle.parentNode) return null;
+            const title = toggle.querySelector(':scope > .life-toggle-row > .life-toggle-title');
             const body = toggle.querySelector(':scope > .life-toggle-body');
             const frag = document.createDocumentFragment();
             let first = null;
+
+            if (title && !isVisuallyEmptyBlock(title)) {
+                const line = document.createElement('div');
+                while (title.firstChild) line.appendChild(title.firstChild);
+                if (!line.childNodes.length) line.appendChild(document.createElement('br'));
+                frag.appendChild(line);
+                first = line;
+            }
 
             if (body) {
                 while (body.firstChild) {
@@ -4776,6 +5753,93 @@
 
             toggle.replaceWith(frag);
             return first;
+        }
+
+        /** 框選是否完整涵蓋某節點 */
+        function rangeFullyCoversNode(range, node) {
+            if (!range || !node) return false;
+            try {
+                const nr = document.createRange();
+                nr.selectNode(node);
+                return range.compareBoundaryPoints(Range.START_TO_START, nr) <= 0
+                    && range.compareBoundaryPoints(Range.END_TO_END, nr) >= 0;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        /**
+         * Backspace／Delete 若會整塊刪掉子級：改為拆殼並保留內容。
+         * 回傳是否已處理。
+         */
+        function handleToggleStructureDelete(e, editor) {
+            // 注音組字中：絕對不要拆子級（第二鍵常被當成刪除）
+            if (noteImeComposing || e?.isComposing) return false;
+
+            const sel = window.getSelection();
+            if (!sel || !sel.rangeCount || !editor) return false;
+
+            // 1) 母級標題：空標題，或游標在標題開頭 → 拆殼保留內容
+            //    僅在「真的按 Backspace／Delete」時由 keydown 呼叫；且標題須已無組字中文字
+            const ctx = getLifeToggleContext();
+            if (ctx?.kind === 'title' && sel.isCollapsed) {
+                const atStart = isCaretAtStartOf(ctx.el, ctx.range);
+                const empty = isVisuallyEmptyBlock(ctx.el);
+                if (empty || atStart) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const first = unwrapLifeToggleKeepChildren(ctx.toggle);
+                    if (first) placeCaretAtStartOfNode(first);
+                    stabilizeLifeToggles(editor);
+                    repairLifeTodos(editor);
+                    normalizeLifeBlockNesting(editor);
+                    return true;
+                }
+            }
+
+            // 2) 框選涵蓋一整塊（或多塊）子級 → 拆殼，勿連內容一起刪
+            if (!sel.isCollapsed) {
+                const base = sel.getRangeAt(0);
+                if (!editor.contains(base.commonAncestorContainer)) return false;
+                const range = expandRangeForLifeBlocks(base, editor);
+                const toggles = [...editor.querySelectorAll('.life-toggle')].filter((t) => {
+                    try { return range.intersectsNode(t); } catch (err) { return false; }
+                });
+                if (!toggles.length) return false;
+                if (!toggles.every((t) => rangeFullyCoversNode(range, t))) return false;
+
+                // 選取是否「主要就是這些子級」（避免誤傷旁鄰一般文字）
+                const probe = document.createElement('div');
+                probe.appendChild(range.cloneContents());
+                const onlyToggles = [...probe.childNodes].every((n) => {
+                    if (n.nodeType === Node.TEXT_NODE) return !String(n.textContent || '').trim();
+                    if (n.nodeType !== Node.ELEMENT_NODE) return true;
+                    if (n.classList?.contains('life-toggle')) return true;
+                    return isClipboardEmptyBlockNode(n);
+                });
+                if (!onlyToggles && probe.querySelector('.life-toggle') && probe.childNodes.length > toggles.length) {
+                    // 混有其他實質內容：仍對「被完整選到的子級」拆殼，其餘用刪除
+                    // 簡化：整段改為拆所有完整涵蓋的子級，再刪剩餘選取太複雜 → 只處理「純子級選取」
+                    return false;
+                }
+                if (!onlyToggles) return false;
+
+                e.preventDefault();
+                e.stopPropagation();
+                let caretTarget = null;
+                // 由後往前拆，避免 DOM 位移
+                for (let i = toggles.length - 1; i >= 0; i--) {
+                    const first = unwrapLifeToggleKeepChildren(toggles[i]);
+                    if (first) caretTarget = first;
+                }
+                if (caretTarget) placeCaretAtStartOfNode(caretTarget);
+                stabilizeLifeToggles(editor);
+                repairLifeTodos(editor);
+                normalizeLifeBlockNesting(editor);
+                return true;
+            }
+
+            return false;
         }
 
         function placeCaretAtStartOfNode(node) {
@@ -4867,6 +5931,7 @@
             if (node.nodeType !== Node.ELEMENT_NODE) return true;
             if (node.classList?.contains('life-date') || node.classList?.contains('life-hl')) return false;
             if (node.classList?.contains('life-todo') || node.classList?.contains('life-toggle')) return false;
+            if (node.classList?.contains('life-image-row') || node.classList?.contains('life-image')) return false;
             const tag = node.tagName;
             if (tag !== 'DIV' && tag !== 'P' && tag !== 'SPAN' && tag !== 'BR') {
                 return !(node.textContent || '').replace(/\u200B/g, '').trim();
@@ -4928,16 +5993,16 @@
             const frag = document.createDocumentFragment();
             if (html && html.trim()) {
                 const tmp = document.createElement('div');
-                tmp.innerHTML = sanitizeNoteHtml(html);
-                if (flattenToggles) flattenLifeTogglesInContainer(tmp);
-                tmp.querySelectorAll('font').forEach((el) => {
-                    const span = document.createElement('span');
-                    while (el.firstChild) span.appendChild(el.firstChild);
-                    el.replaceWith(span);
+                tmp.innerHTML = sanitizeNoteHtml(extractBodyHtmlFromClipboard(html));
+                // 解開複製專用外殼，避免多一層空白 div
+                tmp.querySelectorAll('[data-life-note-clip]').forEach((wrap) => {
+                    while (wrap.firstChild) wrap.parentNode.insertBefore(wrap.firstChild, wrap);
+                    wrap.remove();
                 });
+                if (flattenToggles) flattenLifeTogglesInContainer(tmp);
+                tmp.querySelectorAll('.life-toggle-caret').forEach((c) => { c.textContent = ''; });
                 trimEmptyBlocksFromContainer(tmp);
                 if (inlineOnly) {
-                    // 標題禁止插入區塊元素，只取純文字
                     const plain = (tmp.textContent || '').replace(/\s+/g, ' ').trim();
                     if (plain) frag.appendChild(document.createTextNode(plain));
                     return frag;
@@ -4945,6 +6010,11 @@
                 while (tmp.firstChild) frag.appendChild(tmp.firstChild);
                 return frag;
             }
+
+            // 純文字：辨識 ☐／☑ 行 → 還原成待辦列
+            const fromPlainTodos = !inlineOnly ? buildFragmentFromPlainTodoText(text) : null;
+            if (fromPlainTodos) return fromPlainTodos;
+
             const normalized = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             if (inlineOnly) {
                 const plain = normalized.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -4952,7 +6022,6 @@
                 return frag;
             }
             const lines = normalized.split('\n');
-            // 去掉首尾空行，避免貼上憑空多行
             while (lines.length && !lines[0].trim()) lines.shift();
             while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
             if (lines.length <= 1) {
@@ -4966,6 +6035,226 @@
                 frag.appendChild(div);
             });
             return frag;
+        }
+
+        function extractBodyHtmlFromClipboard(html) {
+            const raw = String(html || '');
+            // 瀏覽器複製常包一整份 HTML 文件
+            const m = raw.match(/<!--StartFragment-->([\s\S]*?)<!--EndFragment-->/i);
+            if (m) return m[1];
+            const body = raw.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            if (body) return body[1];
+            return raw;
+        }
+
+        function clipboardHtmlHasLifeBlocks(html) {
+            return /life-todo|life-toggle|life-date|life-image|data-life-note-clip/i.test(String(html || ''));
+        }
+
+        function buildFragmentFromPlainTodoText(text) {
+            const normalized = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const lines = normalized.split('\n');
+            while (lines.length && !lines[0].trim()) lines.shift();
+            while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+            if (!lines.length) return null;
+
+            const todoLineRe = /^(?:([☐☑✓✔])|(?:\[([ xX])\]))\s*(.*)$/;
+            let hit = 0;
+            lines.forEach((line) => {
+                if (todoLineRe.test(line.trim())) hit += 1;
+            });
+            if (!hit) return null;
+
+            const frag = document.createDocumentFragment();
+            lines.forEach((line) => {
+                const trimmed = line.trimEnd();
+                const m = trimmed.trim().match(todoLineRe);
+                if (m) {
+                    const mark = m[1] || m[2] || '';
+                    const checked = /[☑✓✔xX]/.test(mark);
+                    const content = (m[3] || '').trim();
+                    const todo = createLifeTodoElement('', checked);
+                    const textEl = todo.querySelector('.life-todo-text');
+                    if (content) textEl.textContent = content;
+                    else textEl.innerHTML = '<br>';
+                    frag.appendChild(todo);
+                } else {
+                    const div = document.createElement('div');
+                    if (trimmed) div.textContent = trimmed;
+                    else div.appendChild(document.createElement('br'));
+                    frag.appendChild(div);
+                }
+            });
+            return frag;
+        }
+
+        /**
+         * 框選擴展：
+         * - 選到子級標題／箭頭，或跨選標題與內容 → 整塊子級（含內部全部）
+         * - 選到待辦列文字／勾選 → 整列待辦
+         */
+        function expandRangeForLifeBlocks(range, editor) {
+            if (!range || !editor) return range;
+            const r = range.cloneRange();
+            const elOf = (container) => (
+                container?.nodeType === Node.TEXT_NODE ? container.parentElement : container
+            );
+
+            try {
+                const startEl = elOf(r.startContainer);
+                const endEl = elOf(r.endContainer);
+                if (!startEl || !endEl || !editor.contains(startEl) || !editor.contains(endEl)) return r;
+
+                const startToggle = startEl.closest('.life-toggle');
+                const endToggle = endEl.closest('.life-toggle');
+                const startChrome = !!startEl.closest('.life-toggle-title, .life-toggle-row, .life-toggle-caret');
+                const endChrome = !!endEl.closest('.life-toggle-title, .life-toggle-row, .life-toggle-caret');
+
+                // 同一子級且碰到母級列（或兩端分別在標題／內容）→ 整塊
+                if (startToggle && startToggle === endToggle && editor.contains(startToggle)) {
+                    if (startChrome || endChrome) {
+                        r.setStartBefore(startToggle);
+                        r.setEndAfter(startToggle);
+                        return r;
+                    }
+                }
+
+                if (startChrome && startToggle && editor.contains(startToggle)) {
+                    r.setStartBefore(startToggle);
+                }
+                if (endChrome && endToggle && editor.contains(endToggle)) {
+                    r.setEndAfter(endToggle);
+                }
+
+                const coversNode = (node) => {
+                    if (!node) return false;
+                    try {
+                        const nr = document.createRange();
+                        nr.selectNode(node);
+                        return r.compareBoundaryPoints(Range.START_TO_START, nr) <= 0
+                            && r.compareBoundaryPoints(Range.END_TO_END, nr) >= 0;
+                    } catch (e) {
+                        return false;
+                    }
+                };
+
+                const startTodo = startEl.closest('.life-todo');
+                const endTodo = endEl.closest('.life-todo');
+                if (startTodo && editor.contains(startTodo)) {
+                    const parentToggle = startTodo.closest('.life-toggle');
+                    if (!parentToggle || !coversNode(parentToggle)) {
+                        r.setStartBefore(startTodo);
+                    }
+                }
+                if (endTodo && editor.contains(endTodo)) {
+                    const parentToggle = endTodo.closest('.life-toggle');
+                    if (!parentToggle || !coversNode(parentToggle)) {
+                        r.setEndAfter(endTodo);
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            return r;
+        }
+
+        function expandRangeForLifeTodos(range, editor) {
+            return expandRangeForLifeBlocks(range, editor);
+        }
+
+        function lifeSelectionToPlainText(root) {
+            const parts = [];
+            const walk = (node) => {
+                if (!node) return;
+                if (node.nodeType === Node.TEXT_NODE) {
+                    parts.push(node.textContent || '');
+                    return;
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) return;
+                if (node.classList.contains('life-todo-check') || node.classList.contains('life-toggle-caret')) return;
+
+                if (node.classList.contains('life-toggle')) {
+                    const open = node.getAttribute('data-open') === '1';
+                    const title = node.querySelector(':scope > .life-toggle-row > .life-toggle-title');
+                    const body = node.querySelector(':scope > .life-toggle-body');
+                    const titleText = (title?.innerText || '').replace(/\u200B/g, '').replace(/\s+/g, ' ').trim();
+                    parts.push(`${open ? '▼' : '▶'} ${titleText}`);
+                    parts.push('\n');
+                    if (body) [...body.childNodes].forEach(walk);
+                    return;
+                }
+
+                if (node.classList.contains('life-todo')) {
+                    const checked = node.getAttribute('data-checked') === '1';
+                    const t = (node.querySelector(':scope > .life-todo-text')?.innerText || '')
+                        .replace(/\u200B/g, '')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    parts.push(`${checked ? '☑' : '☐'} ${t}`);
+                    parts.push('\n');
+                    return;
+                }
+                if (node.tagName === 'BR') {
+                    parts.push('\n');
+                    return;
+                }
+                const isBlock = node.tagName === 'DIV' || node.tagName === 'P';
+                [...node.childNodes].forEach(walk);
+                if (isBlock) parts.push('\n');
+            };
+            walk(root);
+            return parts.join('').replace(/\n{3,}/g, '\n\n').replace(/^\n+|\n+$/g, '');
+        }
+
+        function resolveLifeCopyRange(editor, sel) {
+            if (!editor || !sel || !sel.rangeCount) return null;
+            const base = sel.getRangeAt(0);
+            if (!editor.contains(base.commonAncestorContainer)) return null;
+
+            // 游標在母級標題列（未框選）→ 複製整個子級（含收合中的全部內容）
+            if (sel.isCollapsed) {
+                let node = base.startContainer;
+                if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+                const chrome = node?.closest?.('.life-toggle-title, .life-toggle-row, .life-toggle-caret');
+                const toggle = chrome?.closest?.('.life-toggle');
+                if (toggle && editor.contains(toggle) && !node.closest?.('.life-toggle-body')) {
+                    const r = document.createRange();
+                    r.selectNode(toggle);
+                    return r;
+                }
+                return null;
+            }
+
+            // 框選碰到子級標題／待辦列 → 整塊結構（含子級內全部內容）
+            return expandRangeForLifeBlocks(base, editor);
+        }
+
+        function handleLifeNoteCopy(e) {
+            const editor = getNoteEditor();
+            if (!editor) return;
+            const sel = window.getSelection();
+            const range = resolveLifeCopyRange(editor, sel);
+            if (!range) return;
+
+            const holder = document.createElement('div');
+            // 收合中的子級 body 仍在 DOM，clone 會帶上完整內容
+            holder.appendChild(range.cloneContents());
+            holder.querySelectorAll('.life-toggle-caret').forEach((c) => { c.textContent = ''; });
+            holder.querySelectorAll('.life-toggle').forEach((t) => {
+                if (!t.hasAttribute('data-open')) t.setAttribute('data-open', '0');
+            });
+
+            const cleanInner = sanitizeNoteHtml(holder.innerHTML);
+            const wrap = document.createElement('div');
+            wrap.setAttribute('data-life-note-clip', '1');
+            wrap.innerHTML = cleanInner;
+            repairLifeToggles(wrap);
+            repairLifeTodos(wrap);
+
+            const plain = lifeSelectionToPlainText(wrap);
+            if (!plain && !cleanInner.trim()) return;
+
+            e.preventDefault();
+            e.clipboardData.setData('text/html', wrap.outerHTML);
+            e.clipboardData.setData('text/plain', plain || wrap.innerText || '');
         }
 
         function insertFragmentAtRange(range, frag) {
@@ -4996,12 +6285,114 @@
             });
         }
 
+        function finalizeLifePaste(editor) {
+            if (!editor) return;
+            // 待辦裡若誤貼進另一個待辦／子級，拆成兄弟列
+            editor.querySelectorAll('.life-todo .life-todo').forEach((inner) => {
+                const outer = inner.parentElement?.closest?.('.life-todo');
+                if (outer && outer !== inner) outer.after(inner);
+            });
+            editor.querySelectorAll('.life-todo').forEach((todo) => normalizeLifeTodoSingleLine(todo));
+            stabilizeLifeToggles(editor);
+            repairLifeTodos(editor);
+            normalizeLifeImageRows(editor);
+            normalizeLifeBlockNesting(editor);
+        }
+
+        function fragmentHasLifeTodos(frag) {
+            if (!frag) return false;
+            const probe = document.createElement('div');
+            probe.appendChild(frag.cloneNode(true));
+            return !!probe.querySelector('.life-todo');
+        }
+
+        function pasteFragmentIntoToggleBody(toggle, body, range, frag) {
+            if (!toggle || !body || !frag) return null;
+            setLifeToggleOpen(toggle, true);
+
+            // 游標若在子級內的待辦列：整段待辦貼在該列後，避免巢狀／被清掉
+            let hostNode = range?.commonAncestorContainer;
+            if (hostNode?.nodeType === Node.TEXT_NODE) hostNode = hostNode.parentElement;
+            const todoHost = hostNode?.closest?.('.life-todo');
+            const hasTodos = fragmentHasLifeTodos(frag);
+
+            let last = null;
+            if (todoHost && body.contains(todoHost) && hasTodos) {
+                last = frag.lastChild;
+                todoHost.after(frag);
+            } else if (range && body.contains(range.commonAncestorContainer)) {
+                // 空白佔位列：用貼上內容取代
+                let block = getClosestBlockInBody(range.commonAncestorContainer, body);
+                if (
+                    block
+                    && block.parentElement === body
+                    && isVisuallyEmptyBlock(block)
+                    && !block.classList.contains('life-todo')
+                    && !block.classList.contains('life-toggle')
+                ) {
+                    last = frag.lastChild;
+                    block.replaceWith(frag);
+                } else {
+                    last = insertFragmentAtRange(range, frag);
+                }
+            } else {
+                last = frag.lastChild;
+                body.appendChild(frag);
+            }
+
+            // 保險：貼出到 toggle 外的節點收回 body
+            const stopBefore = toggle.nextSibling;
+            let node = toggle.nextSibling;
+            while (node && node !== stopBefore) {
+                const next = node.nextSibling;
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('life-toggle')) break;
+                body.appendChild(node);
+                node = next;
+            }
+            return last;
+        }
+
         function handleLifeNotePaste(e) {
             const editor = getNoteEditor();
             if (!editor) return;
-            // 生活紀錄一律純文字貼上（不要顏色／字體／大小）
+
+            // 剪貼簿圖片 → 插入圖片行（與文字／子級／待辦隔離）
+            const imageFiles = [];
+            const items = e.clipboardData?.items;
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    const it = items[i];
+                    if (it.type && /^image\//i.test(it.type)) {
+                        const f = it.getAsFile();
+                        if (f) imageFiles.push(f);
+                    }
+                }
+            }
+            if (!imageFiles.length && e.clipboardData?.files?.length) {
+                [...e.clipboardData.files].forEach((f) => {
+                    if (f && /^image\//i.test(f.type)) imageFiles.push(f);
+                });
+            }
+            if (imageFiles.length) {
+                e.preventDefault();
+                e.stopPropagation();
+                insertLifeImagesFromFiles(imageFiles);
+                return;
+            }
+
+            const html = e.clipboardData?.getData('text/html') || '';
             const text = e.clipboardData?.getData('text/plain') || '';
-            if (!text) {
+            const useHtml = clipboardHtmlHasLifeBlocks(html);
+
+            // 圖片行選取中：禁止貼文字／結構（圖片檔已在上方處理）
+            if (getSelectedLifeImageRow(editor) || selectionTouchesLifeImage(editor)) {
+                e.preventDefault();
+                e.stopPropagation();
+                showToast('圖片行只能放圖片，請先按 Enter 換行再貼文字', 'info');
+                return;
+            }
+
+            if (!useHtml && !text) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -5013,9 +6404,10 @@
             const target = getLifeTogglePasteTarget();
             const sel = window.getSelection();
             if (!sel || !sel.rangeCount) return;
+            const htmlArg = useHtml ? html : '';
 
             if (target?.kind === 'title') {
-                const plain = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+                const plain = (text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
                 const originalPrev = target.toggle.previousSibling;
                 const originalNext = target.toggle.nextSibling;
                 target.range.deleteContents();
@@ -5026,22 +6418,61 @@
                 }
                 cleanupEmptySiblingsAroundToggle(target.toggle, originalPrev, originalNext);
             } else if (target?.kind === 'body') {
-                setLifeToggleOpen(target.toggle, true);
-                const originalPrev = target.toggle.previousSibling;
-                const stopBefore = target.toggle.nextSibling;
-                const frag = buildFragmentFromClipboard('', text, { inlineOnly: false, flattenToggles: true });
-                const last = insertFragmentAtRange(target.range, frag);
-                reclaimPasteOverflowIntoToggle(target.toggle, target.el, stopBefore);
-                cleanupEmptySiblingsAroundToggle(target.toggle, originalPrev, stopBefore);
-                if (last && editor.contains(last)) placeCaretAfterNode(last);
+                let frag = buildFragmentFromClipboard(htmlArg, text, { inlineOnly: false, flattenToggles: false });
+                if (!frag.childNodes.length && text) {
+                    frag = buildFragmentFromClipboard('', text, { inlineOnly: false, flattenToggles: false });
+                }
+                // 子級內容禁止圖片
+                const probe = document.createElement('div');
+                probe.appendChild(frag.cloneNode(true));
+                if (probe.querySelector('.life-image-row, img.life-image, img')) {
+                    showToast('圖片不能貼進子級內容', 'error');
+                    return;
+                }
+                if (!frag.childNodes.length) {
+                    markNoteDirty();
+                    return;
+                }
+                const last = pasteFragmentIntoToggleBody(target.toggle, target.el, target.range, frag);
+                if (last && editor.contains(last)) {
+                    if (last.classList?.contains('life-todo')) {
+                        const te = last.querySelector('.life-todo-text');
+                        if (te) {
+                            const end = document.createRange();
+                            end.selectNodeContents(te);
+                            end.collapse(false);
+                            sel.removeAllRanges();
+                            sel.addRange(end);
+                        } else placeCaretAfterNode(last);
+                    } else {
+                        placeCaretAfterNode(last);
+                    }
+                }
             } else {
-                const range = sel.getRangeAt(0);
-                const frag = buildFragmentFromClipboard('', text, { inlineOnly: false, flattenToggles: false });
+                const todoCtx = getLifeTodoContext();
+                let range = sel.getRangeAt(0);
+                if (todoCtx?.todo && (useHtml || /^[☐☑✓✔\[]/.test((text || '').trim()))) {
+                    const testFrag = buildFragmentFromClipboard(htmlArg, text, { inlineOnly: false });
+                    if (fragmentHasLifeTodos(testFrag)) {
+                        const frag = buildFragmentFromClipboard(htmlArg, text, { inlineOnly: false });
+                        const last = frag.lastChild;
+                        todoCtx.todo.after(frag);
+                        if (last) placeCaretAfterNode(last);
+                        finalizeLifePaste(editor);
+                        markNoteDirty();
+                        saveNoteSelection();
+                        return;
+                    }
+                }
+                let frag = buildFragmentFromClipboard(htmlArg, text, { inlineOnly: false, flattenToggles: false });
+                if (!frag.childNodes.length && text) {
+                    frag = buildFragmentFromClipboard('', text, { inlineOnly: false });
+                }
                 const last = insertFragmentAtRange(range, frag);
                 if (last) placeCaretAfterNode(last);
             }
 
-            stabilizeLifeToggles(editor);
+            finalizeLifePaste(editor);
             markNoteDirty();
             saveNoteSelection();
         }
@@ -5050,19 +6481,20 @@
             const editor = getNoteEditor();
             if (!editor) return;
 
-            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+            if (!e.isComposing && !noteImeComposing && handleLifeImageKeydown(e, editor)) {
+                saveNoteSelection();
+                return;
+            }
+
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !noteImeComposing) {
                 const todoCtx = getLifeTodoContext();
                 if (todoCtx?.todo) {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (isVisuallyEmptyBlock(todoCtx.textEl)) {
-                        const line = unwrapLifeTodo(todoCtx.todo);
-                        if (line) placeCaretInEmptyBlock(line);
-                    } else {
-                        const next = createLifeTodoElement('', false);
-                        todoCtx.todo.after(next);
-                        placeCaretInEmptyBlock(next.querySelector('.life-todo-text'));
-                    }
+                    // 有字／空白待辦列：Enter 一律在下一行再加一筆待辦（不要退出／刪除）
+                    const next = createLifeTodoElement('', false);
+                    todoCtx.todo.after(next);
+                    placeCaretInEmptyBlock(next.querySelector('.life-todo-text'));
                     repairLifeTodos(editor);
                     markNoteDirty();
                     saveNoteSelection();
@@ -5102,38 +6534,51 @@
                 return;
             }
 
-            if (e.key === 'Backspace' && !e.isComposing) {
+            if (e.key === 'Backspace' && !e.isComposing && !noteImeComposing) {
                 const todoCtx = getLifeTodoContext();
                 if (todoCtx?.todo && todoCtx.sel?.isCollapsed && isCaretAtStartOf(todoCtx.textEl, todoCtx.range)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    const line = unwrapLifeTodo(todoCtx.todo);
-                    if (line) placeCaretInEmptyBlock(line);
+                    handleLifeTodoBackspaceAtStart(todoCtx, editor);
                     markNoteDirty();
                     saveNoteSelection();
                     return;
                 }
 
-                // 母級標題刪到空後再按 Backspace → 拆掉子級系統，保留子級內文字
-                const ctx = getLifeToggleContext();
-                if (ctx?.kind === 'title' && ctx.sel?.isCollapsed && isVisuallyEmptyBlock(ctx.el)) {
+                // 刪母級形式：保留子級內全部內容（含框選整塊子級）
+                if (handleToggleStructureDelete(e, editor)) {
+                    markNoteDirty();
+                    saveNoteSelection();
+                    return;
+                }
+
+                if (handleEmptyLineBackspace(null, editor)) {
                     e.preventDefault();
                     e.stopPropagation();
-                    const first = unwrapLifeToggleKeepChildren(ctx.toggle);
-                    if (first) placeCaretAtStartOfNode(first);
-                    stabilizeLifeToggles(editor);
-                    repairLifeTodos(editor);
-                    normalizeLifeBlockNesting(editor);
+                    markNoteDirty();
+                    saveNoteSelection();
+                    return;
+                }
+            }
+
+            if ((e.key === 'Delete') && !e.isComposing && !noteImeComposing) {
+                if (handleToggleStructureDelete(e, editor)) {
                     markNoteDirty();
                     saveNoteSelection();
                 }
             }
         }
 
-        function handleLifeNoteInput() {
+        function handleLifeNoteInput(e) {
+            // 組字過程勿重整 DOM，否則注音候選／子級會被拆掉
+            if (noteImeComposing || e?.isComposing) {
+                markNoteDirty();
+                return;
+            }
             const editor = getNoteEditor();
             stabilizeLifeToggles(editor);
             repairLifeTodos(editor);
+            normalizeLifeImageRows(editor);
             normalizeLifeBlockNesting(editor);
             markNoteDirty();
         }
@@ -5227,6 +6672,7 @@
             const editor = getNoteEditor();
             if (!editor) return;
             restoreNoteSelection();
+            if (guardAgainstImageRowInteraction(editor, '日期')) return;
             const label = formatNoteDateLabel(iso);
             const chip = document.createElement('span');
             chip.className = 'life-date';
@@ -5267,6 +6713,7 @@
             if (!editor) return;
             restoreNoteSelection();
             editor.focus();
+            if (guardAgainstImageRowInteraction(editor, '外框')) return;
             const sel = window.getSelection();
             if (!sel || sel.isCollapsed || !sel.rangeCount) {
                 showToast('請先選取要圈選的文字', 'error');
@@ -5296,6 +6743,7 @@
             if (!editor) return;
             restoreNoteSelection();
             editor.focus();
+            if (guardAgainstImageRowInteraction(editor, '外框')) return;
             const sel = window.getSelection();
             if (!sel || !sel.rangeCount) {
                 showToast('請先選取要清除外框的文字', 'error');
@@ -5984,6 +7432,28 @@
                 saveNoteSelection();
             });
             document.getElementById('noteInsertTodoBtn')?.addEventListener('click', insertLifeTodo);
+            document.getElementById('noteInsertImageBtn')?.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                saveNoteSelection();
+            });
+            document.getElementById('noteInsertImageBtn')?.addEventListener('click', openNoteImagePicker);
+            document.getElementById('noteImageFileInput')?.addEventListener('change', async (e) => {
+                const files = e.target.files;
+                if (files?.length) await insertLifeImagesFromFiles(files);
+                e.target.value = '';
+            });
+            document.getElementById('lifeImageLightbox')?.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeLifeImageLightbox();
+            });
+            document.getElementById('lifeImageLightbox')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeLifeImageLightbox();
+            });
             document.getElementById('noteDateModalCancel')?.addEventListener('click', closeNoteDateModal);
             document.getElementById('noteDateModalOk')?.addEventListener('click', confirmInsertNoteDate);
             document.getElementById('noteDateModal')?.addEventListener('click', (e) => {
@@ -5997,9 +7467,11 @@
             editor?.addEventListener('keydown', handleLifeNoteKeydown);
             editor?.addEventListener('beforeinput', handleLifeNoteBeforeInput);
             editor?.addEventListener('input', handleLifeNoteInput);
+            editor?.addEventListener('compositionstart', handleLifeNoteCompositionStart);
+            editor?.addEventListener('compositionend', handleLifeNoteCompositionEnd);
             editor?.addEventListener('mousedown', (e) => {
                 if (
-                    (e.target.closest?.('.life-toggle-caret') || e.target.closest?.('.life-todo-check'))
+                    (e.target.closest?.('.life-toggle-caret') || e.target.closest?.('.life-todo-check') || e.target.closest?.('.life-image-row'))
                     && editor.contains(e.target)
                 ) {
                     e.preventDefault();
@@ -6008,8 +7480,35 @@
             editor?.addEventListener('click', (e) => {
                 handleLifeToggleClick(e);
                 handleLifeTodoClick(e);
+                handleLifeImageClick(e);
+                // 點到非圖片處 → 取消圖片選取
+                if (!e.target.closest?.('.life-image-row')) {
+                    clearLifeImageSelection(editor);
+                }
             });
             editor?.addEventListener('paste', handleLifeNotePaste);
+            editor?.addEventListener('copy', handleLifeNoteCopy);
+            editor?.addEventListener('cut', async (e) => {
+                handleLifeNoteCopy(e);
+                // cut：複製後刪除選取（整塊子級／待辦／圖片）
+                if (!e.defaultPrevented) return;
+                const sel = window.getSelection();
+                const editorEl = getNoteEditor();
+                const range = resolveLifeCopyRange(editorEl, sel);
+                if (!range) return;
+
+                const probe = document.createElement('div');
+                probe.appendChild(range.cloneContents());
+                if (probe.querySelector('.life-image-row, img.life-image, img')) {
+                    const ok = await askConfirm('剪下內容含有圖片行，確定刪除？刪除後無法復原。', '刪除圖片');
+                    if (!ok) return;
+                }
+
+                range.deleteContents();
+                finalizeLifePaste(editorEl);
+                markNoteDirty();
+                saveNoteSelection();
+            });
             editor?.addEventListener('blur', () => {
                 if (noteDirty) saveCurrentLifeNote(true);
             });
