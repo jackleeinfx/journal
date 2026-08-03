@@ -5501,6 +5501,7 @@
             const checked = todo.getAttribute('data-checked') === '1';
             setLifeTodoChecked(todo, !checked);
             markNoteDirty();
+            refreshNoteReminders();
             saveNoteSelection();
         }
 
@@ -6870,6 +6871,12 @@
             return (dateNode.textContent || '').trim();
         }
 
+        function isLifeDateInCompletedTodo(dateNode) {
+            // 待辦勾選已完成（劃掉）的日期行：不進生活／待辦提醒
+            const todo = dateNode?.closest?.('.life-todo');
+            return !!(todo && todo.getAttribute('data-checked') === '1');
+        }
+
         function extractDatedLinesFromHtml(html) {
             const root = document.createElement('div');
             root.className = 'records-note-editor';
@@ -6884,6 +6891,7 @@
             const seen = new Set();
 
             root.querySelectorAll('.life-date[data-date]').forEach((dateNode) => {
+                if (isLifeDateInCompletedTodo(dateNode)) return;
                 const iso = dateNode.getAttribute('data-date');
                 if (!iso) return;
                 const text = getVisualLineTextForDate(dateNode, root);
