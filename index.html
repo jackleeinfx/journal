@@ -3340,8 +3340,8 @@
         let currentEditingId = null; // 就地編輯中的日記 id
         let diaryInputActive = false;
         let diaryInputActiveTimer = null;
-        let lastInsertedTag = null;
-        let lastInsertedTagPosition = null;
+        // 點標籤前先記住游標，避免按鈕搶焦點後 selection 掉成 0／誤刪文字
+        let savedDiarySelection = { start: 0, end: 0, elId: null };
         let checklistFilter = 'all';
         let appInitialized = false;
         let confirmModalResolver = null;
@@ -7391,6 +7391,10 @@
                 }
                 tagElement.textContent = `#${tag}`;
                 tagElement.title = '點擊插入到日記（在日記輸入框外點擊則添加到搜尋欄）';
+                // 避免 mousedown 搶走 textarea 焦點，導致游標／選取錯亂
+                tagElement.onmousedown = (e) => {
+                    if (e.button === 0) e.preventDefault();
+                };
                 tagElement.onclick = (e) => {
                     if (e.button === 0 || !e.button) {
                         const searchInput = document.getElementById('searchInput');
@@ -7409,11 +7413,8 @@
                             || activeElement === inlineDiaryInput
                             || diaryInputActive
                         ) {
-                            if (lastInsertedTag === tag && lastInsertedTagPosition !== null) {
-                                removeLastInsertedTag();
-                            } else {
-                                insertTag(tag);
-                            }
+                            // 一律插入；不再用「再點一次撤銷」以免過期位置誤刪正文
+                            insertTag(tag);
                         } else {
                             searchByTag(tag);
                         }
@@ -7502,17 +7503,20 @@
             const handleDiaryInputChange = () => {
                 setActive();
                 autoResizeDiaryInput();
-                // 當用戶手動編輯時，清除最後插入標籤的記錄（因為位置可能已經改變）
-                lastInsertedTag = null;
-                lastInsertedTagPosition = null;
+                saveDiarySelection(diaryInput);
                 saveDiaryDraft();
             };
             diaryInput.addEventListener('input', handleDiaryInputChange);
             diaryInput.addEventListener('keyup', handleDiaryInputChange);
             diaryInput.addEventListener('paste', handleDiaryInputChange);
             diaryInput.addEventListener('change', handleDiaryInputChange);
-            diaryInput.addEventListener('click', setActive);
+            diaryInput.addEventListener('click', () => {
+                setActive();
+                saveDiarySelection(diaryInput);
+            });
             diaryInput.addEventListener('keydown', setActive);
+            diaryInput.addEventListener('select', () => saveDiarySelection(diaryInput));
+            diaryInput.addEventListener('blur', () => saveDiarySelection(diaryInput));
             
             // 當搜尋欄獲得焦點時，清除日記輸入框的活動狀態
             if (searchInput) {
@@ -7543,6 +7547,32 @@
             const inline = document.getElementById('inlineDiaryInput');
             if (inline && currentEditingId !== null) return inline;
             return document.getElementById('diaryInput');
+        }
+
+        function saveDiarySelection(el = null) {
+            const diaryInput = el || getActiveDiaryInputEl();
+            if (!diaryInput || typeof diaryInput.selectionStart !== 'number') return;
+            savedDiarySelection = {
+                start: diaryInput.selectionStart,
+                end: diaryInput.selectionEnd,
+                elId: diaryInput.id || null
+            };
+        }
+
+        function getDiaryInsertRange(diaryInput) {
+            if (!diaryInput) return { start: 0, end: 0 };
+            const focused = document.activeElement === diaryInput;
+            if (focused && typeof diaryInput.selectionStart === 'number') {
+                return { start: diaryInput.selectionStart, end: diaryInput.selectionEnd };
+            }
+            if (savedDiarySelection.elId === diaryInput.id) {
+                const len = diaryInput.value.length;
+                const start = Math.max(0, Math.min(savedDiarySelection.start, len));
+                const end = Math.max(start, Math.min(savedDiarySelection.end, len));
+                return { start, end };
+            }
+            const len = diaryInput.value.length;
+            return { start: len, end: len };
         }
 
         function autoResizeDiaryInput(el = null) {
@@ -7584,24 +7614,21 @@
         function insertTag(tag) {
             const diaryInput = getActiveDiaryInputEl();
             if (!diaryInput) return;
-            const cursorPos = diaryInput.selectionStart;
+            const { start: cursorPos, end: selEnd } = getDiaryInsertRange(diaryInput);
             const textBefore = diaryInput.value.substring(0, cursorPos);
-            const textAfter = diaryInput.value.substring(cursorPos);
-            
-            const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
+            const textAfter = diaryInput.value.substring(selEnd);
+
+            const spaceBefore = textBefore.length === 0 || /\s$/.test(textBefore) ? '' : ' ';
             const tagText = spaceBefore + `#${tag} `;
             diaryInput.value = textBefore + tagText + textAfter;
             autoResizeDiaryInput(diaryInput);
             saveDiaryDraft();
-            
-            const tagStartPos = cursorPos + spaceBefore.length;
-            const tagEndPos = tagStartPos + tag.length + 2;
-            lastInsertedTag = tag;
-            lastInsertedTagPosition = { start: tagStartPos, end: tagEndPos };
-            
-            diaryInput.setSelectionRange(tagEndPos, tagEndPos);
+
+            const tagEndPos = cursorPos + spaceBefore.length + tag.length + 2;
             diaryInput.focus({ preventScroll: true });
-            
+            diaryInput.setSelectionRange(tagEndPos, tagEndPos);
+            saveDiarySelection(diaryInput);
+
             diaryInputActive = true;
             if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
             diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
@@ -7611,50 +7638,22 @@
         function insertChecklist() {
             const diaryInput = getActiveDiaryInputEl();
             if (!diaryInput) return;
-            const cursorPos = diaryInput.selectionStart;
+            const { start: cursorPos, end: selEnd } = getDiaryInsertRange(diaryInput);
             const textBefore = diaryInput.value.substring(0, cursorPos);
-            const textAfter = diaryInput.value.substring(cursorPos);
-            
+            const textAfter = diaryInput.value.substring(selEnd);
+
             const newlineBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === '\n' ? '' : '\n';
             const checklistText = newlineBefore + '☐ ';
-            
+
             diaryInput.value = textBefore + checklistText + textAfter;
             autoResizeDiaryInput(diaryInput);
             saveDiaryDraft();
-            
-            const newPos = cursorPos + newlineBefore.length + 2;
-            diaryInput.setSelectionRange(newPos, newPos);
-            diaryInput.focus({ preventScroll: true });
-            
-            diaryInputActive = true;
-            if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
-            diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
-        }
 
-        // 刪除最後插入的標籤
-        function removeLastInsertedTag() {
-            if (lastInsertedTagPosition === null) return;
-            
-            const diaryInput = getActiveDiaryInputEl();
-            if (!diaryInput) return;
-            const text = diaryInput.value;
-            const { start, end } = lastInsertedTagPosition;
-            
-            let deleteStart = start;
-            if (start > 0 && text[start - 1] === ' ') {
-                deleteStart = start - 1;
-            }
-            
-            diaryInput.value = text.substring(0, deleteStart) + text.substring(end);
-            autoResizeDiaryInput(diaryInput);
-            saveDiaryDraft();
-            
-            diaryInput.setSelectionRange(deleteStart, deleteStart);
+            const newPos = cursorPos + newlineBefore.length + 2;
             diaryInput.focus({ preventScroll: true });
-            
-            lastInsertedTag = null;
-            lastInsertedTagPosition = null;
-            
+            diaryInput.setSelectionRange(newPos, newPos);
+            saveDiarySelection(diaryInput);
+
             diaryInputActive = true;
             if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
             diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
@@ -7900,6 +7899,7 @@
 
             ta.addEventListener('input', () => {
                 autoResizeDiaryInput(ta);
+                saveDiarySelection(ta);
                 diaryInputActive = true;
                 if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
                 diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
@@ -7909,6 +7909,10 @@
                 if (diaryInputActiveTimer) clearTimeout(diaryInputActiveTimer);
                 diaryInputActiveTimer = setTimeout(() => { diaryInputActive = false; }, 5000);
             });
+            ta.addEventListener('click', () => saveDiarySelection(ta));
+            ta.addEventListener('keyup', () => saveDiarySelection(ta));
+            ta.addEventListener('select', () => saveDiarySelection(ta));
+            ta.addEventListener('blur', () => saveDiarySelection(ta));
 
             const translationTa = document.getElementById('inlineTranslationInput');
             if (translationTa) {
