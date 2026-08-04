@@ -501,12 +501,12 @@
             height: 100px;
             border-radius: 6px;
             object-fit: cover;
-            cursor: pointer;
+            cursor: zoom-in;
             border: 2px solid #e0e0e0;
         }
 
         .diary-item-image:hover {
-            opacity: 0.8;
+            opacity: 0.85;
         }
 
         @media (max-width: 768px) {
@@ -719,11 +719,16 @@
             color: white;
         }
 
-        .tag-item.search-tag {
+        .tag-item.search-tag,
+        .tag-item.is-filter-selected {
             background: #667eea;
             color: white;
             border: 2px solid #764ba2;
             font-weight: bold;
+        }
+        .tag-item.is-filter-selected:hover {
+            background: #5568d3;
+            color: white;
         }
 
         /* 提示消息样式 */
@@ -1193,6 +1198,13 @@
         body.dark-mode .tag-item:hover {
             background: #667eea;
             color: white;
+        }
+
+        body.dark-mode .tag-item.search-tag,
+        body.dark-mode .tag-item.is-filter-selected {
+            background: #667eea;
+            border-color: #a78bfa;
+            color: #fff;
         }
 
         body.dark-mode .diary-list {
@@ -2649,6 +2661,113 @@
             color: #fff;
             border-style: solid;
         }
+        .tag-item.tag-untagged-btn {
+            border-style: dashed;
+            background: transparent;
+            color: #666;
+            font: inherit;
+            font-size: 14px;
+            line-height: inherit;
+        }
+        .tag-item.tag-untagged-btn:hover {
+            background: #eef0f8;
+            color: #444;
+            border-style: dashed;
+        }
+        .tag-item.tag-untagged-btn.is-filter-selected {
+            border-style: solid;
+            background: #667eea;
+            color: #fff;
+            border-color: #764ba2;
+        }
+        body.dark-mode .tag-item.tag-untagged-btn {
+            color: #bbb;
+        }
+        body.dark-mode .tag-item.tag-untagged-btn:hover {
+            background: #3a3a55;
+            color: #eee;
+        }
+        .tag-item.tag-edit-btn {
+            border-style: solid;
+            background: #eef0f8;
+            color: #5568d3;
+            font: inherit;
+            font-size: 14px;
+            line-height: inherit;
+        }
+        .tag-item.tag-edit-btn:hover {
+            background: #667eea;
+            color: #fff;
+        }
+        body.dark-mode .tag-item.tag-edit-btn {
+            background: #3a3a55;
+            color: #c5cdf8;
+        }
+        .edit-tags-list {
+            margin: 8px 0 18px;
+            min-height: 48px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            border: 1px dashed #cfd3e6;
+        }
+        body.dark-mode .edit-tags-list {
+            background: #222234;
+            border-color: #555;
+        }
+        .edit-tags-list .tag-item.edit-tag-chip {
+            cursor: grab;
+            padding-right: 28px;
+            user-select: none;
+            touch-action: none;
+        }
+        .edit-tags-list .tag-item.edit-tag-chip:active { cursor: grabbing; }
+        .edit-tags-list .tag-item.edit-tag-chip.is-dragging {
+            opacity: 0.45;
+            transform: scale(0.98);
+        }
+        .edit-tags-list .tag-item.edit-tag-chip.drag-over {
+            box-shadow: 0 0 0 2px #764ba2;
+        }
+        .edit-tags-list .tag-item.edit-tag-chip .edit-tag-del {
+            position: absolute;
+            top: -6px;
+            right: -4px;
+            width: 22px;
+            height: 22px;
+            border: none;
+            border-radius: 50%;
+            background: #dc3545;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .edit-tags-list .tag-item.edit-tag-chip .edit-tag-del:hover {
+            background: #c82333;
+        }
+        .diary-inline-hashtag {
+            display: inline;
+            color: #3949ab;
+            background: rgba(102, 126, 234, 0.12);
+            border: 1.5px solid #667eea;
+            border-radius: 999px;
+            padding: 0 0.45em;
+            margin: 0 0.1em;
+            font-weight: 600;
+            line-height: 1.6;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+        }
+        body.dark-mode .diary-inline-hashtag {
+            color: #c5cdf8;
+            background: rgba(102, 126, 234, 0.22);
+            border-color: #8b9cf7;
+        }
         .tag-composer {
             display: flex;
             flex-wrap: wrap;
@@ -3234,6 +3353,17 @@
         </div>
     </div>
 
+    <div class="confirm-modal" id="editTagsModal" role="dialog" aria-modal="true" aria-labelledby="editTagsModalTitle">
+        <div class="confirm-modal-card" style="max-width: 520px;">
+            <h3 id="editTagsModalTitle">編輯標籤</h3>
+            <p class="edit-cat-hint">拖曳標籤調整順序（外觀與標籤列相同）；點紅色 × 可刪除（會先確認）</p>
+            <div class="tags-list edit-tags-list" id="editTagsList"></div>
+            <div class="confirm-modal-actions">
+                <button type="button" class="confirm-ok" id="editTagsModalDone">完成</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="header">
             <div class="header-buttons">
@@ -3450,6 +3580,7 @@
 
         let diaries = [];
         let tagUsage = {}; // 記錄標籤使用次數
+        let tagOrder = []; // 自訂標籤顯示順序
         let currentUserId = null; // auth.uid()
         let activeSupabaseUserId = null;
         let diariesOffset = 0;
@@ -4816,6 +4947,12 @@
             if (box?.classList.contains('show')) closeLifeImageLightbox();
             else openLifeImageLightbox(src);
         }
+
+        /** 日記圖片：點擊全螢幕，再點（或 Esc）關閉 */
+        window.openDiaryImageLightbox = function(src) {
+            if (!src) return;
+            openLifeImageLightbox(src);
+        };
 
         function handleLifeImageClick(e) {
             const editor = getNoteEditor();
@@ -7403,6 +7540,10 @@
             document.getElementById('editCategoriesModal')?.addEventListener('click', (e) => {
                 if (e.target.id === 'editCategoriesModal') closeEditCategoriesModal();
             });
+            document.getElementById('editTagsModalDone')?.addEventListener('click', closeEditTagsModal);
+            document.getElementById('editTagsModal')?.addEventListener('click', (e) => {
+                if (e.target.id === 'editTagsModal') closeEditTagsModal();
+            });
             document.getElementById('editCategoriesList')?.addEventListener('click', async (e) => {
                 const delBtn = e.target.closest('[data-cat-delete]');
                 if (!delBtn) return;
@@ -8265,6 +8406,23 @@
             return diaries.findIndex(d => sameDiaryId(d.id, id));
         }
 
+        /** 篩選／搜尋結果可能不在目前分頁的 diaries 裡，編輯前先補進本機列表 */
+        async function ensureDiaryAvailable(id) {
+            let idx = findDiaryIndexById(id);
+            if (idx >= 0) return idx;
+            if (!USE_SUPABASE) return -1;
+            try {
+                const all = await ensureAllDiariesForSearch();
+                const found = all.find((d) => sameDiaryId(d.id, id));
+                if (!found) return -1;
+                diaries.push(found);
+                return diaries.length - 1;
+            } catch (e) {
+                console.warn('[diary] ensureDiaryAvailable failed', e);
+                return -1;
+            }
+        }
+
         function loadPinnedDiaryIds() {
             try {
                 const saved = localStorage.getItem(PINNED_DIARY_IDS_KEY);
@@ -8298,7 +8456,7 @@
 
         async function togglePinDiary(id, event) {
             if (event) event.stopPropagation();
-            const diaryIndex = findDiaryIndexById(id);
+            const diaryIndex = await ensureDiaryAvailable(id);
             if (diaryIndex < 0) {
                 console.warn('[Pin] diary not found:', id);
                 showToast('找不到這篇日記，請重新整理後再試', 'error');
@@ -8512,6 +8670,9 @@
                     } else {
                         tagUsage = {};
                     }
+                    loadTagOrderFromStorage();
+                    syncTagOrderWithUsage();
+                    await loadSelectedDiaryTags();
                 } catch (error) {
                     console.error('[Supabase] 載入日記失敗:', error);
                     diaries = [];
@@ -8527,6 +8688,9 @@
                 if (savedTagUsage) {
                     tagUsage = JSON.parse(savedTagUsage);
                 }
+                loadTagOrderFromStorage();
+                syncTagOrderWithUsage();
+                await loadSelectedDiaryTags();
                 hasMoreDiaries = false;
             }
             
@@ -8568,6 +8732,7 @@
             // 更新標籤使用次數
             tags.forEach(tag => {
                 tagUsage[tag] = (tagUsage[tag] || 0) + 1;
+                ensureTagInOrder(tag);
             });
 
             const userId = getUserId();
@@ -8726,9 +8891,9 @@
             showToast('日記已儲存！', 'success');
         }
 
-        // 提取標籤（#開頭的詞）
+        // 提取標籤（#開頭的詞，含中文）
         function extractTags(content) {
-            const tagRegex = /#(\w+)/g;
+            const tagRegex = /#([\w\u4e00-\u9fa5]+)/g;
             const tags = [];
             let match;
             
@@ -8739,8 +8904,216 @@
             return [...new Set(tags)]; // 去重
         }
 
-        // 當前搜索的標籤
-        let currentSearchTag = null;
+        function tagOrderStorageKey() {
+            const uid = getUserId?.() || currentUserId || 'local';
+            return `tagOrder:${uid}`;
+        }
+
+        function loadTagOrderFromStorage() {
+            try {
+                const raw = localStorage.getItem(tagOrderStorageKey());
+                const arr = raw ? JSON.parse(raw) : [];
+                tagOrder = Array.isArray(arr) ? arr.map(String).filter(Boolean) : [];
+            } catch (e) {
+                tagOrder = [];
+            }
+        }
+
+        function persistTagOrder() {
+            try {
+                localStorage.setItem(tagOrderStorageKey(), JSON.stringify(tagOrder));
+            } catch (e) { /* ignore */ }
+        }
+
+        function syncTagOrderWithUsage() {
+            const names = Object.keys(tagUsage);
+            if (!tagOrder.length) {
+                // 尚無自訂順序：沿用使用次數多→少
+                tagOrder = [...names].sort((a, b) => (tagUsage[b] || 0) - (tagUsage[a] || 0));
+            } else {
+                const known = new Set(names);
+                tagOrder = tagOrder.filter((t) => known.has(t));
+                names.forEach((t) => {
+                    if (!tagOrder.includes(t)) tagOrder.push(t);
+                });
+            }
+            persistTagOrder();
+        }
+
+        function getOrderedTagNames() {
+            syncTagOrderWithUsage();
+            return tagOrder.slice();
+        }
+
+        function ensureTagInOrder(tagName) {
+            if (!tagName) return;
+            if (!tagOrder.includes(tagName)) {
+                tagOrder.push(tagName);
+                persistTagOrder();
+            }
+        }
+
+        // 日記標籤多選篩選（不依賴搜尋欄；可跨設備同步）
+        let selectedDiaryTags = [];
+        let filterUntaggedOnly = false;
+        let selectedDiaryTagsPersistTimer = null;
+
+        function selectedDiaryTagsStorageKey() {
+            const uid = getUserId?.() || currentUserId || 'local';
+            return `diarySelectedTags:${uid}`;
+        }
+
+        function untaggedFilterStorageKey() {
+            const uid = getUserId?.() || currentUserId || 'local';
+            return `diaryFilterUntagged:${uid}`;
+        }
+
+        function hasActiveDiaryTagFilter() {
+            return filterUntaggedOnly || selectedDiaryTags.length > 0;
+        }
+
+        function loadSelectedDiaryTagsFromStorage() {
+            try {
+                const raw = localStorage.getItem(selectedDiaryTagsStorageKey());
+                const arr = raw ? JSON.parse(raw) : [];
+                selectedDiaryTags = Array.isArray(arr) ? arr.map(String).filter(Boolean) : [];
+            } catch (e) {
+                selectedDiaryTags = [];
+            }
+            try {
+                filterUntaggedOnly = localStorage.getItem(untaggedFilterStorageKey()) === '1';
+            } catch (e) {
+                filterUntaggedOnly = false;
+            }
+        }
+
+        async function loadSelectedDiaryTags() {
+            loadSelectedDiaryTagsFromStorage();
+            if (!USE_SUPABASE) return;
+            try {
+                const { data: { user } } = await sb.auth.getUser();
+                const meta = user?.user_metadata || {};
+                if (Array.isArray(meta.diary_selected_tags)) {
+                    selectedDiaryTags = meta.diary_selected_tags.map(String).filter(Boolean);
+                }
+                if (typeof meta.diary_filter_untagged === 'boolean') {
+                    filterUntaggedOnly = meta.diary_filter_untagged;
+                }
+                try {
+                    localStorage.setItem(selectedDiaryTagsStorageKey(), JSON.stringify(selectedDiaryTags));
+                    localStorage.setItem(untaggedFilterStorageKey(), filterUntaggedOnly ? '1' : '0');
+                } catch (e) { /* ignore */ }
+            } catch (e) {
+                console.warn('[tags] load selected tags from auth metadata failed', e);
+            }
+        }
+
+        function persistSelectedDiaryTagsLocal() {
+            try {
+                localStorage.setItem(selectedDiaryTagsStorageKey(), JSON.stringify(selectedDiaryTags));
+                localStorage.setItem(untaggedFilterStorageKey(), filterUntaggedOnly ? '1' : '0');
+            } catch (e) { /* ignore */ }
+        }
+
+        async function persistSelectedDiaryTagsRemote() {
+            if (!USE_SUPABASE) return;
+            try {
+                const { error } = await sb.auth.updateUser({
+                    data: {
+                        diary_selected_tags: selectedDiaryTags.slice(),
+                        diary_filter_untagged: !!filterUntaggedOnly
+                    }
+                });
+                if (error) console.warn('[tags] sync selected tags failed', error);
+            } catch (e) {
+                console.warn('[tags] sync selected tags failed', e);
+            }
+        }
+
+        function schedulePersistSelectedDiaryTags() {
+            persistSelectedDiaryTagsLocal();
+            if (selectedDiaryTagsPersistTimer) clearTimeout(selectedDiaryTagsPersistTimer);
+            selectedDiaryTagsPersistTimer = setTimeout(() => {
+                persistSelectedDiaryTagsRemote();
+            }, 400);
+        }
+
+        function isDiaryTagFilterSelected(tag) {
+            return selectedDiaryTags.some((t) => String(t).toLowerCase() === String(tag).toLowerCase());
+        }
+
+        function getDiaryTagNames(diary) {
+            const content = String(diary?.content || '');
+            if (Array.isArray(diary?.tags) && diary.tags.length) {
+                return diary.tags.map((t) => String(t));
+            }
+            return extractTags(content);
+        }
+
+        function diaryHasNoTags(diary) {
+            return getDiaryTagNames(diary).length === 0;
+        }
+
+        function diaryMatchesSelectedTags(diary) {
+            if (!hasActiveDiaryTagFilter()) return true;
+            const isUntagged = diaryHasNoTags(diary);
+            if (filterUntaggedOnly && isUntagged) return true;
+            if (!selectedDiaryTags.length) {
+                // 只開「無標籤」
+                return filterUntaggedOnly ? isUntagged : true;
+            }
+            if (isUntagged) {
+                // 有選一般標籤時，無標籤篇只在同時開了「無標籤」才顯示
+                return !!filterUntaggedOnly;
+            }
+            const content = String(diary?.content || '');
+            const contentLower = content.toLowerCase();
+            const tagSet = new Set(getDiaryTagNames(diary).map((t) => String(t).toLowerCase()));
+            // OR：符合任一選取標籤即顯示
+            return selectedDiaryTags.some((tag) => {
+                const key = String(tag).toLowerCase();
+                return tagSet.has(key) || contentLower.includes(`#${key}`);
+            });
+        }
+
+        async function toggleDiaryTagFilter(tag) {
+            if (!tag) return;
+            const idx = selectedDiaryTags.findIndex((t) => String(t).toLowerCase() === String(tag).toLowerCase());
+            if (idx >= 0) selectedDiaryTags.splice(idx, 1);
+            else selectedDiaryTags.push(tag);
+            schedulePersistSelectedDiaryTags();
+            updateTagsList();
+            await refreshDiaryListWithFilters();
+        }
+
+        async function toggleUntaggedDiaryFilter() {
+            filterUntaggedOnly = !filterUntaggedOnly;
+            schedulePersistSelectedDiaryTags();
+            updateTagsList();
+            await refreshDiaryListWithFilters();
+        }
+
+        async function refreshDiaryListWithFilters() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput?.value?.trim() || '';
+            if (searchTerm) {
+                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                return;
+            }
+            if (!hasActiveDiaryTagFilter()) {
+                await renderDiaryList();
+                setDiaryListLoadingState(USE_SUPABASE ? (hasMoreDiaries ? '往下滾動可載入更多' : '已載入全部日記') : '');
+                return;
+            }
+            let base = diaries;
+            if (USE_SUPABASE) {
+                base = await ensureAllDiariesForSearch();
+            }
+            const filtered = base.filter(diaryMatchesSelectedTags);
+            // 標籤篩選：不把 #標籤 當搜尋關鍵字標亮（仍保留圓角外框樣式）
+            await renderFilteredDiaries(filtered, []);
+            setDiaryListLoadingState('');
+        }
 
         // 顯示提示消息（替代alert）
         function showToast(message, type = 'success') {
@@ -8769,60 +9142,9 @@
             }, 3000);
         }
 
-        // 按標籤搜索日記
+        // （舊版）按標籤寫入搜尋欄 — 保留給少數相容呼叫，標籤列已改為多選篩選
         function searchByTag(tag) {
-            const searchInput = document.getElementById('searchInput');
-            const currentSearchValue = searchInput.value;
-            const expectedTagValue = `#${tag}`;
-            const currentSearchValueLower = currentSearchValue.toLowerCase();
-            const expectedTagValueLower = expectedTagValue.toLowerCase();
-            
-            // 檢查標籤是否已經在搜尋欄中
-            const tagAlreadyExists = currentSearchValueLower.includes(expectedTagValueLower);
-            
-            // 如果搜尋欄只有這個標籤（沒有其他文字），則清除搜索
-            if (currentSearchValue.trim() === expectedTagValue || currentSearchValue.trim().toLowerCase() === expectedTagValueLower) {
-                currentSearchTag = null;
-                searchInput.value = '';
-                // 觸發 input 事件以執行搜尋邏輯（清空搜尋）
-                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                return;
-            }
-            
-            // 如果標籤已經存在於搜尋欄中，則移除它
-            if (tagAlreadyExists) {
-                // 移除標籤（包括前後的空格）
-                let newValue = currentSearchValue;
-                // 使用正則表達式移除標籤
-                const regex = new RegExp(`\\s*${escapeRegex(expectedTagValue)}\\s*`, 'gi');
-                newValue = newValue.replace(regex, ' ').trim();
-                searchInput.value = newValue;
-                // 觸發 input 事件
-                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-                return;
-            }
-
-            // 設置當前搜索標籤
-            currentSearchTag = tag;
-            
-            // 在搜索框現有文字後面添加標籤（用空格分隔）
-            const cursorPos = searchInput.selectionStart || searchInput.value.length;
-            const textBefore = searchInput.value.substring(0, cursorPos);
-            const textAfter = searchInput.value.substring(cursorPos);
-            
-            // 檢查前面是否需要添加空格
-            const spaceBefore = textBefore.length === 0 || textBefore[textBefore.length - 1] === ' ' ? '' : ' ';
-            // 檢查後面是否需要添加空格
-            const spaceAfter = textAfter.length === 0 || textAfter[0] === ' ' ? '' : ' ';
-            
-            searchInput.value = textBefore + spaceBefore + expectedTagValue + spaceAfter + textAfter;
-            
-            // 設置游標位置到標籤後面
-            const newPos = cursorPos + spaceBefore.length + expectedTagValue.length + spaceAfter.length;
-            searchInput.setSelectionRange(newPos, newPos);
-            
-            // 手動觸發 input 事件，這樣會執行統一的搜尋邏輯
-            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            toggleDiaryTagFilter(tag);
         }
 
         // 添加待辦事項搜尋到搜尋欄
@@ -8885,45 +9207,37 @@
         function fillTagsIntoList(tagsList) {
             tagsList.innerHTML = '';
 
-            const sortedTags = Object.entries(tagUsage)
-                .sort((a, b) => b[1] - a[1])
-                .map(entry => entry[0]);
+            const sortedTags = getOrderedTagNames();
 
             sortedTags.forEach(tag => {
                 const tagElement = document.createElement('span');
-                if (currentSearchTag === tag) {
-                    tagElement.className = 'tag-item search-tag';
-                } else {
-                    tagElement.className = 'tag-item';
-                }
+                tagElement.className = isDiaryTagFilterSelected(tag)
+                    ? 'tag-item is-filter-selected'
+                    : 'tag-item';
                 tagElement.textContent = `#${tag}`;
-                tagElement.title = '點擊插入到日記（在日記輸入框外點擊則添加到搜尋欄）';
+                tagElement.title = '寫日記時點擊可插入；否則點擊可多選篩選日記';
                 // 避免 mousedown 搶走 textarea 焦點，導致游標／選取錯亂
                 tagElement.onmousedown = (e) => {
                     if (e.button === 0) e.preventDefault();
                 };
                 tagElement.onclick = (e) => {
                     if (e.button === 0 || !e.button) {
-                        const searchInput = document.getElementById('searchInput');
                         const diaryInput = document.getElementById('diaryInput');
                         const inlineDiaryInput = document.getElementById('inlineDiaryInput');
                         const activeElement = document.activeElement;
                         const editingInline = currentEditingId !== null && !!inlineDiaryInput;
                         const fromInlineTags = tagsList.id === 'inlineTagsList';
 
-                        if (activeElement === searchInput && !fromInlineTags && !editingInline) {
-                            searchByTag(tag);
-                        } else if (
+                        if (
                             editingInline
                             || fromInlineTags
                             || activeElement === diaryInput
                             || activeElement === inlineDiaryInput
                             || diaryInputActive
                         ) {
-                            // 一律插入；不再用「再點一次撤銷」以免過期位置誤刪正文
                             insertTag(tag);
                         } else {
-                            searchByTag(tag);
+                            toggleDiaryTagFilter(tag);
                         }
                     }
                 };
@@ -8934,6 +9248,16 @@
                 tagsList.appendChild(tagElement);
             });
 
+            const untaggedBtn = document.createElement('button');
+            untaggedBtn.type = 'button';
+            untaggedBtn.className = filterUntaggedOnly
+                ? 'tag-item is-filter-selected tag-untagged-btn'
+                : 'tag-item tag-untagged-btn';
+            untaggedBtn.textContent = '無標籤';
+            untaggedBtn.title = '可與其他標籤一起多選：顯示無標籤日記';
+            untaggedBtn.onclick = () => toggleUntaggedDiaryFilter();
+            tagsList.appendChild(untaggedBtn);
+
             const addBtn = document.createElement('button');
             addBtn.type = 'button';
             addBtn.className = 'tag-item tag-add-btn';
@@ -8941,6 +9265,141 @@
             addBtn.title = '新增標籤';
             addBtn.onclick = () => openNewTagComposer(tagsList);
             tagsList.appendChild(addBtn);
+
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.className = 'tag-item tag-edit-btn';
+            editBtn.textContent = '編輯標籤';
+            editBtn.title = '排序或刪除標籤';
+            editBtn.onclick = () => openEditTagsModal();
+            tagsList.appendChild(editBtn);
+        }
+
+        function openEditTagsModal() {
+            syncTagOrderWithUsage();
+            renderEditTagsList();
+            initEditTagDrag(document.getElementById('editTagsList'));
+            document.getElementById('editTagsModal')?.classList.add('show');
+        }
+
+        function closeEditTagsModal() {
+            document.getElementById('editTagsModal')?.classList.remove('show');
+            persistTagOrder();
+            updateTagsList();
+        }
+
+        function renderEditTagsList() {
+            const list = document.getElementById('editTagsList');
+            if (!list) return;
+            const names = getOrderedTagNames();
+            if (!names.length) {
+                list.innerHTML = '<div style="color:#888;font-size:14px;">目前沒有標籤</div>';
+                return;
+            }
+            list.innerHTML = names.map((tag) => `
+                <span class="tag-item edit-tag-chip" draggable="true" data-tag-name="${escapeHtml(tag)}">
+                    #${escapeHtml(tag)}
+                    <button type="button" class="edit-tag-del" data-tag-delete title="刪除標籤" aria-label="刪除">×</button>
+                </span>
+            `).join('');
+        }
+
+        function reorderTagsByName(fromName, toName, placeAfter) {
+            const fromIdx = tagOrder.indexOf(fromName);
+            const toIdx = tagOrder.indexOf(toName);
+            if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return false;
+            const [item] = tagOrder.splice(fromIdx, 1);
+            let insertAt = tagOrder.indexOf(toName);
+            if (placeAfter) insertAt += 1;
+            tagOrder.splice(insertAt, 0, item);
+            persistTagOrder();
+            return true;
+        }
+
+        function initEditTagDrag(listEl) {
+            if (!listEl || listEl.dataset.dragReady === '1') return;
+            listEl.dataset.dragReady = '1';
+            let dragName = null;
+
+            listEl.addEventListener('dragstart', (e) => {
+                const chip = e.target.closest?.('.edit-tag-chip');
+                if (!chip || !listEl.contains(chip)) return;
+                dragName = chip.dataset.tagName;
+                chip.classList.add('is-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', dragName);
+            });
+
+            listEl.addEventListener('dragend', (e) => {
+                const chip = e.target.closest?.('.edit-tag-chip');
+                chip?.classList.remove('is-dragging');
+                listEl.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+                dragName = null;
+            });
+
+            listEl.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const over = e.target.closest?.('.edit-tag-chip');
+                listEl.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+                if (over && over.dataset.tagName !== String(dragName)) {
+                    over.classList.add('drag-over');
+                }
+            });
+
+            listEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                listEl.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+                const fromName = dragName || e.dataTransfer.getData('text/plain');
+                const over = e.target.closest?.('.edit-tag-chip');
+                if (!fromName || !over) return;
+                const toName = over.dataset.tagName;
+                if (!toName || fromName === toName) return;
+                const rect = over.getBoundingClientRect();
+                const placeAfter = e.clientX > rect.left + rect.width / 2;
+                if (!reorderTagsByName(fromName, toName, placeAfter)) return;
+                renderEditTagsList();
+            });
+
+            listEl.addEventListener('click', async (e) => {
+                const delBtn = e.target.closest?.('[data-tag-delete]');
+                if (!delBtn) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const chip = delBtn.closest('.edit-tag-chip');
+                const tag = chip?.dataset?.tagName;
+                if (tag) await deleteTagByName(tag);
+            });
+        }
+
+        async function deleteTagByName(tagName) {
+            if (!tagName) return;
+            const ok = await askConfirm(
+                `確定刪除標籤「#${tagName}」嗎？\n不會刪除日記內已寫入的文字，只是從標籤列移除。`,
+                '確認刪除標籤'
+            );
+            if (!ok) return;
+
+            delete tagUsage[tagName];
+            tagOrder = tagOrder.filter((t) => t !== tagName);
+            persistTagOrder();
+
+            try {
+                localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
+            } catch (e) { /* ignore */ }
+
+            if (USE_SUPABASE) {
+                const userId = getUserId();
+                if (userId) {
+                    await supabaseRequest('tag_usage', 'DELETE', null, `?user_id=eq.${userId}&tag_name=eq.${encodeURIComponent(tagName)}`);
+                }
+            }
+
+            selectedDiaryTags = selectedDiaryTags.filter((t) => String(t).toLowerCase() !== String(tagName).toLowerCase());
+            schedulePersistSelectedDiaryTags();
+            renderEditTagsList();
+            updateTagsList();
+            await refreshDiaryListWithFilters();
+            showToast(`已刪除 #${tagName}`, 'success');
         }
 
         function openNewTagComposer(targetList = null) {
@@ -8956,6 +9415,7 @@
             const freshList = document.getElementById(tagsList.id) || tagsList;
             const addBtn = freshList.querySelector('.tag-add-btn');
             if (addBtn) addBtn.remove();
+            freshList.querySelector('.tag-edit-btn')?.remove();
 
             const wrap = document.createElement('div');
             wrap.className = 'tag-composer';
@@ -9193,6 +9653,7 @@
             } else {
                 tagUsage[cleanTagName] = 1;
             }
+            ensureTagInOrder(cleanTagName);
 
             // 保存標籤使用次數
             localStorage.setItem('tagUsage', JSON.stringify(tagUsage));
@@ -9279,6 +9740,12 @@
                 return;
             }
 
+            // 有選取標籤／無標籤篩選時走篩選路徑（可載入完整日記集）
+            if (hasActiveDiaryTagFilter()) {
+                await refreshDiaryListWithFilters();
+                return;
+            }
+
             // 存檔後可能只有 storage path，沒有簽名網址 → 先補齊再畫
             diaries = await ensureDiariesHaveSignedUrls(diaries);
 
@@ -9360,15 +9827,13 @@
                 const displayImages = getDiaryDisplayImageUrls(diary);
                 const imagesHtml = displayImages.length > 0 ? `
                     <div class="diary-item-images">
-                        ${displayImages.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" onclick="window.open('${img}', '_blank')">`).join('')}
+                        ${displayImages.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" onclick="openDiaryImageLightbox(this.src)">`).join('')}
                     </div>
                 ` : '';
                 
-                const contentHtml = hasChecklistItems 
-                    ? convertChecklistToHTML(diary.content, diary.id)
-                    : escapeHtml(diary.content);
+                const contentHtml = formatDiaryContentHtml(diary.content, diary.id);
                 const translationBlock = diary.translation
-                    ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${escapeHtml(diary.translation)}</div>`
+                    ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${wrapHashtagsInEscapedHtml(escapeHtml(diary.translation))}</div>`
                     : '';
                 
                 return `
@@ -9449,7 +9914,7 @@
 
         // 就地展開編輯（不跳到頁面上方）
         async function startInlineEdit(id) {
-            const diaryIndex = findDiaryIndexById(id);
+            const diaryIndex = await ensureDiaryAvailable(id);
             const diary = diaryIndex >= 0 ? diaries[diaryIndex] : null;
             if (!diary) {
                 showToast('找不到這篇日記', 'error');
@@ -9469,6 +9934,8 @@
             const searchInput = document.getElementById('searchInput');
             if (searchInput && searchInput.value.trim()) {
                 searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            } else if (hasActiveDiaryTagFilter()) {
+                await refreshDiaryListWithFilters();
             } else {
                 await renderDiaryList();
             }
@@ -9543,6 +10010,8 @@
                             tagUsage[tag] -= 1;
                             if (tagUsage[tag] === 0) {
                                 delete tagUsage[tag];
+                                tagOrder = tagOrder.filter((t) => t !== tag);
+                                persistTagOrder();
                                 // 從 Supabase 刪除標籤
                                 if (USE_SUPABASE) {
                                     await supabaseRequest('tag_usage', 'DELETE', null, `?user_id=eq.${userId}&tag_name=eq.${tag}`);
@@ -9599,23 +10068,19 @@
             const searchTerm = e.target.value.trim();
             const searchTermLower = searchTerm.toLowerCase();
             
-            // 如果搜索框被清空，清除標籤搜索
+            // 如果搜索框被清空，回到「標籤篩選／全部」
             if (!searchTerm) {
-                currentSearchTag = null;
                 const checklistFilterButtons = document.getElementById('checklistFilterButtons');
                 if (checklistFilterButtons) {
                     checklistFilterButtons.style.display = 'none';
                 }
                 checklistFilter = 'all'; // 重置篩選
-                renderDiaryList();
-                updateTagsList(); // 更新標籤樣式
-                setDiaryListLoadingState(USE_SUPABASE ? (hasMoreDiaries ? '往下滾動可載入更多' : '已載入全部日記') : '');
+                updateTagsList();
+                await refreshDiaryListWithFilters();
                 return;
             }
 
-            // 清除標籤搜索狀態（搜尋框輸入時不再使用特殊標籤搜尋）
-            currentSearchTag = null;
-            updateTagsList(); // 更新標籤樣式
+            updateTagsList();
 
             let searchBaseDiaries = diaries;
             if (USE_SUPABASE) {
@@ -9656,8 +10121,9 @@
                 }
             });
 
-            // 統一使用普通文字搜尋，一律當成普通字符處理
+            // 統一使用普通文字搜尋，一律當成普通字符處理；再套用選取標籤篩選
             const filteredDiaries = searchBaseDiaries.filter(diary => {
+                if (!diaryMatchesSelectedTags(diary)) return false;
                 // 搜尋日記內容（直接字串匹配，包含 #標籤名 等所有字符）
                 const contentLower = (diary.content || '').toLowerCase();
                 // 搜尋翻譯內容
@@ -9679,7 +10145,7 @@
                 return allIncludeMatch && allExcludeMatch;
             });
             
-            // 傳遞所有關鍵字用於高亮（只高亮正常關鍵字，不高亮排除關鍵字）
+            // 傳遞搜尋關鍵字用於高亮（不含標籤篩選用的 #標籤）
             renderFilteredDiaries(filteredDiaries, includeKeywords);
             setDiaryListLoadingState('');
         });
@@ -9689,6 +10155,7 @@
             if (!USE_SUPABASE || !hasMoreDiaries || isLoadingMoreDiaries) return;
             const searchInput = document.getElementById('searchInput');
             if (searchInput && searchInput.value.trim()) return;
+            if (hasActiveDiaryTagFilter()) return;
             if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 300)) {
                 loadMoreDiaries();
             }
@@ -9699,8 +10166,12 @@
 
             const diaryList = document.getElementById('diaryList');
             
-            if (filteredDiaries.length === 0) {
-                diaryList.innerHTML = '<div class="empty-state"><strong>找不到符合的日記</strong>試試其他關鍵字，或清除搜尋</div>';
+            if (!filteredDiaries.length) {
+                diaryList.innerHTML = hasActiveDiaryTagFilter()
+                    ? (filterUntaggedOnly
+                        ? '<div class="empty-state"><strong>沒有無標籤的日記</strong>再點一次「無標籤」可取消篩選</div>'
+                        : '<div class="empty-state"><strong>沒有符合選取標籤的日記</strong>再點一次標籤可取消選取</div>')
+                    : '<div class="empty-state"><strong>找不到符合的日記</strong>試試其他關鍵字，或清除搜尋</div>';
                 return;
             }
 
@@ -9777,14 +10248,10 @@
                     </div>`;
                 }
 
-                let contentHtml;
-                if (hasChecklistItems) {
-                    contentHtml = convertChecklistToHTML(diary.content, diary.id);
-                } else {
-                    contentHtml = highlightText(diary.content, keywords);
-                }
-                
-                let highlightedTranslation = diary.translation ? highlightText(diary.translation, keywords) : '';
+                let contentHtml = formatDiaryContentHtml(diary.content, diary.id, keywords);
+                let highlightedTranslation = diary.translation
+                    ? wrapHashtagsInEscapedHtml(highlightText(diary.translation, keywords))
+                    : '';
 
                 const tagsHtml = (diary.tags || []).map(tag => 
                     `<span class="diary-item-tag">#${tag}</span>`
@@ -9793,7 +10260,7 @@
                 const displayImages = getDiaryDisplayImageUrls(diary);
                 const imagesHtml = displayImages.length > 0 ? `
                     <div class="diary-item-images">
-                        ${displayImages.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" onclick="window.open('${img}', '_blank')">`).join('')}
+                        ${displayImages.map(img => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" onclick="openDiaryImageLightbox(this.src)">`).join('')}
                     </div>
                 ` : '';
                 
@@ -9853,6 +10320,26 @@
                     if (hint) hint.textContent = '';
                 }
             });
+        }
+
+        // 高亮日記正文中的 #標籤（內容須已 escape）
+        function wrapHashtagsInEscapedHtml(html) {
+            return String(html || '').replace(
+                /#([\w\u4e00-\u9fa5]+)/g,
+                '<span class="diary-inline-hashtag">#$1</span>'
+            );
+        }
+
+        function formatDiaryContentHtml(content, diaryId, keywords) {
+            let html;
+            if (hasChecklist(content)) {
+                html = convertChecklistToHTML(content, diaryId);
+            } else if (keywords && (Array.isArray(keywords) ? keywords.length : String(keywords).trim())) {
+                html = highlightText(content, keywords);
+            } else {
+                html = escapeHtml(content || '');
+            }
+            return wrapHashtagsInEscapedHtml(html);
         }
 
         // 高亮文字（支持多個關鍵字）
