@@ -3659,9 +3659,20 @@
         let recordsLoaded = false;
         let noteDirty = false;
         let noteSaveTimer = null;
+        let noteRepairTimer = null;
+        let noteRemindersTimer = null;
         let noteSavedSelection = null;
         let noteImeComposing = false; // 注音／拼音等組字中，勿拆子級或重整 DOM
         let noteSelectedLifeImage = null; // 目前選到的那一張圖（Backspace／Delete 刪這張）
+        // 生活紀錄效能：提醒快取、載入／儲存 singleflight，避免每鍵重算／重繪
+        let lifeRemindersCache = null;
+        let lifeReminderDatesCache = null;
+        let todoLifeRemindersStale = true;
+        let lifeNotesLoadPromise = null;
+        let lifeNoteSaveInFlight = null;
+        const NOTE_AUTOSAVE_MS = 1600;
+        const NOTE_REMINDERS_DEBOUNCE_MS = 450;
+        const NOTE_REPAIR_DEBOUNCE_MS = 280;
 
         function toDateInputValue(dateObj) {
             const y = dateObj.getFullYear();
@@ -4021,8 +4032,17 @@
 
         async function ensureTodosLoaded() {
             if (!recordsLoaded) await loadLifeNotes();
-            if (!todosLoaded) await loadTodos();
-            else refreshTodoUI();
+            if (!todosLoaded) {
+                await loadTodos();
+                todoLifeRemindersStale = false;
+                return;
+            }
+            // 生活紀錄改過日期後，回到待辦時才重算提醒（打字時不重繪）
+            if (todoLifeRemindersStale) {
+                invalidateLifeRemindersCache();
+                todoLifeRemindersStale = false;
+            }
+            refreshTodoUI();
         }
 
         window.editTodoItem = function(id) {
@@ -4376,14 +4396,50 @@
 
         function handleLifeNoteCompositionEnd() {
             noteImeComposing = false;
-            // 組字結束後再整理結構
-            const editor = getNoteEditor();
-            if (!editor) return;
-            stabilizeLifeToggles(editor);
-            repairLifeTodos(editor);
-            normalizeLifeBlockNesting(editor);
+            // 組字結束後再整理結構（立即 flush，避免候選字與 DOM 不同步）
+            flushLifeNoteRepair();
             markNoteDirty();
             saveNoteSelection();
+        }
+
+        function invalidateLifeRemindersCache() {
+            lifeRemindersCache = null;
+            lifeReminderDatesCache = null;
+            todoLifeRemindersStale = true;
+        }
+
+        /** 立即執行編輯器結構修復（儲存／貼上／IME 結束前呼叫） */
+        function flushLifeNoteRepair() {
+            if (noteRepairTimer) {
+                clearTimeout(noteRepairTimer);
+                noteRepairTimer = null;
+            }
+            if (noteImeComposing) return;
+            const editor = getNoteEditor();
+            if (!editor) return;
+            saveNoteSelection();
+            stabilizeLifeToggles(editor);
+            repairLifeTodos(editor);
+            normalizeLifeImageRows(editor);
+            normalizeLifeBlockNesting(editor);
+            restoreNoteSelection();
+        }
+
+        /** 一般輸入延遲修復，避免每個字元都整樹 walk */
+        function scheduleLifeNoteRepair() {
+            if (noteRepairTimer) clearTimeout(noteRepairTimer);
+            noteRepairTimer = setTimeout(() => {
+                noteRepairTimer = null;
+                flushLifeNoteRepair();
+            }, NOTE_REPAIR_DEBOUNCE_MS);
+        }
+
+        function scheduleNoteRemindersRefresh(includeTodoUi = false) {
+            if (noteRemindersTimer) clearTimeout(noteRemindersTimer);
+            noteRemindersTimer = setTimeout(() => {
+                noteRemindersTimer = null;
+                refreshNoteReminders({ includeTodoUi });
+            }, NOTE_REMINDERS_DEBOUNCE_MS);
         }
 
         function setLifeToggleOpen(toggle, open) {
@@ -6713,11 +6769,21 @@
                 markNoteDirty();
                 return;
             }
-            const editor = getNoteEditor();
-            stabilizeLifeToggles(editor);
-            repairLifeTodos(editor);
-            normalizeLifeImageRows(editor);
-            normalizeLifeBlockNesting(editor);
+            const t = e?.inputType || '';
+            // 一般 insertText 不需要結構修復；僅在換行／刪除／貼上／還原等可能破壞結構時延遲 repair
+            const needsRepair =
+                !t
+                || t === 'insertParagraph'
+                || t === 'insertLineBreak'
+                || t.startsWith('insertFrom')
+                || t.startsWith('delete')
+                || t === 'historyUndo'
+                || t === 'historyRedo'
+                || t === 'formatIndent'
+                || t === 'formatOutdent';
+            if (needsRepair) {
+                scheduleLifeNoteRepair();
+            }
             markNoteDirty();
         }
 
@@ -7014,19 +7080,11 @@
             return !!(todo && todo.getAttribute('data-checked') === '1');
         }
 
-        function extractDatedLinesFromHtml(html) {
-            const root = document.createElement('div');
-            root.className = 'records-note-editor';
-            root.innerHTML = sanitizeNoteHtml(html || '');
-            // 收合的子級也要納入提醒：暫時全部展開再抽日期行
-            root.querySelectorAll('.life-toggle').forEach((t) => {
-                t.setAttribute('data-open', '1');
-                const body = t.querySelector(':scope > .life-toggle-body');
-                if (body) body.style.display = 'block';
-            });
+        function extractDatedLinesFromDom(root) {
+            if (!root) return [];
             const lines = [];
             const seen = new Set();
-
+            // 收合的子級仍在 DOM 內，可直接查詢 .life-date（不必展開或 sanitize）
             root.querySelectorAll('.life-date[data-date]').forEach((dateNode) => {
                 if (isLifeDateInCompletedTodo(dateNode)) return;
                 const iso = dateNode.getAttribute('data-date');
@@ -7038,14 +7096,21 @@
                 seen.add(key);
                 lines.push({ date: iso, dates: [iso], text });
             });
-
             return lines.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function extractDatedLinesFromHtml(html) {
+            const root = document.createElement('div');
+            root.className = 'records-note-editor';
+            // 內容在載入／儲存時已 sanitize；抽取日期不必再整樹清洗（原本是卡頓主因之一）
+            root.innerHTML = html || '';
+            return extractDatedLinesFromDom(root);
         }
 
         function extractDatedLinesFromEditor() {
             const editor = getNoteEditor();
             if (!editor) return [];
-            return extractDatedLinesFromHtml(editor.innerHTML);
+            return extractDatedLinesFromDom(editor);
         }
 
         function stripDateFromReminderText(text, iso) {
@@ -7056,12 +7121,24 @@
         }
 
         function collectAllLifeReminders() {
+            if (lifeRemindersCache) return lifeRemindersCache;
             const items = [];
             const seen = new Set();
             lifeCategories.forEach((cat) => {
-                const note = lifeNotesByCategory[String(cat.id)];
-                if (!note?.content) return;
-                extractDatedLinesFromHtml(note.content).forEach((line) => {
+                let lines;
+                // 正在編輯的分類優先讀 live DOM，避免用到過期快取內容
+                if (
+                    Number(cat.id) === Number(recordsSelectedCategoryId)
+                    && getNoteEditor()
+                    && (currentAppView === 'records' || noteDirty)
+                ) {
+                    lines = extractDatedLinesFromEditor();
+                } else {
+                    const note = lifeNotesByCategory[String(cat.id)];
+                    if (!note?.content) return;
+                    lines = extractDatedLinesFromHtml(note.content);
+                }
+                lines.forEach((line) => {
                     const key = `${cat.id}|${line.date}|${line.text}`;
                     if (seen.has(key)) return;
                     seen.add(key);
@@ -7074,15 +7151,20 @@
                     });
                 });
             });
-            return items.sort((a, b) => {
+            items.sort((a, b) => {
                 const d = String(a.date).localeCompare(String(b.date));
                 if (d !== 0) return d;
                 return String(a.categoryName || '').localeCompare(String(b.categoryName || ''), 'zh');
             });
+            lifeRemindersCache = items;
+            lifeReminderDatesCache = null;
+            return items;
         }
 
         function lifeReminderDatesSet() {
-            return new Set(collectAllLifeReminders().map((r) => r.date).filter(Boolean));
+            if (lifeReminderDatesCache) return lifeReminderDatesCache;
+            lifeReminderDatesCache = new Set(collectAllLifeReminders().map((r) => r.date).filter(Boolean));
+            return lifeReminderDatesCache;
         }
 
         function getLifeReminderUrgency(iso) {
@@ -7107,42 +7189,47 @@
             await switchLifeCategory(categoryId);
         };
 
-        function refreshNoteReminders() {
+        function refreshNoteReminders(opts = {}) {
+            const includeTodoUi = opts.includeTodoUi === true;
             const list = document.getElementById('recordsRemindersList');
-            if (!list) return;
-            const items = extractDatedLinesFromEditor();
-            if (!items.length) {
-                list.innerHTML = '<div class="records-reminders-empty">筆記裡插入日期後，含日期的整行會出現在這裡</div>';
-                if (todosLoaded) {
-                    renderTodoCalendar();
-                    renderTodoList();
-                }
-                return;
-            }
-            list.innerHTML = items.map((item) => {
-                const u = getLifeReminderUrgency(item.date);
-                const lineText = stripDateFromReminderText(item.text, item.date);
-                return `
+            if (list) {
+                const items = extractDatedLinesFromEditor();
+                if (!items.length) {
+                    list.innerHTML = '<div class="records-reminders-empty">筆記裡插入日期後，含日期的整行會出現在這裡</div>';
+                } else {
+                    list.innerHTML = items.map((item) => {
+                        const u = getLifeReminderUrgency(item.date);
+                        const lineText = stripDateFromReminderText(item.text, item.date);
+                        return `
                     <div class="records-reminder-item${u.cls}">
                         <span class="records-reminder-date">${escapeHtml(formatNoteDateLabel(item.date))} · ${escapeHtml(u.tag)}</span>
                         <span class="records-reminder-text">${escapeHtml(lineText)}</span>
                     </div>
                 `;
-            }).join('');
-            if (todosLoaded) {
+                    }).join('');
+                }
+            }
+            // 打字時不要重繪待辦月曆／列表（那是主要卡頓源）；僅在明確要求且目前在待辦頁時更新
+            if (includeTodoUi && todosLoaded && currentAppView === 'todo') {
+                invalidateLifeRemindersCache();
                 renderTodoCalendar();
                 renderTodoList();
+                todoLifeRemindersStale = false;
+            } else if (includeTodoUi) {
+                invalidateLifeRemindersCache();
             }
         }
 
         function markNoteDirty() {
             noteDirty = true;
             setNoteStatus('未儲存');
+            invalidateLifeRemindersCache();
             if (noteSaveTimer) clearTimeout(noteSaveTimer);
             noteSaveTimer = setTimeout(() => {
                 saveCurrentLifeNote(true);
-            }, 1200);
-            refreshNoteReminders();
+            }, NOTE_AUTOSAVE_MS);
+            // 提醒列延遲更新；打字期間不碰待辦 UI
+            scheduleNoteRemindersRefresh(false);
         }
 
         function renderCategoryBar() {
@@ -7365,10 +7452,20 @@
                 clearTimeout(noteSaveTimer);
                 noteSaveTimer = null;
             }
+            if (noteRepairTimer) {
+                clearTimeout(noteRepairTimer);
+                noteRepairTimer = null;
+            }
+            if (noteRemindersTimer) {
+                clearTimeout(noteRemindersTimer);
+                noteRemindersTimer = null;
+            }
             editor.innerHTML = note?.content ? sanitizeNoteHtml(note.content) : '';
+            editor.dataset.hydratedCat = recordsSelectedCategoryId != null ? String(recordsSelectedCategoryId) : '';
             collapseAllLifeToggles(editor);
             setNoteStatus(note?.updated_at ? '已載入' : '空白筆記');
-            refreshNoteReminders();
+            invalidateLifeRemindersCache();
+            refreshNoteReminders({ includeTodoUi: false });
             noteSavedSelection = null;
         }
 
@@ -7399,36 +7496,64 @@
 
         async function loadLifeNotes() {
             if (!currentUserId) return;
-            await loadLifeCategories();
-            const data = await supabaseRequest(
-                'life_notes',
-                'GET',
-                null,
-                `?user_id=eq.${currentUserId}`
-            );
-            lifeNotesByCategory = {};
-            if (Array.isArray(data)) {
-                data.forEach((n) => {
-                    lifeNotesByCategory[String(n.category_id)] = n;
-                });
-            }
-            recordsLoaded = true;
-            if (!recordsSelectedCategoryId && lifeCategories.length) {
-                recordsSelectedCategoryId = lifeCategories[0].id;
-            } else if (
-                recordsSelectedCategoryId &&
-                !lifeCategories.some((c) => Number(c.id) === Number(recordsSelectedCategoryId))
-            ) {
-                recordsSelectedCategoryId = lifeCategories[0]?.id || null;
-            }
-            showCategoryNote(recordsSelectedCategoryId);
+            // 防止登入初始化與切到待辦同時觸發重複請求
+            if (lifeNotesLoadPromise) return lifeNotesLoadPromise;
+            lifeNotesLoadPromise = (async () => {
+                try {
+                    await loadLifeCategories();
+                    const data = await supabaseRequest(
+                        'life_notes',
+                        'GET',
+                        null,
+                        `?user_id=eq.${currentUserId}`
+                    );
+                    lifeNotesByCategory = {};
+                    if (Array.isArray(data)) {
+                        data.forEach((n) => {
+                            lifeNotesByCategory[String(n.category_id)] = n;
+                        });
+                    }
+                    recordsLoaded = true;
+                    if (!recordsSelectedCategoryId && lifeCategories.length) {
+                        recordsSelectedCategoryId = lifeCategories[0].id;
+                    } else if (
+                        recordsSelectedCategoryId &&
+                        !lifeCategories.some((c) => Number(c.id) === Number(recordsSelectedCategoryId))
+                    ) {
+                        recordsSelectedCategoryId = lifeCategories[0]?.id || null;
+                    }
+                    invalidateLifeRemindersCache();
+                    // 僅在生活紀錄分頁才灌入 contenteditable（sanitize 大 HTML 很重）；其它分頁只保留記憶體資料
+                    if (currentAppView === 'records' && !noteDirty) {
+                        showCategoryNote(recordsSelectedCategoryId);
+                    }
+                } finally {
+                    lifeNotesLoadPromise = null;
+                }
+            })();
+            return lifeNotesLoadPromise;
         }
 
         async function ensureRecordsLoaded() {
             if (!recordsLoaded) await loadLifeNotes();
-            else {
-                renderCategoryBar();
-                refreshNoteReminders();
+            renderCategoryBar();
+            if (noteDirty) {
+                refreshNoteReminders({ includeTodoUi: false });
+                return;
+            }
+            const editor = getNoteEditor();
+            const note = lifeNotesByCategory[String(recordsSelectedCategoryId)];
+            if (!editor) return;
+            // 第一次進入分頁、或編輯器與記憶體不同步時才 hydrate
+            const editorHtml = (editor.innerHTML || '').trim();
+            const needHydrate =
+                !editor.dataset.hydratedCat
+                || String(editor.dataset.hydratedCat) !== String(recordsSelectedCategoryId)
+                || (!editorHtml && !!(note?.content));
+            if (needHydrate) {
+                showCategoryNote(recordsSelectedCategoryId);
+            } else {
+                refreshNoteReminders({ includeTodoUi: false });
             }
         }
 
@@ -7442,43 +7567,68 @@
 
         async function saveCurrentLifeNote(silent = false) {
             if (!currentUserId || !recordsSelectedCategoryId) return false;
-            const editor = getNoteEditor();
-            if (!editor) return false;
-            const content = serializeLifeNoteHtml(editor);
-            const existing = lifeNotesByCategory[String(recordsSelectedCategoryId)];
-            setNoteStatus('儲存中…');
-            let result;
-            if (existing?.id) {
-                result = await supabaseRequest(
-                    'life_notes',
-                    'PATCH',
-                    { content },
-                    `?id=eq.${existing.id}`
-                );
-            } else {
-                result = await supabaseRequest('life_notes', 'POST', {
-                    user_id: currentUserId,
-                    category_id: Number(recordsSelectedCategoryId),
-                    content
-                });
+
+            // 合併同時觸發的 autosave / blur / 切分類 儲存
+            if (lifeNoteSaveInFlight) {
+                await lifeNoteSaveInFlight;
+                if (!noteDirty) return true;
             }
-            if (!result || (Array.isArray(result) && result.length === 0)) {
-                setNoteStatus('儲存失敗');
-                if (!silent) showToast('筆記儲存失敗（請確認已執行 life_notes SQL）', 'error');
-                return false;
+
+            const tracked = (async () => {
+                flushLifeNoteRepair();
+                if (noteRemindersTimer) {
+                    clearTimeout(noteRemindersTimer);
+                    noteRemindersTimer = null;
+                }
+                const editor = getNoteEditor();
+                if (!editor) return false;
+                const categoryIdAtStart = Number(recordsSelectedCategoryId);
+                const content = serializeLifeNoteHtml(editor);
+                const existing = lifeNotesByCategory[String(categoryIdAtStart)];
+                setNoteStatus('儲存中…');
+                let result;
+                if (existing?.id) {
+                    result = await supabaseRequest(
+                        'life_notes',
+                        'PATCH',
+                        { content },
+                        `?id=eq.${existing.id}`
+                    );
+                } else {
+                    result = await supabaseRequest('life_notes', 'POST', {
+                        user_id: currentUserId,
+                        category_id: categoryIdAtStart,
+                        content
+                    });
+                }
+                if (!result || (Array.isArray(result) && result.length === 0)) {
+                    setNoteStatus('儲存失敗');
+                    if (!silent) showToast('筆記儲存失敗（請確認已執行 life_notes SQL）', 'error');
+                    return false;
+                }
+                const saved = Array.isArray(result) ? result[0] : result;
+                // 即使使用者已切走分類，仍寫回正確 category 的記憶體快取
+                lifeNotesByCategory[String(categoryIdAtStart)] = { ...saved, content };
+                invalidateLifeRemindersCache();
+                if (Number(recordsSelectedCategoryId) === categoryIdAtStart) {
+                    noteDirty = false;
+                    if (noteSaveTimer) {
+                        clearTimeout(noteSaveTimer);
+                        noteSaveTimer = null;
+                    }
+                    setNoteStatus('已儲存');
+                    refreshNoteReminders({ includeTodoUi: currentAppView === 'todo' });
+                }
+                if (!silent) showToast('筆記已儲存', 'success');
+                return true;
+            })();
+
+            lifeNoteSaveInFlight = tracked;
+            try {
+                return await tracked;
+            } finally {
+                if (lifeNoteSaveInFlight === tracked) lifeNoteSaveInFlight = null;
             }
-            const saved = Array.isArray(result) ? result[0] : result;
-            // 記憶體快取用收合後內容；編輯器 DOM 維持使用者當前展開狀態
-            lifeNotesByCategory[String(recordsSelectedCategoryId)] = { ...saved, content };
-            noteDirty = false;
-            if (noteSaveTimer) {
-                clearTimeout(noteSaveTimer);
-                noteSaveTimer = null;
-            }
-            setNoteStatus('已儲存');
-            if (!silent) showToast('筆記已儲存', 'success');
-            refreshNoteReminders();
-            return true;
         }
 
         async function switchLifeCategory(nextId) {
@@ -7685,7 +7835,17 @@
             }
             if (viewName === 'records') {
                 initRecordsPage();
-                ensureRecordsLoaded();
+                (async () => {
+                    await ensureRecordsLoaded();
+                    // 確保進頁時編輯器有內容（若先前在背景只載入資料）
+                    if (recordsLoaded && recordsSelectedCategoryId && !noteDirty) {
+                        const editor = getNoteEditor();
+                        const note = lifeNotesByCategory[String(recordsSelectedCategoryId)];
+                        if (editor && note?.content && !(editor.innerHTML || '').trim()) {
+                            showCategoryNote(recordsSelectedCategoryId);
+                        }
+                    }
+                })();
             }
         }
 
