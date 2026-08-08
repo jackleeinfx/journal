@@ -8314,62 +8314,117 @@
             return urls.filter(isDisplayableImageUrl);
         }
 
-        /** 列表圖片：有 signed URL 才塞 src；否則用 placeholder，進入視窗再解析（省流量） */
+        function normalizeDiaryImagePaths(raw) {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+            if (typeof raw === 'string') {
+                const s = raw.trim();
+                if (!s) return [];
+                try {
+                    const parsed = JSON.parse(s);
+                    if (Array.isArray(parsed)) return parsed.filter(Boolean).map(String);
+                } catch (_) { /* 單一路徑字串 */ }
+                return [s];
+            }
+            return [];
+        }
+
+        function findDiaryByIdLoose(id) {
+            if (id == null || id === '') return null;
+            const fromMain = diaries.find((d) => sameDiaryId(d.id, id));
+            if (fromMain) return fromMain;
+            return remoteFilterResults.find((d) => sameDiaryId(d.id, id)) || null;
+        }
+
+        /** 列表圖片：優先用已簽好的 URL；否則依 diary id 懶載入（不把 path 塞進 HTML 屬性） */
         function buildDiaryImagesHtml(diary) {
-            const paths = Array.isArray(diary.images) ? diary.images.filter(Boolean) : [];
+            const paths = normalizeDiaryImagePaths(diary?.images);
             if (!paths.length) return '';
             const urls = getDiaryDisplayImageUrls(diary);
-            const ready = urls.length === paths.length && urls.every(isDisplayableImageUrl);
-            if (ready) {
+            if (urls.length > 0) {
                 return `
                     <div class="diary-item-images">
-                        ${urls.map((img) => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this.src)">`).join('')}
+                        ${urls.map((img) => `<img src="${escapeHtml(img)}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this.src)">`).join('')}
                     </div>
                 `;
             }
-            const pathJson = escapeHtml(JSON.stringify(paths));
             return `
-                <div class="diary-item-images diary-images-lazy" data-image-paths="${pathJson}">
+                <div class="diary-item-images diary-images-lazy" data-diary-id-for-images="${escapeHtml(String(diary.id))}">
                     ${paths.map(() => `<div class="diary-item-image diary-image-placeholder" aria-hidden="true"></div>`).join('')}
                 </div>
             `;
         }
 
         async function hydrateDiaryImageContainer(el) {
-            if (!el || el.dataset.hydrated === '1') return;
-            let paths = [];
-            try {
-                paths = JSON.parse(el.getAttribute('data-image-paths') || '[]');
-            } catch (_) {
-                paths = [];
+            if (!el || el.dataset.hydrated === '1' || el.dataset.hydrated === 'pending') return;
+            el.dataset.hydrated = 'pending';
+
+            const idAttr = el.getAttribute('data-diary-id-for-images')
+                || el.closest('.diary-item')?.getAttribute('data-diary-id');
+            const diary = findDiaryByIdLoose(idAttr);
+            let paths = normalizeDiaryImagePaths(diary?.images);
+
+            // 備援：舊版 data-image-paths（若仍存在）
+            if (!paths.length) {
+                try {
+                    const raw = el.getAttribute('data-image-paths') || '[]';
+                    const parsed = JSON.parse(raw);
+                    paths = normalizeDiaryImagePaths(parsed);
+                } catch (_) { /* ignore */ }
             }
-            if (!Array.isArray(paths) || !paths.length) {
+
+            if (!paths.length) {
                 el.dataset.hydrated = '1';
+                el.innerHTML = '';
                 return;
             }
-            el.dataset.hydrated = '1';
-            const urls = await Promise.all(paths.map(resolveImageUrl));
-            el.classList.remove('diary-images-lazy');
-            el.removeAttribute('data-image-paths');
-            el.innerHTML = urls
-                .filter(isDisplayableImageUrl)
-                .map((img) => `<img src="${img}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this.src)">`)
-                .join('');
-            // 回寫到記憶體中的 diary（若找得到）
-            const itemEl = el.closest('.diary-item');
-            const idAttr = itemEl?.getAttribute('data-diary-id');
-            if (idAttr != null) {
-                const idx = findDiaryIndexById(idAttr);
-                if (idx >= 0) diaries[idx].imageUrls = urls;
-                const fidx = remoteFilterResults.findIndex((d) => sameDiaryId(d.id, idAttr));
-                if (fidx >= 0) remoteFilterResults[fidx].imageUrls = urls;
+
+            try {
+                const urls = await Promise.all(paths.map((p) => resolveImageUrl(p)));
+                const good = urls.filter(isDisplayableImageUrl);
+                if (!good.length) {
+                    el.dataset.hydrated = '0';
+                    el.innerHTML = '<div class="diary-image-error" style="font-size:12px;color:#999;padding:8px;">圖片載入失敗</div>';
+                    return;
+                }
+                el.dataset.hydrated = '1';
+                el.classList.remove('diary-images-lazy');
+                el.removeAttribute('data-image-paths');
+                el.removeAttribute('data-diary-id-for-images');
+                el.innerHTML = good
+                    .map((img) => `<img src="${escapeHtml(img)}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this.src)">`)
+                    .join('');
+                if (diary) {
+                    diary.imageUrls = urls;
+                    const idx = findDiaryIndexById(diary.id);
+                    if (idx >= 0) diaries[idx].imageUrls = urls;
+                    const fidx = remoteFilterResults.findIndex((d) => sameDiaryId(d.id, diary.id));
+                    if (fidx >= 0) remoteFilterResults[fidx].imageUrls = urls;
+                }
+            } catch (err) {
+                console.warn('[diary] hydrate image failed', err);
+                el.dataset.hydrated = '0';
+                el.innerHTML = '<div class="diary-image-error" style="font-size:12px;color:#999;padding:8px;">圖片載入失敗</div>';
             }
         }
 
         function setupDiaryImageLazyLoad(root) {
             const host = root || document.getElementById('diaryList') || document;
-            const nodes = host.querySelectorAll?.('.diary-images-lazy[data-image-paths]') || [];
+            const nodes = [...(host.querySelectorAll?.('.diary-images-lazy') || [])];
             if (!nodes.length) return;
+
+            // 已在視窗內的立刻 hydrate（iOS 上 IO 有時不會對「已可見」節點回呼）
+            const forceHydrateVisible = () => {
+                nodes.forEach((el) => {
+                    if (el.dataset.hydrated === '1' || el.dataset.hydrated === 'pending') return;
+                    const rect = el.getBoundingClientRect();
+                    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+                    if (rect.bottom >= -40 && rect.top <= vh + 200) {
+                        hydrateDiaryImageContainer(el);
+                    }
+                });
+            };
+
             if (!('IntersectionObserver' in window)) {
                 nodes.forEach((el) => { hydrateDiaryImageContainer(el); });
                 return;
@@ -8378,12 +8433,18 @@
                 diaryImageObserver = new IntersectionObserver((entries) => {
                     entries.forEach((entry) => {
                         if (!entry.isIntersecting) return;
-                        diaryImageObserver.unobserve(entry.target);
+                        try { diaryImageObserver.unobserve(entry.target); } catch (_) { /* ignore */ }
                         hydrateDiaryImageContainer(entry.target);
                     });
-                }, { root: null, rootMargin: '120px 0px', threshold: 0.01 });
+                }, { root: null, rootMargin: '200px 0px', threshold: 0 });
             }
             nodes.forEach((el) => diaryImageObserver.observe(el));
+            // 雙 rAF：等 layout 後再強制載入可見項
+            requestAnimationFrame(() => {
+                requestAnimationFrame(forceHydrateVisible);
+            });
+            // 再保險：短延遲補一次（部分 WebView 初次 layout 不準）
+            setTimeout(forceHydrateVisible, 120);
         }
 
         // 圖片壓縮函數（壓縮到100KB以下）
@@ -8811,11 +8872,18 @@
             const q = buildDiaryListQuery({ offset, limit, mode, searchTerm });
             const pageData = await supabaseRequest('diaries', 'GET', null, q);
             const mapped = (pageData && Array.isArray(pageData)) ? mapSupabaseDiaries(pageData) : [];
-            // 不在此產生 signed URL（省流量）；渲染時再懶載入可見圖片
-            return mapped.map((d) => ({
+            // 只為「這一頁」簽圖片 URL（通常 10～15 篇），不一次簽全庫
+            const page = mapped.map((d) => ({
                 ...d,
+                images: normalizeDiaryImagePaths(d.images),
                 isPinned: isDiaryPinned(d.id) || !!d.isPinned
             }));
+            try {
+                return await attachSignedImageUrls(page);
+            } catch (err) {
+                console.warn('[diary] attachSignedImageUrls failed, will lazy-load', err);
+                return page;
+            }
         }
 
         function diaryHasMoreToLoad() {
