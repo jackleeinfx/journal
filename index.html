@@ -1489,6 +1489,20 @@
             opacity: 0.7;
             cursor: wait;
         }
+        .auth-card .btn-local-preview {
+            display: none;
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            background: #fff;
+            color: #5a67d8;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .auth-card .btn-local-preview.show { display: block; }
         .auth-status {
             margin-top: 14px;
             font-size: 0.88rem;
@@ -3343,8 +3357,326 @@
             white-space: pre-wrap;
         }
         body.dark-mode .todo-item-notes { color: #ccc; }
+
+        .fsi-page { padding: 16px 20px 32px; }
+        .fsi-panel { display: none; }
+        .fsi-panel.active { display: block; }
+        .fsi-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .fsi-head h2 {
+            margin: 0 0 4px;
+            font-size: 1.35rem;
+            color: #333;
+        }
+        .fsi-head p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 640px;
+        }
+        body.dark-mode .fsi-head h2 { color: #eee; }
+        body.dark-mode .fsi-head p { color: #aaa; }
+        .fsi-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .fsi-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 0 0 14px;
+        }
+        .fsi-filter-btn {
+            border: 1px solid #cfd3e6;
+            background: #fff;
+            border-radius: 999px;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            min-height: 34px;
+        }
+        .fsi-filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+        body.dark-mode .fsi-filter-btn {
+            background: #2d2d44;
+            border-color: #555;
+            color: #ddd;
+        }
+        body.dark-mode .fsi-filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .fsi-set-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+        }
+        .fsi-set-card {
+            border: 1px solid #e8eaf2;
+            border-radius: 14px;
+            padding: 16px;
+            background: #fff;
+            box-shadow: 0 4px 18px rgba(60, 70, 120, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        body.dark-mode .fsi-set-card {
+            background: #2d2d44;
+            border-color: #444;
+        }
+        .fsi-set-card h3 {
+            margin: 0;
+            font-size: 1.05rem;
+            color: #333;
+        }
+        body.dark-mode .fsi-set-card h3 { color: #eee; }
+        .fsi-set-meta {
+            font-size: 13px;
+            color: #777;
+            line-height: 1.45;
+        }
+        body.dark-mode .fsi-set-meta { color: #aaa; }
+        .fsi-chip {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #eef0ff;
+            color: #5a67d8;
+            margin-right: 4px;
+        }
+        body.dark-mode .fsi-chip { background: #3a3a66; color: #c5c9ff; }
+        .fsi-set-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+        .fsi-set-actions button {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            min-height: 36px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            touch-action: manipulation;
+        }
+        .fsi-set-actions .go { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .fsi-set-actions .ghost { background: #eef0f5; color: #333; }
+        .fsi-set-actions .danger { background: #fde8ea; color: #b42318; }
+        body.dark-mode .fsi-set-actions .ghost { background: #3a3a55; color: #eee; }
+        body.dark-mode .fsi-set-actions .danger { background: #4a2a30; color: #ffb4b4; }
+        .fsi-form {
+            display: grid;
+            gap: 12px;
+            max-width: 720px;
+        }
+        .fsi-form label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        body.dark-mode .fsi-form label { color: #ccc; }
+        .fsi-form input[type="text"],
+        .fsi-form input[type="password"],
+        .fsi-form input[type="number"],
+        .fsi-form select,
+        .fsi-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            background: #fff;
+            color: inherit;
+        }
+        .fsi-form textarea { min-height: 120px; resize: vertical; }
+        .fsi-form input:focus,
+        .fsi-form select:focus,
+        .fsi-form textarea:focus { border-color: #667eea; }
+        body.dark-mode .fsi-form input,
+        body.dark-mode .fsi-form select,
+        body.dark-mode .fsi-form textarea {
+            background: #1e1e2e;
+            border-color: #555;
+            color: #eee;
+        }
+        .fsi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+        .fsi-checks {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            font-size: 14px;
+        }
+        .fsi-checks label { font-weight: 500; display: flex; align-items: center; gap: 6px; margin: 0; }
+        .fsi-details {
+            border: 1px solid #e8eaf2;
+            border-radius: 12px;
+            padding: 10px 14px;
+            background: #fafbff;
+        }
+        body.dark-mode .fsi-details { background: #252538; border-color: #444; }
+        .fsi-details summary { cursor: pointer; font-weight: 600; color: #555; }
+        body.dark-mode .fsi-details summary { color: #ccc; }
+        .fsi-preview {
+            margin-top: 18px;
+            border: 1px dashed #c5c9e8;
+            border-radius: 12px;
+            padding: 14px;
+            display: none;
+        }
+        .fsi-preview.show { display: block; }
+        .fsi-preview h3 { margin: 0 0 8px; font-size: 1rem; }
+        .fsi-preview-list {
+            max-height: 280px;
+            overflow: auto;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+        .fsi-preview-list div { padding: 4px 0; border-bottom: 1px solid #eee; }
+        body.dark-mode .fsi-preview-list div { border-color: #3a3a55; }
+        .fsi-drill-stage {
+            max-width: 680px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 8px 0 24px;
+        }
+        .fsi-drill-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .fsi-progress-text { font-size: 13px; color: #777; font-weight: 600; }
+        body.dark-mode .fsi-progress-text { color: #aaa; }
+        .fsi-type-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #667eea;
+            background: #eef0ff;
+            border-radius: 999px;
+            padding: 4px 10px;
+            margin-bottom: 12px;
+        }
+        body.dark-mode .fsi-type-badge { background: #3a3a66; color: #c5c9ff; }
+        .fsi-prompt {
+            font-size: clamp(28px, 6vw, 44px);
+            font-weight: 800;
+            line-height: 1.25;
+            color: #222;
+            min-height: 1.4em;
+            word-break: break-word;
+        }
+        body.dark-mode .fsi-prompt { color: #f2f2f2; }
+        .fsi-ipa { margin-top: 8px; color: #667eea; font-size: 18px; letter-spacing: 0.02em; }
+        .fsi-cue { margin-top: 8px; color: #777; font-size: 15px; }
+        body.dark-mode .fsi-cue { color: #aaa; }
+        .fsi-timer-bar {
+            height: 7px;
+            background: #e8eaf2;
+            border-radius: 99px;
+            overflow: hidden;
+            margin: 22px auto 10px;
+            max-width: 360px;
+        }
+        body.dark-mode .fsi-timer-bar { background: #3a3a55; }
+        .fsi-timer-bar > i {
+            display: block;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform-origin: left center;
+        }
+        .fsi-timer-bar.running > i { animation: fsiDrain linear forwards; }
+        @keyframes fsiDrain { to { transform: scaleX(0); } }
+        .fsi-slow {
+            min-height: 28px;
+            color: #c0392b;
+            font-weight: 800;
+            font-size: 1.15rem;
+        }
+        .fsi-reference {
+            display: none;
+            margin: 16px auto 0;
+            padding: 14px 16px;
+            max-width: 480px;
+            background: #f4f6ff;
+            border-radius: 12px;
+            text-align: left;
+        }
+        .fsi-reference.show { display: block; }
+        body.dark-mode .fsi-reference { background: #2a2a48; }
+        .fsi-reference .k { font-size: 12px; color: #888; font-weight: 700; }
+        .fsi-reference .v { font-size: 20px; font-weight: 700; color: #333; margin-top: 4px; }
+        body.dark-mode .fsi-reference .v { color: #eee; }
+        .fsi-zh {
+            margin-top: 6px;
+            font-size: 15px;
+            line-height: 1.45;
+            color: #555;
+        }
+        body.dark-mode .fsi-zh { color: #bbb; }
+        .fsi-note {
+            margin-top: 6px;
+            font-size: 13px;
+            color: #888;
+        }
+        .fsi-actions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+        .fsi-typein {
+            margin: 16px auto 0;
+            max-width: 420px;
+            display: none;
+        }
+        .fsi-typein.show { display: block; }
+        .fsi-typein input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            text-align: center;
+        }
+        body.dark-mode .fsi-typein input { background: #1e1e2e; border-color: #555; color: #eee; }
+        .fsi-done {
+            display: none;
+            text-align: center;
+            padding: 28px 12px;
+        }
+        .fsi-done.show { display: block; }
+        .fsi-done h3 { margin: 0 0 8px; font-size: 1.4rem; }
+        .fsi-hint {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.5;
+        }
+        @media (max-width: 768px) {
+            .fsi-page { padding: 12px 12px 28px; }
+            .fsi-prompt { font-size: 28px; }
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="fsi-library.js"></script>
+    <script src="fsi-library-advanced.js"></script>
+    <script src="fsi-library-c1.js"></script>
 </head>
 <body class="app-locked">
     <div class="auth-gate show" id="authGate">
@@ -3354,6 +3686,7 @@
             <p class="auth-lead">私人日記，僅限登入後存取</p>
             <p class="auth-note">請使用已授權的 Google 帳號登入。資料存放於你的安全專案中。</p>
             <button type="button" class="btn-google" id="googleLoginBtn">使用 Google 登入</button>
+            <button type="button" class="btn-local-preview" id="localPreviewBtn">本機預覽英語操練（略過登入）</button>
             <div class="auth-status" id="authStatus" role="status"></div>
         </div>
     </div>
@@ -3432,6 +3765,10 @@
                 <button type="button" class="app-nav-btn" data-view="records">
                     <span class="nav-label-full">生活紀錄</span>
                     <span class="nav-label-short">紀錄</span>
+                </button>
+                <button type="button" class="app-nav-btn" data-view="english">
+                    <span class="nav-label-full">英語操練</span>
+                    <span class="nav-label-short">英語</span>
                 </button>
             </nav>
         </div>
@@ -3615,6 +3952,171 @@
                         aria-multiline="true"
                         data-placeholder="在這裡寫這個分類的長期筆記…&#10;內容為純文字；可加圖片、待辦勾選、子級摺疊、日期提醒；選取後可圈選外框。"
                     ></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="app-view" id="view-english">
+            <div class="fsi-page">
+                <div class="fsi-panel active" id="fsiPanelLibrary">
+                    <div class="fsi-head">
+                        <div>
+                            <h2>英語操練</h2>
+                            <p>FSI Pattern Drill：用反射練句子，不評對錯。下面的基礎題集依 Academic Phrasebank 功能、FSI 六種操練，以及高頻口語語塊編成。</p>
+                        </div>
+                        <div class="fsi-head-actions">
+                            <button type="button" class="btn-action btn-muted" id="fsiImportBtn">匯入</button>
+                            <button type="button" class="btn-action btn-primary-action" id="fsiNewSetBtn">出新題集</button>
+                            <input type="file" id="fsiImportFile" accept="application/json" hidden>
+                        </div>
+                    </div>
+                    <div class="fsi-filters" id="fsiLevelFilters" aria-label="難度">
+                        <button type="button" class="fsi-filter-btn active" data-fsi-level="all">全部難度</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-level="A1">A1</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-level="A2">A2</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-level="B1">B1</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-level="B2">B2</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-level="C1">C1</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-level="C2">C2</button>
+                    </div>
+                    <div class="fsi-filters" id="fsiFilters">
+                        <button type="button" class="fsi-filter-btn active" data-fsi-filter="all">全部類型</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-filter="spoken">口語</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-filter="fsi">FSI 語法</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-filter="chunk">語塊</button>
+                        <button type="button" class="fsi-filter-btn" data-fsi-filter="academic">學術</button>
+                    </div>
+                    <div class="fsi-set-grid" id="fsiSetList"></div>
+                </div>
+
+                <div class="fsi-panel" id="fsiPanelGenerate">
+                    <div class="fsi-head">
+                        <div>
+                            <h2>出新題集</h2>
+                            <p>告訴 AI 你要練的句型或情境。它只產出題目，不會在練習時看你的答案。</p>
+                        </div>
+                        <button type="button" class="btn-action btn-muted" id="fsiGenBackBtn">回題庫</button>
+                    </div>
+                    <div class="fsi-form">
+                        <div>
+                            <label for="fsiTopic">句型或主題</label>
+                            <input type="text" id="fsiTopic" placeholder="例如：I want + 飲料、在咖啡店點餐、現在完成式">
+                        </div>
+                        <div class="fsi-row">
+                            <div>
+                                <label for="fsiLevel">程度</label>
+                                <select id="fsiLevel">
+                                    <option value="A1">A1 入門</option>
+                                    <option value="A2" selected>A2 初階</option>
+                                    <option value="B1">B1 中階</option>
+                                    <option value="B2">B2 中高階</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="fsiSeconds">反應秒數</label>
+                                <input type="number" id="fsiSeconds" min="2" max="8" value="3">
+                            </div>
+                        </div>
+                        <div>
+                            <label>練習類型</label>
+                            <div class="fsi-checks">
+                                <label><input type="checkbox" id="fsiTypeSub" checked> Substitution 替換</label>
+                                <label><input type="checkbox" id="fsiTypeTrans" checked> Transformation 轉換</label>
+                                <label><input type="checkbox" id="fsiTypeResp" checked> Response 回應</label>
+                                <label><input type="checkbox" id="fsiTypeExp" checked> Expansion 擴展</label>
+                            </div>
+                        </div>
+                        <div class="fsi-row">
+                            <div>
+                                <label for="fsiCountSub">替換題數</label>
+                                <input type="number" id="fsiCountSub" min="5" max="30" value="20">
+                            </div>
+                            <div>
+                                <label for="fsiCountTrans">轉換題數</label>
+                                <input type="number" id="fsiCountTrans" min="0" max="20" value="8">
+                            </div>
+                            <div>
+                                <label for="fsiCountResp">回應題數</label>
+                                <input type="number" id="fsiCountResp" min="0" max="15" value="6">
+                            </div>
+                            <div>
+                                <label for="fsiCountExp">擴展題數</label>
+                                <input type="number" id="fsiCountExp" min="0" max="10" value="5">
+                            </div>
+                        </div>
+                        <details class="fsi-details" id="fsiApiDetails">
+                            <summary>LLM API 設定（出題用）</summary>
+                            <div class="fsi-form" style="margin-top:12px;">
+                                <div>
+                                    <label for="fsiApiBase">Base URL</label>
+                                    <input type="text" id="fsiApiBase" placeholder="https://api.x.ai/v1">
+                                </div>
+                                <div>
+                                    <label for="fsiApiModel">Model</label>
+                                    <input type="text" id="fsiApiModel" placeholder="grok-4.6">
+                                </div>
+                                <div>
+                                    <label for="fsiApiKey">API Key（只存在這台瀏覽器）</label>
+                                    <input type="password" id="fsiApiKey" autocomplete="off" placeholder="貼上後不會上傳到本站伺服器">
+                                </div>
+                                <p class="fsi-hint">預設走 xAI 相容的 <code>/chat/completions</code>。若瀏覽器被 CORS 擋下，用「複製出題 Prompt」，把 JSON 貼回來即可。</p>
+                            </div>
+                        </details>
+                        <div class="fsi-head-actions">
+                            <button type="button" class="btn-action btn-primary-action" id="fsiGenerateBtn">用 AI 出題</button>
+                            <button type="button" class="btn-action btn-muted" id="fsiCopyPromptBtn">複製出題 Prompt</button>
+                        </div>
+                        <div>
+                            <label for="fsiPasteJson">或貼上題集 JSON</label>
+                            <textarea id="fsiPasteJson" placeholder='{"title":"...","baseSentence":"I want coffee.","items":[...]}'></textarea>
+                            <div class="fsi-head-actions" style="margin-top:8px;">
+                                <button type="button" class="btn-action btn-muted" id="fsiParsePasteBtn">讀取 JSON</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="fsi-preview" id="fsiPreview">
+                        <h3 id="fsiPreviewTitle">預覽</h3>
+                        <div class="fsi-preview-list" id="fsiPreviewList"></div>
+                        <div class="fsi-head-actions" style="margin-top:12px;">
+                            <button type="button" class="btn-action btn-primary-action" id="fsiSavePreviewBtn">存進題庫</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fsi-panel" id="fsiPanelDrill">
+                    <div class="fsi-drill-stage" id="fsiDrillPlay">
+                        <div class="fsi-drill-top">
+                            <button type="button" class="btn-action btn-muted" id="fsiDrillExitBtn">結束</button>
+                            <span class="fsi-progress-text" id="fsiProgressText">1 / 20</span>
+                        </div>
+                        <div class="fsi-type-badge" id="fsiTypeBadge">Substitution</div>
+                        <div class="fsi-prompt" id="fsiPrompt">tea</div>
+                        <div class="fsi-ipa" id="fsiIpa"></div>
+                        <div class="fsi-cue" id="fsiCue"></div>
+                        <div class="fsi-timer-bar" id="fsiTimerBar" hidden><i id="fsiTimerFill"></i></div>
+                        <div class="fsi-slow" id="fsiSlowMsg"></div>
+                        <div class="fsi-typein" id="fsiTypeinWrap">
+                            <input type="text" id="fsiTypein" placeholder="可選：打出完整句子（不會評分）" autocomplete="off">
+                        </div>
+                        <div class="fsi-reference" id="fsiReference">
+                            <div class="k">參考句 · 自己對一下，系統不評分</div>
+                            <div class="v" id="fsiReferenceText"></div>
+                            <div class="fsi-zh" id="fsiReferenceZh"></div>
+                            <div class="fsi-note" id="fsiReferenceNote"></div>
+                        </div>
+                        <div class="fsi-actions">
+                            <button type="button" class="btn-action btn-primary-action" id="fsiPrimaryBtn">已說出</button>
+                        </div>
+                    </div>
+                    <div class="fsi-done" id="fsiDrillDone">
+                        <h3>這一輪練完了</h3>
+                        <p class="fsi-cue" id="fsiDoneStats"></p>
+                        <p class="fsi-hint">題集已更新複習時間。過幾天再點進來，舊提示詞會穿插出現。</p>
+                        <div class="fsi-actions">
+                            <button type="button" class="btn-action btn-primary-action" id="fsiAgainBtn">再練一次</button>
+                            <button type="button" class="btn-action btn-muted" id="fsiDoneBackBtn">回題庫</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7878,7 +8380,7 @@
 
 
         function switchAppView(viewName) {
-            const allowed = ['diary', 'todo', 'records'];
+            const allowed = ['diary', 'todo', 'records', 'english'];
             if (!allowed.includes(viewName)) viewName = 'diary';
             currentAppView = viewName;
 
@@ -7909,6 +8411,13 @@
                         }
                     }
                 })();
+            }
+            if (viewName === 'english') {
+                initFsiPage();
+                fsiLoadSets();
+                fsiRenderLibrary();
+            } else {
+                fsiPauseTimer();
             }
         }
 
@@ -7962,6 +8471,11 @@
             switchAppView('diary');
             document.getElementById('googleLoginBtn')?.addEventListener('click', signInWithGoogle);
             document.getElementById('logoutBtn')?.addEventListener('click', signOutUser);
+            const localPreviewBtn = document.getElementById('localPreviewBtn');
+            if (isLocalPreviewHost() && localPreviewBtn) {
+                localPreviewBtn.classList.add('show');
+                localPreviewBtn.addEventListener('click', enterLocalPreview);
+            }
 
             sb.auth.onAuthStateChange(async (event, session) => {
                 if (session?.user) {
@@ -8002,6 +8516,26 @@
             if (gate) gate.classList.remove('show');
         }
 
+        function isLocalPreviewHost() {
+            const host = location.hostname;
+            return location.protocol === 'file:' || host === 'localhost' || host === '127.0.0.1';
+        }
+
+        function enterLocalPreview() {
+            currentUserId = 'local-preview';
+            activeSupabaseUserId = null;
+            const emailLabel = document.getElementById('userEmailLabel');
+            if (emailLabel) {
+                emailLabel.textContent = '本機預覽';
+                emailLabel.title = '本機預覽不會連線日記資料';
+            }
+            hideAuthGate();
+            loadDarkMode();
+            initFsiPage();
+            fsiLoadSets();
+            switchAppView('english');
+        }
+
         async function signInWithGoogle() {
             const status = document.getElementById('authStatus');
             const loginBtn = document.getElementById('googleLoginBtn');
@@ -8038,6 +8572,9 @@
             currentUserId = null;
             activeSupabaseUserId = null;
             signedUrlCache = {};
+            fsiSets = [];
+            fsiSession = null;
+            fsiRemoteOk = null;
             showAuthGate('已登出', true);
         }
 
@@ -8069,6 +8606,9 @@
             loadTodos();
             initRecordsPage();
             loadLifeNotes();
+            initFsiPage();
+            fsiLoadSets();
+            fsiPullRemote();
             updateTagsList();
             initImageUpload();
             initDiaryInputTracking();
@@ -11109,6 +11649,870 @@
             }
             
             return { total, completed, pending: total - completed };
+        }
+
+        const FSI_LLM_KEY = 'fsiLlmSettings';
+        const FSI_TYPE_LABEL = {
+            echo: 'Echo 回音',
+            substitution: 'Substitution 替換',
+            shadow: 'Shadow 影子',
+            transformation: 'Transformation 轉換',
+            response: 'Response 回應',
+            expansion: 'Expansion 擴展',
+            integration: 'Integration 合併',
+            completion: 'Completion 補完',
+            situation: 'Situation 情境'
+        };
+        const FSI_SOURCE_LABEL = {
+            spoken: '口語',
+            fsi: 'FSI 語法',
+            academic: '學術',
+            chunk: '語塊'
+        };
+        const FSI_SYSTEM_PROMPT = [
+            'You generate FSI-style Pattern Drill question sets for English speaking practice.',
+            'Return ONLY valid JSON. No markdown, no commentary.',
+            'Do not grade, score, or comment on learner answers. You only write prompts and reference sentences.',
+            'Schema:',
+            '{',
+            '  "title": "short Chinese or English title",',
+            '  "topic": "string",',
+            '  "level": "A1|A2|B1|B2",',
+            '  "corePattern": "e.g. I want + noun",',
+            '  "baseSentence": "I want coffee.",',
+            '  "ipa": "/aɪ wɑnt ˈkɔfi/",',
+            '  "rhythm": "i WANT | COF-fee",',
+            '  "items": [',
+            '    { "type": "echo|substitution|shadow|transformation|response|expansion|situation",',
+            '      "prompt": "what flashes on screen",',
+            '      "cue": "optional short Chinese hint",',
+            '      "reference": "full English sentence to self-check after speaking",',
+            '      "ipa": "optional",',
+            '      "rhythm": "optional" }',
+            '  ]',
+            '}',
+            'Rules:',
+            '- First item must be type echo using the base sentence + ipa.',
+            '- After every 5 substitution items, insert one shadow item with rhythm marks.',
+            '- After the substitution block, add one situation item (real life cue).',
+            '- Then transformation / response / expansion as requested.',
+            '- Substitution prompt is ONLY the replacement word/phrase, not the full sentence.',
+            '- Transformation prompt is the change to make (e.g. negative / past / question).',
+            '- Response prompt is a short situation or question the learner must answer in 3 seconds.',
+            '- Expansion prompt is the extra chunk to add; reference is the longer sentence.',
+            '- Reference sentences must be natural spoken English at the requested level.',
+            '- Mix everyday vocabulary. No rare words at A1/A2.'
+        ].join('\n');
+
+        let fsiSets = [];
+        let fsiPreviewSet = null;
+        let fsiSession = null;
+        let fsiPageReady = false;
+        let fsiRemoteOk = null;
+        let fsiLibraryFilter = 'all';
+        let fsiLevelFilter = 'all';
+
+        function fsiEsc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function fsiUid() {
+            if (crypto.randomUUID) return crypto.randomUUID();
+            return 'fsi-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+        }
+
+        function fsiStorageKey() {
+            return 'fsiDrillSets:' + (currentUserId || 'local');
+        }
+
+        function fsiSeedFlag() {
+            return 'fsiSeeded:' + (currentUserId || 'local');
+        }
+
+        function fsiSeenStartersKey() {
+            return 'fsiStarterSeen:' + (currentUserId || 'local');
+        }
+
+        function fsiReadSeenStarters() {
+            try {
+                const arr = JSON.parse(localStorage.getItem(fsiSeenStartersKey()) || '[]');
+                return new Set(Array.isArray(arr) ? arr : []);
+            } catch (e) {
+                return new Set();
+            }
+        }
+
+        function fsiWriteSeenStarters(seen) {
+            localStorage.setItem(fsiSeenStartersKey(), JSON.stringify([...seen]));
+        }
+
+        function fsiMarkStarterSeen(id) {
+            const seen = fsiReadSeenStarters();
+            seen.add(id);
+            fsiWriteSeenStarters(seen);
+        }
+
+        function fsiNowIso() {
+            return new Date().toISOString();
+        }
+
+        function fsiLoadLlmSettings() {
+            let saved = {};
+            try { saved = JSON.parse(localStorage.getItem(FSI_LLM_KEY) || '{}'); } catch (e) { saved = {}; }
+            return {
+                baseUrl: saved.baseUrl || 'https://api.x.ai/v1',
+                model: saved.model || 'grok-4.6',
+                apiKey: saved.apiKey || ''
+            };
+        }
+
+        function fsiSaveLlmSettingsFromForm() {
+            const settings = {
+                baseUrl: (document.getElementById('fsiApiBase')?.value || '').trim() || 'https://api.x.ai/v1',
+                model: (document.getElementById('fsiApiModel')?.value || '').trim() || 'grok-4.6',
+                apiKey: (document.getElementById('fsiApiKey')?.value || '').trim()
+            };
+            localStorage.setItem(FSI_LLM_KEY, JSON.stringify(settings));
+            return settings;
+        }
+
+        function fsiFillLlmForm() {
+            const s = fsiLoadLlmSettings();
+            const base = document.getElementById('fsiApiBase');
+            const model = document.getElementById('fsiApiModel');
+            const key = document.getElementById('fsiApiKey');
+            if (base && !base.value) base.value = s.baseUrl;
+            if (model && !model.value) model.value = s.model;
+            if (key && !key.value) key.value = s.apiKey;
+        }
+
+        function fsiLoadSets() {
+            try {
+                const raw = localStorage.getItem(fsiStorageKey());
+                fsiSets = raw ? JSON.parse(raw) : [];
+                if (!Array.isArray(fsiSets)) fsiSets = [];
+            } catch (e) {
+                fsiSets = [];
+            }
+            fsiEnsureStarterSets();
+        }
+
+        function fsiEnsureStarterSets() {
+            const starters = (typeof FSI_STARTER_SETS !== 'undefined' && FSI_STARTER_SETS) || [];
+            if (!starters.length) return;
+            const seen = fsiReadSeenStarters();
+            if (localStorage.getItem(fsiSeedFlag())) {
+                seen.add('starter-i-want');
+                seen.add('starter-can-you');
+            }
+            const byId = new Map(starters.map(s => [s.id, s]));
+            let changed = false;
+            fsiSets = fsiSets.map(set => {
+                const fresh = byId.get(set.id);
+                if (!fresh) return set;
+                seen.add(set.id);
+                changed = true;
+                return {
+                    ...fresh,
+                    createdAt: set.createdAt || fsiNowIso(),
+                    lastPracticedAt: set.lastPracticedAt || null,
+                    timesCompleted: set.timesCompleted || 0,
+                    lastTooSlow: set.lastTooSlow || 0
+                };
+            });
+            const have = new Set(fsiSets.map(s => s.id));
+            starters.forEach(starter => {
+                if (have.has(starter.id) || seen.has(starter.id)) return;
+                fsiSets.push({
+                    ...starter,
+                    createdAt: fsiNowIso(),
+                    updatedAt: fsiNowIso(),
+                    lastPracticedAt: null,
+                    timesCompleted: 0,
+                    lastTooSlow: 0
+                });
+                seen.add(starter.id);
+                have.add(starter.id);
+                changed = true;
+            });
+            fsiWriteSeenStarters(seen);
+            localStorage.setItem(fsiSeedFlag(), '1');
+            localStorage.setItem('fsiLibraryVersion:' + (currentUserId || 'local'), String(window.FSI_LIBRARY_VERSION || 5));
+            if (changed) fsiSaveSets();
+        }
+
+        function fsiSaveSets() {
+            localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiSets));
+            fsiPushRemote();
+        }
+
+        function fsiMergeSets(local, remote) {
+            const map = new Map();
+            [...(local || []), ...(remote || [])].forEach(raw => {
+                const set = fsiNormalizeSet(raw);
+                if (!set.id || !set.items.length) return;
+                const prev = map.get(set.id);
+                if (!prev || (set.updatedAt || '') >= (prev.updatedAt || '')) map.set(set.id, set);
+            });
+            return [...map.values()];
+        }
+
+        async function fsiPullRemote() {
+            if (!USE_SUPABASE || !currentUserId || fsiRemoteOk === false) return;
+            const rows = await supabaseRequest(
+                'fsi_drill_library',
+                'GET',
+                null,
+                `?user_id=eq.${currentUserId}&select=sets`
+            );
+            if (rows === null) {
+                fsiRemoteOk = false;
+                return;
+            }
+            fsiRemoteOk = true;
+            const remote = Array.isArray(rows[0]?.sets) ? rows[0].sets : [];
+            if (!remote.length) {
+                if (fsiSets.length) fsiPushRemote();
+                return;
+            }
+            const merged = fsiMergeSets(fsiSets, remote);
+            const before = JSON.stringify(fsiSets);
+            fsiSets = merged;
+            localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiSets));
+            if (JSON.stringify(fsiSets) !== before) {
+                fsiPushRemote();
+                if (currentAppView === 'english') fsiRenderLibrary();
+            }
+        }
+
+        async function fsiPushRemote() {
+            if (!USE_SUPABASE || !currentUserId || fsiRemoteOk === false) return;
+            const payload = { user_id: currentUserId, sets: fsiSets, updated_at: fsiNowIso() };
+            const patched = await supabaseRequest(
+                'fsi_drill_library',
+                'PATCH',
+                payload,
+                `?user_id=eq.${currentUserId}`
+            );
+            if (patched === null) {
+                fsiRemoteOk = false;
+                return;
+            }
+            if (Array.isArray(patched) && patched.length === 0) {
+                const posted = await supabaseRequest('fsi_drill_library', 'POST', payload);
+                if (posted === null) fsiRemoteOk = false;
+                else fsiRemoteOk = true;
+                return;
+            }
+            fsiRemoteOk = true;
+        }
+
+        function fsiShowPanel(name) {
+            ['Library', 'Generate', 'Drill'].forEach(n => {
+                document.getElementById('fsiPanel' + n)?.classList.toggle('active', n.toLowerCase() === name);
+            });
+        }
+
+        function fsiFormatWhen(iso) {
+            if (!iso) return '尚未練習';
+            try {
+                return new Date(iso).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return iso;
+            }
+        }
+
+        function fsiRenderLibrary() {
+            const host = document.getElementById('fsiSetList');
+            if (!host) return;
+            host.innerHTML = '';
+            if (!fsiSets.length) {
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.innerHTML = '<strong>還沒有題集</strong>點右上角「出新題集」，或匯入 JSON';
+                host.appendChild(empty);
+                return;
+            }
+            const sorted = [...fsiSets].sort((a, b) => {
+                const ta = a.lastPracticedAt || a.updatedAt || '';
+                const tb = b.lastPracticedAt || b.updatedAt || '';
+                return tb.localeCompare(ta);
+            }).filter(set => {
+                const srcOk = fsiLibraryFilter === 'all' || (set.source || '') === fsiLibraryFilter;
+                const lvOk = fsiLevelFilter === 'all' || (set.level || '') === fsiLevelFilter;
+                return srcOk && lvOk;
+            });
+            if (!sorted.length) {
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.innerHTML = '<strong>這個分類還沒有題集</strong>可切回「全部」或自己出一本題集';
+                host.appendChild(empty);
+                return;
+            }
+            sorted.forEach(set => {
+                const card = document.createElement('article');
+                card.className = 'fsi-set-card';
+                const n = (set.items || []).length;
+                const src = FSI_SOURCE_LABEL[set.source] || (set.builtin ? '範例' : '自訂');
+                card.innerHTML = `
+                    <div><span class="fsi-chip">${fsiEsc(set.level || 'A2')}</span><span class="fsi-chip">${fsiEsc(src)}</span></div>
+                    <h3></h3>
+                    <div class="fsi-set-meta"></div>
+                    <div class="fsi-set-actions">
+                        <button type="button" class="go" data-act="play">開始操練</button>
+                        <button type="button" class="ghost" data-act="export">匯出</button>
+                        <button type="button" class="danger" data-act="del">刪除</button>
+                    </div>`;
+                card.querySelector('h3').textContent = set.title || set.corePattern || '未命名題集';
+                card.querySelector('.fsi-set-meta').textContent =
+                    `${set.topic || set.corePattern || ''} · ${n} 題 · 練過 ${set.timesCompleted || 0} 次 · ${fsiFormatWhen(set.lastPracticedAt)}`;
+                card.querySelector('[data-act="play"]').addEventListener('click', () => fsiStartSession(set.id));
+                card.querySelector('[data-act="export"]').addEventListener('click', () => fsiExportSet(set.id));
+                card.querySelector('[data-act="del"]').addEventListener('click', () => fsiDeleteSet(set.id));
+                host.appendChild(card);
+            });
+        }
+
+        function fsiExportSet(id) {
+            const set = fsiSets.find(s => s.id === id);
+            if (!set) return;
+            const blob = new Blob([JSON.stringify(set, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = (set.title || 'fsi-set').replace(/[\\/:*?"<>|]/g, '_') + '.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('已匯出題集', 'success');
+        }
+
+        async function fsiDeleteSet(id) {
+            const set = fsiSets.find(s => s.id === id);
+            if (!set) return;
+            const ok = await askConfirm(`確定刪除「${set.title || '這本題集'}」？`, '刪除題集');
+            if (!ok) return;
+            if (set.builtin) fsiMarkStarterSeen(id);
+            fsiSets = fsiSets.filter(s => s.id !== id);
+            fsiSaveSets();
+            fsiRenderLibrary();
+            showToast('已刪除題集', 'success');
+        }
+
+        function fsiImportFiles(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const parsed = JSON.parse(String(reader.result || ''));
+                    const incoming = Array.isArray(parsed) ? parsed : [parsed];
+                    let added = 0;
+                    incoming.forEach(raw => {
+                        const set = fsiNormalizeSet(raw);
+                        if (!set.items.length) return;
+                        set.id = fsiUid();
+                        set.createdAt = fsiNowIso();
+                        set.updatedAt = set.createdAt;
+                        set.timesCompleted = 0;
+                        set.lastPracticedAt = null;
+                        set.builtin = false;
+                        fsiSets.unshift(set);
+                        added++;
+                    });
+                    if (!added) throw new Error('JSON 裡沒有可用題目');
+                    fsiSaveSets();
+                    fsiRenderLibrary();
+                    showToast(`已匯入 ${added} 本題集`, 'success');
+                } catch (err) {
+                    showToast(err.message || '匯入失敗', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function fsiNormalizeSet(raw) {
+            const src = raw && typeof raw === 'object' ? raw : {};
+            let items = Array.isArray(src.items) ? src.items.slice() : [];
+            const pushAll = (type, arr) => {
+                if (!Array.isArray(arr)) return;
+                arr.forEach(it => {
+                    if (typeof it === 'string') {
+                        items.push({ type, prompt: it, reference: it });
+                    } else if (it && typeof it === 'object') {
+                        items.push({ type, ...it });
+                    }
+                });
+            };
+            if (!items.length) {
+                pushAll('substitution', src.substitutions);
+                pushAll('transformation', src.transformations);
+                pushAll('response', src.responses);
+                pushAll('expansion', src.expansions);
+            }
+            items = items.map(it => ({
+                id: it.id || fsiUid(),
+                type: String(it.type || 'substitution').toLowerCase(),
+                prompt: String(it.prompt || it.cueWord || it.hint || '').trim(),
+                cue: String(it.cue || '').trim(),
+                reference: String(it.reference || it.sentence || it.expected || '').trim(),
+                ipa: String(it.ipa || '').trim(),
+                rhythm: String(it.rhythm || '').trim()
+            })).filter(it => it.prompt || it.reference);
+            const baseSentence = String(src.baseSentence || src.base || items.find(i => i.type === 'echo')?.reference || '').trim();
+            if (baseSentence && !items.some(i => i.type === 'echo')) {
+                items.unshift({
+                    id: fsiUid(),
+                    type: 'echo',
+                    prompt: baseSentence,
+                    cue: '先跟讀一次',
+                    reference: baseSentence,
+                    ipa: String(src.ipa || '').trim(),
+                    rhythm: String(src.rhythm || '').trim()
+                });
+            }
+            return {
+                id: src.id || fsiUid(),
+                title: String(src.title || src.corePattern || baseSentence || '未命名題集').trim(),
+                topic: String(src.topic || '').trim(),
+                level: String(src.level || 'A2').trim(),
+                corePattern: String(src.corePattern || src.pattern || '').trim(),
+                baseSentence,
+                ipa: String(src.ipa || '').trim(),
+                rhythm: String(src.rhythm || '').trim(),
+                items,
+                createdAt: src.createdAt || fsiNowIso(),
+                updatedAt: src.updatedAt || fsiNowIso(),
+                lastPracticedAt: src.lastPracticedAt || null,
+                timesCompleted: Number(src.timesCompleted || 0),
+                lastTooSlow: Number(src.lastTooSlow || 0),
+                builtin: !!src.builtin
+            };
+        }
+
+        function fsiSelectedTypes() {
+            return {
+                substitution: !!document.getElementById('fsiTypeSub')?.checked,
+                transformation: !!document.getElementById('fsiTypeTrans')?.checked,
+                response: !!document.getElementById('fsiTypeResp')?.checked,
+                expansion: !!document.getElementById('fsiTypeExp')?.checked
+            };
+        }
+
+        function fsiBuildUserPrompt() {
+            const topic = (document.getElementById('fsiTopic')?.value || '').trim();
+            const level = document.getElementById('fsiLevel')?.value || 'A2';
+            const types = fsiSelectedTypes();
+            const counts = {
+                substitution: Number(document.getElementById('fsiCountSub')?.value || 20),
+                transformation: Number(document.getElementById('fsiCountTrans')?.value || 8),
+                response: Number(document.getElementById('fsiCountResp')?.value || 6),
+                expansion: Number(document.getElementById('fsiCountExp')?.value || 5)
+            };
+            return [
+                `Create one Pattern Drill set.`,
+                `Topic / pattern: ${topic || 'everyday café English with I want + noun'}`,
+                `Level: ${level}`,
+                `Include:`,
+                types.substitution ? `- ${counts.substitution} substitution items` : '- no substitution items',
+                types.transformation ? `- ${counts.transformation} transformation items` : '- no transformation items',
+                types.response ? `- ${counts.response} response items` : '- no response items',
+                types.expansion ? `- ${counts.expansion} expansion items` : '- no expansion items',
+                'Always include 1 echo, shadow after every 5 substitutions, and 1 situation after substitutions.',
+                'JSON only.'
+            ].join('\n');
+        }
+
+        function fsiShowPreview(set) {
+            fsiPreviewSet = set;
+            const box = document.getElementById('fsiPreview');
+            const title = document.getElementById('fsiPreviewTitle');
+            const list = document.getElementById('fsiPreviewList');
+            if (!box || !list) return;
+            box.classList.add('show');
+            if (title) title.textContent = `${set.title} · ${set.items.length} 題`;
+            list.innerHTML = '';
+            set.items.forEach((it, i) => {
+                const row = document.createElement('div');
+                row.innerHTML = `<strong>${i + 1}. ${fsiEsc(FSI_TYPE_LABEL[it.type] || it.type)}</strong> · ${fsiEsc(it.prompt)}${it.reference ? ' → ' + fsiEsc(it.reference) : ''}`;
+                list.appendChild(row);
+            });
+        }
+
+        function fsiExtractJson(text) {
+            const raw = String(text || '').trim();
+            const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+            const body = fenced ? fenced[1] : raw;
+            const start = body.indexOf('{');
+            const end = body.lastIndexOf('}');
+            if (start < 0 || end <= start) throw new Error('回傳裡找不到 JSON');
+            return JSON.parse(body.slice(start, end + 1));
+        }
+
+        async function fsiCallLlm(userPrompt) {
+            const settings = fsiSaveLlmSettingsFromForm();
+            if (!settings.apiKey) {
+                throw new Error('請先在「LLM API 設定」填入 API Key，或改用複製 Prompt / 貼 JSON');
+            }
+            const base = settings.baseUrl.replace(/\/$/, '');
+            const url = base + '/chat/completions';
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + settings.apiKey,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: settings.model,
+                    temperature: 0.7,
+                    messages: [
+                        { role: 'system', content: FSI_SYSTEM_PROMPT },
+                        { role: 'user', content: userPrompt }
+                    ]
+                })
+            });
+            if (!res.ok) {
+                const t = await res.text().catch(() => '');
+                throw new Error(`API ${res.status}: ${t.slice(0, 180) || res.statusText}`);
+            }
+            const data = await res.json();
+            const text = data.choices?.[0]?.message?.content
+                || data.output_text
+                || data.output?.[0]?.content?.[0]?.text
+                || '';
+            if (!text) throw new Error('API 沒有回傳內容');
+            return fsiNormalizeSet(fsiExtractJson(text));
+        }
+
+        async function fsiGenerateWithAi() {
+            const btn = document.getElementById('fsiGenerateBtn');
+            const topic = (document.getElementById('fsiTopic')?.value || '').trim();
+            if (!topic) {
+                showToast('先寫句型或主題', 'error');
+                return;
+            }
+            fsiSaveLlmSettingsFromForm();
+            if (btn) { btn.disabled = true; btn.textContent = '出題中…'; }
+            try {
+                const set = await fsiCallLlm(fsiBuildUserPrompt());
+                set.id = fsiUid();
+                set.topic = topic;
+                set.level = document.getElementById('fsiLevel')?.value || set.level;
+                set.builtin = false;
+                set.createdAt = fsiNowIso();
+                set.updatedAt = set.createdAt;
+                set.timesCompleted = 0;
+                set.lastPracticedAt = null;
+                if (!set.items.length) throw new Error('AI 沒產出題目');
+                fsiShowPreview(set);
+                showToast('題集已生成，確認後存進題庫', 'success');
+            } catch (err) {
+                const msg = String(err.message || err);
+                if (/Failed to fetch|NetworkError|CORS/i.test(msg)) {
+                    showToast('瀏覽器連不到這支 API（多半是 CORS）。請複製 Prompt，把 JSON 貼回來。', 'error');
+                } else {
+                    showToast(msg, 'error');
+                }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '用 AI 出題'; }
+            }
+        }
+
+        async function fsiCopyPrompt() {
+            fsiSaveLlmSettingsFromForm();
+            const text = `${FSI_SYSTEM_PROMPT}\n\n${fsiBuildUserPrompt()}`;
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('已複製出題 Prompt', 'success');
+            } catch (e) {
+                showToast('複製失敗，請手動選取', 'error');
+            }
+        }
+
+        function fsiParsePastedJson() {
+            const raw = document.getElementById('fsiPasteJson')?.value || '';
+            try {
+                const parsed = fsiExtractJson(raw);
+                const set = fsiNormalizeSet(parsed);
+                if (!set.items.length) throw new Error('JSON 裡沒有題目');
+                set.id = fsiUid();
+                set.builtin = false;
+                set.createdAt = fsiNowIso();
+                set.updatedAt = set.createdAt;
+                const topic = (document.getElementById('fsiTopic')?.value || '').trim();
+                if (topic && !set.topic) set.topic = topic;
+                fsiShowPreview(set);
+                showToast('已讀取 JSON', 'success');
+            } catch (err) {
+                showToast(err.message || 'JSON 格式不對', 'error');
+            }
+        }
+
+        function fsiSavePreview() {
+            if (!fsiPreviewSet || !fsiPreviewSet.items.length) {
+                showToast('沒有可存的預覽', 'error');
+                return;
+            }
+            fsiSets.unshift({ ...fsiPreviewSet, updatedAt: fsiNowIso() });
+            fsiSaveSets();
+            fsiPreviewSet = null;
+            document.getElementById('fsiPreview')?.classList.remove('show');
+            fsiShowPanel('library');
+            fsiRenderLibrary();
+            showToast('題集已存進題庫', 'success');
+        }
+
+        function fsiTimedType(type) {
+            return type === 'substitution' || type === 'transformation' || type === 'response'
+                || type === 'expansion' || type === 'integration' || type === 'completion';
+        }
+
+        function fsiLimitMs(type) {
+            const sec = Number(document.getElementById('fsiSeconds')?.value || 3);
+            const base = Math.min(8, Math.max(2, sec || 3)) * 1000;
+            if (type === 'expansion') return base + 2000;
+            if (type === 'response') return base;
+            return base;
+        }
+
+        function fsiBuildQueue(set) {
+            const queue = (set.items || []).map(it => ({ ...it, fromSetId: set.id }));
+            const others = fsiSets.filter(s => s.id !== set.id && (s.items || []).length);
+            const reviews = [];
+            others.forEach(s => {
+                (s.items || []).forEach(it => {
+                    if (it.type === 'substitution' || it.type === 'response') {
+                        reviews.push({ ...it, fromSetId: s.id, review: true, cue: (it.cue ? it.cue + ' · ' : '') + '複習' });
+                    }
+                });
+            });
+            for (let i = reviews.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [reviews[i], reviews[j]] = [reviews[j], reviews[i]];
+            }
+            const take = reviews.slice(0, Math.min(4, reviews.length));
+            take.forEach((item, idx) => {
+                const at = Math.min(queue.length, 8 + idx * 4);
+                queue.splice(at, 0, item);
+            });
+            return queue;
+        }
+
+        function fsiStartSession(id) {
+            const set = fsiSets.find(s => s.id === id);
+            if (!set) return;
+            const queue = fsiBuildQueue(set);
+            if (!queue.length) {
+                showToast('這本題集沒有題目', 'error');
+                return;
+            }
+            fsiSession = {
+                setId: set.id,
+                queue,
+                index: 0,
+                tooSlow: 0,
+                answered: 0,
+                startedAt: Date.now(),
+                waitingNext: false
+            };
+            document.getElementById('fsiDrillPlay')?.style.setProperty('display', 'block');
+            document.getElementById('fsiDrillDone')?.classList.remove('show');
+            fsiShowPanel('drill');
+            fsiShowCurrentItem();
+        }
+
+        function fsiPauseTimer() {
+            const bar = document.getElementById('fsiTimerBar');
+            if (bar) {
+                bar.classList.remove('running');
+                bar.hidden = true;
+            }
+        }
+
+        function fsiShowCurrentItem() {
+            if (!fsiSession) return;
+            const item = fsiSession.queue[fsiSession.index];
+            if (!item) {
+                fsiFinishSession();
+                return;
+            }
+            fsiSession.waitingNext = false;
+            const play = document.getElementById('fsiDrillPlay');
+            const done = document.getElementById('fsiDrillDone');
+            if (play) play.style.display = 'block';
+            done?.classList.remove('show');
+            document.getElementById('fsiTypeBadge').textContent =
+                (item.review ? '複習 · ' : '') + (FSI_TYPE_LABEL[item.type] || item.type);
+            document.getElementById('fsiPrompt').textContent = item.prompt || item.reference || '—';
+            const ipaEl = document.getElementById('fsiIpa');
+            if (ipaEl) {
+                ipaEl.textContent = (item.type === 'echo' || item.type === 'shadow') ? (item.rhythm || '') : '';
+            }
+            document.getElementById('fsiCue').textContent = item.cue || '';
+            document.getElementById('fsiSlowMsg').textContent = '';
+            document.getElementById('fsiReference')?.classList.remove('show');
+            document.getElementById('fsiReferenceText').textContent = '';
+            const zhClear = document.getElementById('fsiReferenceZh');
+            if (zhClear) zhClear.textContent = '';
+            document.getElementById('fsiProgressText').textContent = `${fsiSession.index + 1} / ${fsiSession.queue.length}`;
+            document.getElementById('fsiPrimaryBtn').textContent =
+                item.type === 'echo' || item.type === 'shadow' ? '我已跟讀' : '已說出';
+            const typein = document.getElementById('fsiTypeinWrap');
+            const input = document.getElementById('fsiTypein');
+            if (typein && input) {
+                const showType = fsiTimedType(item.type);
+                typein.classList.toggle('show', showType);
+                input.value = '';
+            }
+            const bar = document.getElementById('fsiTimerBar');
+            const fill = document.getElementById('fsiTimerFill');
+            if (bar && fill && fsiTimedType(item.type)) {
+                bar.hidden = false;
+                bar.classList.remove('running');
+                fill.style.animationDuration = fsiLimitMs(item.type) + 'ms';
+                void bar.offsetWidth;
+                bar.classList.add('running');
+            } else if (bar) {
+                bar.classList.remove('running');
+                bar.hidden = true;
+            }
+        }
+
+        function fsiOnTooSlow() {
+            if (!fsiSession || fsiSession.waitingNext) return;
+            const item = fsiSession.queue[fsiSession.index];
+            if (!item || !fsiTimedType(item.type)) return;
+            fsiSession.tooSlow += 1;
+            const msg = document.getElementById('fsiSlowMsg');
+            if (msg) msg.textContent = '太慢了！加快速度！';
+            fsiPauseTimer();
+            setTimeout(() => {
+                if (!fsiSession || fsiSession.waitingNext) return;
+                fsiShowCurrentItem();
+            }, 850);
+        }
+
+        function fsiRevealAndWait() {
+            if (!fsiSession) return;
+            const item = fsiSession.queue[fsiSession.index];
+            if (!item) return;
+            fsiSession.waitingNext = true;
+            fsiSession.answered += 1;
+            fsiPauseTimer();
+            const ref = document.getElementById('fsiReference');
+            document.getElementById('fsiReferenceText').textContent = item.reference || item.prompt || '';
+            const zhEl = document.getElementById('fsiReferenceZh');
+            if (zhEl) zhEl.textContent = item.zh || '';
+            const note = document.getElementById('fsiReferenceNote');
+            if (note) note.textContent = item.rhythm ? `節奏：${item.rhythm}` : '對過就好，系統不計分。';
+            ref?.classList.add('show');
+            document.getElementById('fsiSlowMsg').textContent = '';
+            document.getElementById('fsiPrimaryBtn').textContent = '下一題';
+        }
+
+        function fsiPrimaryAction() {
+            if (!fsiSession) return;
+            if (fsiSession.waitingNext) {
+                fsiSession.index += 1;
+                if (fsiSession.index >= fsiSession.queue.length) fsiFinishSession();
+                else fsiShowCurrentItem();
+                return;
+            }
+            fsiRevealAndWait();
+        }
+
+        function fsiFinishSession() {
+            if (!fsiSession) return;
+            const set = fsiSets.find(s => s.id === fsiSession.setId);
+            if (set) {
+                set.timesCompleted = (set.timesCompleted || 0) + 1;
+                set.lastPracticedAt = fsiNowIso();
+                set.lastTooSlow = fsiSession.tooSlow;
+                set.updatedAt = set.lastPracticedAt;
+                fsiSaveSets();
+            }
+            const elapsed = Math.max(1, Math.round((Date.now() - fsiSession.startedAt) / 1000));
+            const stats = document.getElementById('fsiDoneStats');
+            if (stats) {
+                stats.textContent = `完成 ${fsiSession.answered} 題 · 逾時重來 ${fsiSession.tooSlow} 次 · 用時 ${elapsed} 秒`;
+            }
+            document.getElementById('fsiDrillPlay').style.display = 'none';
+            document.getElementById('fsiDrillDone')?.classList.add('show');
+            fsiPauseTimer();
+        }
+
+        function fsiExitDrill() {
+            fsiPauseTimer();
+            fsiSession = null;
+            fsiShowPanel('library');
+            fsiRenderLibrary();
+        }
+
+        function initFsiPage() {
+            const page = document.getElementById('view-english');
+            if (!page || fsiPageReady) return;
+            fsiPageReady = true;
+            fsiFillLlmForm();
+
+            document.getElementById('fsiNewSetBtn')?.addEventListener('click', () => {
+                fsiShowPanel('generate');
+                fsiFillLlmForm();
+                document.getElementById('fsiTopic')?.focus();
+            });
+            document.getElementById('fsiGenBackBtn')?.addEventListener('click', () => {
+                fsiShowPanel('library');
+                fsiRenderLibrary();
+            });
+            document.getElementById('fsiGenerateBtn')?.addEventListener('click', fsiGenerateWithAi);
+            document.getElementById('fsiCopyPromptBtn')?.addEventListener('click', fsiCopyPrompt);
+            document.getElementById('fsiParsePasteBtn')?.addEventListener('click', fsiParsePastedJson);
+            document.getElementById('fsiSavePreviewBtn')?.addEventListener('click', fsiSavePreview);
+            document.getElementById('fsiImportBtn')?.addEventListener('click', () => {
+                document.getElementById('fsiImportFile')?.click();
+            });
+            document.getElementById('fsiImportFile')?.addEventListener('change', (e) => {
+                const file = e.target.files && e.target.files[0];
+                fsiImportFiles(file);
+                e.target.value = '';
+            });
+            document.getElementById('fsiFilters')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-fsi-filter]');
+                if (!btn) return;
+                fsiLibraryFilter = btn.dataset.fsiFilter || 'all';
+                document.querySelectorAll('[data-fsi-filter]').forEach(b => {
+                    b.classList.toggle('active', b === btn);
+                });
+                fsiRenderLibrary();
+            });
+            document.getElementById('fsiLevelFilters')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-fsi-level]');
+                if (!btn) return;
+                fsiLevelFilter = btn.dataset.fsiLevel || 'all';
+                document.querySelectorAll('[data-fsi-level]').forEach(b => {
+                    b.classList.toggle('active', b === btn);
+                });
+                fsiRenderLibrary();
+            });
+            document.getElementById('fsiDrillExitBtn')?.addEventListener('click', fsiExitDrill);
+            document.getElementById('fsiDoneBackBtn')?.addEventListener('click', fsiExitDrill);
+            document.getElementById('fsiAgainBtn')?.addEventListener('click', () => {
+                if (fsiSession?.setId) fsiStartSession(fsiSession.setId);
+            });
+            document.getElementById('fsiPrimaryBtn')?.addEventListener('click', fsiPrimaryAction);
+            document.getElementById('fsiTimerBar')?.addEventListener('animationend', fsiOnTooSlow);
+            document.getElementById('fsiTypein')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fsiPrimaryAction();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (currentAppView !== 'english' || !fsiSession) return;
+                if (e.key !== ' ' && e.key !== 'Enter') return;
+                const tag = (e.target && e.target.tagName) || '';
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                e.preventDefault();
+                fsiPrimaryAction();
+            });
         }
     </script>
 </body>
