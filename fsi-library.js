@@ -28,7 +28,7 @@
                     reference: r,
                     zh,
                     rhythm: sh,
-                    cue: sh ? ('重音：' + sh) : '再跟讀一次，對齊重音'
+                    cue: '再跟讀一次，對齊重音'
                 });
             }
         });

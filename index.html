@@ -12261,6 +12261,29 @@
             showToast('題集已存進題庫', 'success');
         }
 
+        function fsiLooksLikeRhythm(s) {
+            return typeof s === 'string' && /\|/.test(s) && /[A-Z]{2,}/.test(s);
+        }
+
+        function fsiDisplayPrompt(item) {
+            const prompt = item.prompt || '';
+            if (fsiLooksLikeRhythm(prompt) && item.reference) return item.reference;
+            return prompt || item.reference || '—';
+        }
+
+        function fsiDisplayCue(item) {
+            const cue = item.cue || '';
+            if (!cue) {
+                if (item.type === 'echo') return '先跟讀完整句子';
+                if (item.type === 'shadow') return '再跟讀一次，對齊重音';
+                return '';
+            }
+            if (fsiLooksLikeRhythm(cue) || /^重音：/.test(cue)) {
+                return item.type === 'shadow' ? '再跟讀一次，對齊重音' : '';
+            }
+            return cue;
+        }
+
         function fsiTimedType(type) {
             return type === 'substitution' || type === 'transformation' || type === 'response'
                 || type === 'expansion' || type === 'integration' || type === 'completion';
@@ -12342,12 +12365,10 @@
             done?.classList.remove('show');
             document.getElementById('fsiTypeBadge').textContent =
                 (item.review ? '複習 · ' : '') + (FSI_TYPE_LABEL[item.type] || item.type);
-            document.getElementById('fsiPrompt').textContent = item.prompt || item.reference || '—';
+            document.getElementById('fsiPrompt').textContent = fsiDisplayPrompt(item);
             const ipaEl = document.getElementById('fsiIpa');
-            if (ipaEl) {
-                ipaEl.textContent = (item.type === 'echo' || item.type === 'shadow') ? (item.rhythm || '') : '';
-            }
-            document.getElementById('fsiCue').textContent = item.cue || '';
+            if (ipaEl) ipaEl.textContent = '';
+            document.getElementById('fsiCue').textContent = fsiDisplayCue(item);
             document.getElementById('fsiSlowMsg').textContent = '';
             document.getElementById('fsiReference')?.classList.remove('show');
             document.getElementById('fsiReferenceText').textContent = '';
@@ -12403,7 +12424,11 @@
             const zhEl = document.getElementById('fsiReferenceZh');
             if (zhEl) zhEl.textContent = item.zh || '';
             const note = document.getElementById('fsiReferenceNote');
-            if (note) note.textContent = item.rhythm ? `節奏：${item.rhythm}` : '對過就好，系統不計分。';
+            if (note) {
+                note.textContent = item.rhythm
+                    ? `跟讀重音（大寫較重）：${item.rhythm}`
+                    : '對過就好，系統不計分。';
+            }
             ref?.classList.add('show');
             document.getElementById('fsiSlowMsg').textContent = '';
             document.getElementById('fsiPrimaryBtn').textContent = '下一題';
