@@ -3674,6 +3674,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="fsi-zh-map.js"></script>
     <script src="fsi-library.js"></script>
     <script src="fsi-library-advanced.js"></script>
     <script src="fsi-library-c1.js"></script>
@@ -11839,7 +11840,7 @@
             });
             fsiWriteSeenStarters(seen);
             localStorage.setItem(fsiSeedFlag(), '1');
-            localStorage.setItem('fsiLibraryVersion:' + (currentUserId || 'local'), String(window.FSI_LIBRARY_VERSION || 5));
+            localStorage.setItem('fsiLibraryVersion:' + (currentUserId || 'local'), String(window.FSI_LIBRARY_VERSION || 6));
             if (changed) fsiSaveSets();
         }
 
@@ -12422,7 +12423,11 @@
             const ref = document.getElementById('fsiReference');
             document.getElementById('fsiReferenceText').textContent = item.reference || item.prompt || '';
             const zhEl = document.getElementById('fsiReferenceZh');
-            if (zhEl) zhEl.textContent = item.zh || '';
+            if (zhEl) {
+                const map = window.FSI_ZH_MAP || {};
+                const en = (item.reference || '').trim();
+                zhEl.textContent = item.zh || map[en] || map[item.reference] || '';
+            }
             const note = document.getElementById('fsiReferenceNote');
             if (note) {
                 note.textContent = item.rhythm

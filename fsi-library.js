@@ -1,5 +1,11 @@
 /* FSI 內建題庫 v3：句型名清楚、不顯示音標亂碼、影子練習出完整句子 */
 (function (global) {
+    function fsiLookupZh(en, existing) {
+        if (existing && /[\u4e00-\u9fff]/.test(existing)) return existing;
+        const map = global.FSI_ZH_MAP || {};
+        return (en && (map[en] || map[String(en).trim()])) || '';
+    }
+
     function fsiTriple(s) {
         if (Array.isArray(s)) return [s[0] || '', s[1] || '', s[2] || '', s[3] || ''];
         return [s.p || '', s.r || '', s.c || '', s.zh || s.translation || ''];
@@ -11,7 +17,7 @@
             type: 'echo',
             prompt: meta.baseSentence,
             reference: meta.baseSentence,
-            zh: meta.baseZh || meta.zh || '',
+            zh: fsiLookupZh(meta.baseSentence, meta.baseZh || meta.zh || ''),
             rhythm: meta.rhythm || '',
             cue: '先跟讀完整句子'
         });
@@ -19,14 +25,14 @@
         let shadowIdx = 0;
         subs.forEach((s, i) => {
             const [p, r, c, zh] = fsiTriple(s);
-            items.push({ type: 'substitution', prompt: p, cue: c || ('換成：' + p), reference: r, zh });
+            items.push({ type: 'substitution', prompt: p, cue: c || ('換成：' + p), reference: r, zh: fsiLookupZh(r, zh) });
             if ((i + 1) % 5 === 0) {
                 const sh = (spec.shadows || [])[shadowIdx++] || '';
                 items.push({
                     type: 'shadow',
                     prompt: r,
                     reference: r,
-                    zh,
+                    zh: fsiLookupZh(r, zh),
                     rhythm: sh,
                     cue: '再跟讀一次，對齊重音'
                 });
@@ -34,27 +40,27 @@
         });
         if (spec.situation) {
             const [p, r, c, zh] = fsiTriple(spec.situation);
-            items.push({ type: 'situation', prompt: p, reference: r, cue: c || '用這個句型回答', zh });
+            items.push({ type: 'situation', prompt: p, reference: r, cue: c || '用這個句型回答', zh: fsiLookupZh(r, zh) });
         }
         (spec.trans || []).forEach(s => {
             const [p, r, c, zh] = fsiTriple(s);
-            items.push({ type: 'transformation', prompt: p, cue: c || meta.baseSentence, reference: r, zh });
+            items.push({ type: 'transformation', prompt: p, cue: c || meta.baseSentence, reference: r, zh: fsiLookupZh(r, zh) });
         });
         (spec.resps || []).forEach(s => {
             const [p, r, c, zh] = fsiTriple(s);
-            items.push({ type: 'response', prompt: p, cue: c, reference: r, zh });
+            items.push({ type: 'response', prompt: p, cue: c, reference: r, zh: fsiLookupZh(r, zh) });
         });
         (spec.exps || []).forEach(s => {
             const [p, r, c, zh] = fsiTriple(s);
-            items.push({ type: 'expansion', prompt: p, cue: c, reference: r, zh });
+            items.push({ type: 'expansion', prompt: p, cue: c, reference: r, zh: fsiLookupZh(r, zh) });
         });
         (spec.ints || []).forEach(s => {
             const [p, r, c, zh] = fsiTriple(s);
-            items.push({ type: 'integration', prompt: p, cue: c || '合成一句', reference: r, zh });
+            items.push({ type: 'integration', prompt: p, cue: c || '合成一句', reference: r, zh: fsiLookupZh(r, zh) });
         });
         (spec.comps || []).forEach(s => {
             const [p, r, c, zh] = fsiTriple(s);
-            items.push({ type: 'completion', prompt: p, cue: c || '把句子說完', reference: r, zh });
+            items.push({ type: 'completion', prompt: p, cue: c || '把句子說完', reference: r, zh: fsiLookupZh(r, zh) });
         });
         return { builtin: true, version: 5, ...meta, items };
     }
