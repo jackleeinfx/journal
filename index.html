@@ -446,6 +446,49 @@
             color: #667eea;
         }
 
+        .todo-image-upload {
+            margin-top: 8px;
+        }
+
+        .todo-image-upload-btn {
+            width: 100%;
+        }
+
+        .todo-item-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .todo-item-image {
+            width: 72px;
+            height: 72px;
+            border-radius: 6px;
+            object-fit: cover;
+            cursor: zoom-in;
+            border: 2px solid #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            .todo-item-image {
+                width: 56px;
+                height: 56px;
+            }
+        }
+        .todo-image-placeholder {
+            width: 72px;
+            height: 72px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+            background-size: 200% 100%;
+            animation: diary-shimmer 1.2s ease-in-out infinite;
+        }
+        body.dark-mode .todo-image-placeholder {
+            background: linear-gradient(90deg, #333 25%, #3a3a3a 50%, #333 75%);
+            background-size: 200% 100%;
+        }
+
         @media (max-width: 768px) {
             .image-upload-area {
                 padding: 15px;
@@ -1796,6 +1839,16 @@
             display: block;
         }
         .records-note-toolbar button:hover { background: #eef0f8; }
+        /* 「已完成」開關啟用狀態 */
+        .records-note-toolbar button.note-hide-completed.active {
+            background: #667eea;
+            border-color: transparent;
+            color: #fff;
+        }
+        body.dark-mode .records-note-toolbar button.note-hide-completed.active {
+            background: #667eea;
+            color: #fff;
+        }
         .records-note-toolbar button.primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-color: transparent;
@@ -2096,6 +2149,10 @@
             color: #333 !important;
             -webkit-text-fill-color: #333 !important;
         }
+        /* 隱藏已勾選的待辦（「已完成」開關）；僅 CSS 隱藏，不影響內容與儲存 */
+        .records-note-card.hide-completed .records-note-editor .life-todo[data-checked="1"] {
+            display: none;
+        }
         body.dark-mode .records-note-editor .life-todo-check {
             border-color: #7c8aef;
             background: rgba(255, 255, 255, 0.04);
@@ -2193,6 +2250,55 @@
             border-radius: 4px;
             box-shadow: 0 8px 40px rgba(0,0,0,0.45);
             cursor: zoom-out;
+        }
+        /* 燈箱左右切換（半透明按鈕） */
+        .lightbox-nav-btn {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 52px;
+            height: 52px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            color: #fff;
+            font-size: 32px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 10070;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            transition: background 0.2s, opacity 0.2s;
+            touch-action: manipulation;
+        }
+        .lightbox-nav-btn.show {
+            display: flex;
+        }
+        .lightbox-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.34);
+        }
+        #lightboxPrevBtn {
+            left: 16px;
+        }
+        #lightboxNextBtn {
+            right: 16px;
+        }
+        @media (max-width: 768px) {
+            .lightbox-nav-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 26px;
+            }
+            #lightboxPrevBtn {
+                left: 10px;
+            }
+            #lightboxNextBtn {
+                right: 10px;
+            }
         }
             display: flex;
             align-items: center;
@@ -2835,6 +2941,18 @@
             background: rgba(102, 126, 234, 0.22);
             border-color: #8b9cf7;
         }
+        .inline-link {
+            color: #667eea;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            word-break: break-all;
+        }
+        .inline-link:hover {
+            color: #5568d3;
+        }
+        body.dark-mode .inline-link {
+            color: #aab6ff;
+        }
         .tag-composer {
             display: flex;
             flex-wrap: wrap;
@@ -3277,6 +3395,18 @@
         body.dark-mode .todo-remain.remain-20 { color: #6ea8ff; }
         body.dark-mode .todo-remain.remain-10 { color: #ffc069; }
         body.dark-mode .todo-remain.remain-3 { color: #ff7875; }
+        /* 生活紀錄提醒「已完成」標記 */
+        .todo-life-done-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #4b9e4f;
+            background: rgba(75, 158, 79, 0.12);
+            vertical-align: middle;
+        }
 
         .confirm-modal {
             display: none;
@@ -3384,6 +3514,25 @@
         body.dark-mode .fsi-head h2 { color: #eee; }
         body.dark-mode .fsi-head p { color: #aaa; }
         .fsi-head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .fsi-search {
+            width: 100%;
+            max-width: 420px;
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            background: #fff;
+            color: inherit;
+        }
+        .fsi-search:focus { border-color: #667eea; }
+        body.dark-mode .fsi-search {
+            background: #1e1e2e;
+            border-color: #555;
+            color: #eee;
+        }
         .fsi-filters {
             display: flex;
             flex-wrap: wrap;
@@ -3473,6 +3622,23 @@
         .fsi-set-actions .danger { background: #fde8ea; color: #b42318; }
         body.dark-mode .fsi-set-actions .ghost { background: #3a3a55; color: #eee; }
         body.dark-mode .fsi-set-actions .danger { background: #4a2a30; color: #ffb4b4; }
+        .fsi-mix-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 0 0 14px;
+        }
+        .fsi-mix-hint {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+        body.dark-mode .fsi-mix-hint { color: #aaa; }
+        #fsiMixBtn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
         .fsi-form {
             display: grid;
             gap: 12px;
@@ -3674,10 +3840,6 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="fsi-zh-map.js"></script>
-    <script src="fsi-library.js"></script>
-    <script src="fsi-library-advanced.js"></script>
-    <script src="fsi-library-c1.js"></script>
 </head>
 <body class="app-locked">
     <div class="auth-gate show" id="authGate">
@@ -3887,6 +4049,12 @@
                                 </select>
                                 <label for="todoNotes">備註（可空）</label>
                                 <textarea id="todoNotes" rows="2" placeholder="補充說明…"></textarea>
+                                <div class="todo-image-upload">
+                                    <button type="button" class="btn-action btn-muted todo-image-upload-btn" id="todoImageUploadBtn">📷 上傳圖片</button>
+                                    <input type="file" id="todoImageFileInput" accept="image/*" multiple style="display:none;">
+                                    <div class="uploaded-images" id="todoUploadedImages"></div>
+                                    <div class="image-upload-progress" id="todoUploadProgress" style="display:none;"></div>
+                                </div>
                                 <div class="todo-form-actions">
                                     <button type="submit" class="btn-action btn-primary-action" id="todoSaveBtn">儲存</button>
                                     <button type="button" class="btn-action btn-muted" id="todoResetBtn">取消</button>
@@ -3902,6 +4070,7 @@
                         <button type="button" class="todo-filter-btn" data-todo-filter="selected">選中日期</button>
                         <button type="button" class="todo-filter-btn active" data-todo-filter="pending">未完成</button>
                         <button type="button" class="todo-filter-btn" data-todo-filter="all">全部</button>
+                        <button type="button" class="todo-filter-btn" data-todo-filter="done">完成</button>
                     </div>
                 </div>
                 <div class="diary-list" id="todoList">
@@ -3938,6 +4107,9 @@
                         <button type="button" id="noteInsertToggleBtn" class="note-tool-btn" title="子級摺疊" aria-label="子級摺疊">
                             <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.3 6.3a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 1 1-1.4-1.4L13.58 12 9.3 7.7a1 1 0 0 1 0-1.4Z"/></svg>
                         </button>
+                        <button type="button" id="noteHideCompletedBtn" class="note-tool-btn note-hide-completed" title="隱藏／顯示已勾選的待辦" aria-label="隱藏已完成">
+                            <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4C7 4 2.7 7.7 1 12c1.7 4.3 6 8 11 8s9.3-3.7 11-8c-1.7-4.3-6-8-11-8Zm0 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg>
+                        </button>
                         <button type="button" id="noteInsertImageBtn" class="note-tool-btn" title="插入圖片" aria-label="插入圖片">
                             <svg class="note-tool-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 12H5V7h14v10zm-9.5-7a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM6 15l3-4 2 2.5L14 9l4 6H6z"/></svg>
                         </button>
@@ -3971,6 +4143,7 @@
                             <input type="file" id="fsiImportFile" accept="application/json" hidden>
                         </div>
                     </div>
+                    <input type="search" id="fsiSearch" class="fsi-search" placeholder="搜尋句型、主題、英文…" autocomplete="off">
                     <div class="fsi-filters" id="fsiLevelFilters" aria-label="難度">
                         <button type="button" class="fsi-filter-btn active" data-fsi-level="all">全部難度</button>
                         <button type="button" class="fsi-filter-btn" data-fsi-level="A1">A1</button>
@@ -3986,6 +4159,22 @@
                         <button type="button" class="fsi-filter-btn" data-fsi-filter="fsi">FSI 語法</button>
                         <button type="button" class="fsi-filter-btn" data-fsi-filter="chunk">語塊</button>
                         <button type="button" class="fsi-filter-btn" data-fsi-filter="academic">學術</button>
+                    </div>
+                    <div class="fsi-filters" id="fsiTypeFilters" aria-label="題型">
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="all">全選</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="echo">回音</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="shadow">影子</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="substitution">替換</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="transformation">轉換</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="response">回應</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="expansion">擴展</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="integration">合併</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="completion">補完</button>
+                        <button type="button" class="fsi-filter-btn active" data-fsi-qtype="situation">情境</button>
+                    </div>
+                    <div class="fsi-mix-bar">
+                        <button type="button" class="btn-action btn-primary-action" id="fsiMixBtn">依目前篩選抽題</button>
+                        <span class="fsi-mix-hint" id="fsiMixHint">把下面列出的題集合在一起抽題，同一組篩選順序固定。</span>
                     </div>
                     <div class="fsi-set-grid" id="fsiSetList"></div>
                 </div>
@@ -4011,6 +4200,8 @@
                                     <option value="A2" selected>A2 初階</option>
                                     <option value="B1">B1 中階</option>
                                     <option value="B2">B2 中高階</option>
+                                    <option value="C1">C1 高階</option>
+                                    <option value="C2">C2 精熟</option>
                                 </select>
                             </div>
                             <div>
@@ -4125,6 +4316,8 @@
 
     <div id="lifeImageLightbox" class="life-image-lightbox" aria-hidden="true" title="再點一次關閉">
         <img id="lifeImageLightboxImg" alt="預覽">
+        <button type="button" id="lightboxPrevBtn" class="lightbox-nav-btn" aria-label="上一張">‹</button>
+        <button type="button" id="lightboxNextBtn" class="lightbox-nav-btn" aria-label="下一張">›</button>
     </div>
 
     <script>
@@ -4216,6 +4409,7 @@
         let todoSelectedDate = '';
         let todoListFilter = 'pending'; // selected | pending | all
         let todosLoaded = false;
+        let todoFormImages = []; // 待辦表單正在編輯/上傳的圖片（storage path 或 base64）
 
         const DEFAULT_LIFE_CATEGORIES = ['汽車', '手機通訊', '房屋', '網路', '其他'];
         const NOTE_REMINDER_SOON_DAYS = 30;
@@ -4342,6 +4536,9 @@
             if (formTitle) formTitle.textContent = '新增待辦';
             if (saveBtn) saveBtn.textContent = '儲存';
             if (hint) hint.textContent = '點月曆選日期後填寫，或直接改日期欄';
+            // 清空待辦表單圖片
+            todoFormImages = [];
+            updateTodoImagePreview();
         }
 
         function resetTodoForm(keepDate = true) {
@@ -4355,6 +4552,8 @@
             document.getElementById('todoTime').value = formatTodoTime(todo.due_time);
             document.getElementById('todoNotes').value = todo.notes || '';
             document.getElementById('todoPriority').value = String(todo.priority ?? 0);
+            todoFormImages = Array.isArray(todo.images) ? todo.images.filter(Boolean).map(String) : [];
+            updateTodoImagePreview();
             todoSelectedDate = todo.due_date || todoSelectedDate;
             const d = todo.due_date ? new Date(todo.due_date + 'T12:00:00') : todoCalendarCursor;
             todoCalendarCursor = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -4458,15 +4657,21 @@
                 list = list.filter(t => t.due_date === todoSelectedDate);
             } else if (todoListFilter === 'pending') {
                 list = list.filter(t => !t.is_done);
+            } else if (todoListFilter === 'done') {
+                list = list.filter(t => t.is_done);
             }
             return list;
         }
 
         function getFilteredLifeRemindersForList() {
             let items = collectAllLifeReminders();
-            // 選中日期：只顯示該日；未完成／全部：顯示全部生活紀錄日期提醒
+            // 選中日期：只顯示該日；未完成：排除已完成；全部：全部（含已完成）；完成：只顯示已完成
             if (todoListFilter === 'selected') {
                 items = items.filter((r) => r.date === todoSelectedDate);
+            } else if (todoListFilter === 'pending') {
+                items = items.filter((r) => !r.done);
+            } else if (todoListFilter === 'done') {
+                items = items.filter((r) => r.done === true);
             }
             return items;
         }
@@ -4508,6 +4713,8 @@
                     heading.textContent = `待辦列表（${todoSelectedDate || '未選日期'} · ${todoCount} 筆${extra}）`;
                 } else if (todoListFilter === 'pending') {
                     heading.textContent = `待辦列表（未完成 · ${todoCount} 筆${extra}）`;
+                } else if (todoListFilter === 'done') {
+                    heading.textContent = `待辦列表（已完成 · ${todoCount} 筆${extra}）`;
                 } else {
                     heading.textContent = `待辦列表（全部 · ${todoCount} 筆${extra}）`;
                 }
@@ -4520,15 +4727,17 @@
                 if (row.kind === 'life') {
                     const r = row.life;
                     const u = getLifeReminderUrgency(r.date);
-                    const overdueClass = u.days < 0 ? ' is-overdue' : '';
-                    const remainTier = u.days < 0 || u.days <= 3 ? 'remain-3' : (u.days <= 10 ? 'remain-10' : 'remain-20');
-                    const remainHtml = `<span class="todo-remain ${remainTier}">${escapeHtml(u.tag)}</span>`;
+                    const isDone = r.done === true;
+                    const overdueClass = u.days < 0 && !isDone ? ' is-overdue' : '';
+                    const remainHtml = isDone
+                        ? `<span class="todo-life-done-badge">已完成</span>`
+                        : `<span class="todo-remain ${u.days < 0 || u.days <= 3 ? 'remain-3' : (u.days <= 10 ? 'remain-10' : 'remain-20')}">${escapeHtml(u.tag)}</span>`;
                     return `
-                        <div class="todo-item is-life-reminder${overdueClass}">
+                        <div class="todo-item is-life-reminder${isDone ? ' is-done' : ''}${overdueClass}">
                             <div class="todo-item-top">
                                 <div>
                                     <div class="todo-item-title">
-                                        <span class="todo-life-badge">生活紀錄</span>${escapeHtml(r.displayText || r.text || '（無內容）')}
+                                        <span class="todo-life-badge">生活紀錄</span>${linkifyEscapedHtml(escapeHtml(r.displayText || r.text || '（無內容）'))}
                                     </div>
                                     <div class="todo-item-meta">${escapeHtml(formatNoteDateLabel(r.date))} · ${escapeHtml(r.categoryName || '')}${remainHtml}</div>
                                 </div>
@@ -4550,7 +4759,8 @@
                     ? `<span class="todo-remain ${remain.tier}">${escapeHtml(remain.text)}</span>`
                     : '';
                 const meta = `${formatNoteDateLabel(t.due_date) || t.due_date || ''}${timeLabel ? ' · ' + timeLabel : ''}${priorityLabel}${t.is_done ? ' · 已完成' : ''}`;
-                const notes = t.notes ? `<div class="todo-item-notes">${escapeHtml(t.notes)}</div>` : '';
+                const notes = t.notes ? `<div class="todo-item-notes">${linkifyEscapedHtml(escapeHtml(t.notes))}</div>` : '';
+                const imagesHtml = buildTodoImagesHtml(t);
                 const postponeBtn = overdue
                     ? `<button type="button" class="muted" onclick="postponeTodoToTomorrow(${t.id})">推遲到明天</button>`
                     : '';
@@ -4558,7 +4768,7 @@
                     <div class="todo-item${t.is_done ? ' is-done' : ''}${overdue ? ' is-overdue' : ''}${priorityClass}">
                         <div class="todo-item-top">
                             <div>
-                                <div class="todo-item-title">${escapeHtml(t.title || '')}</div>
+                                <div class="todo-item-title">${linkifyEscapedHtml(escapeHtml(t.title || ''))}</div>
                                 <div class="todo-item-meta">${escapeHtml(meta)}${remainHtml}</div>
                                 ${notes}
                             </div>
@@ -4569,9 +4779,11 @@
                                 <button type="button" class="danger" onclick="deleteTodoItem(${t.id})">刪除</button>
                             </div>
                         </div>
+                        ${imagesHtml}
                     </div>
                 `;
             }).join('');
+            setupTodoImageLazyLoad(listEl);
         }
 
         function refreshTodoUI() {
@@ -4721,6 +4933,16 @@
             });
             document.getElementById('todoCloseFormBtn')?.addEventListener('click', () => closeTodoFormPanel(true));
             document.getElementById('todoResetBtn')?.addEventListener('click', () => closeTodoFormPanel(true));
+            const todoImgBtn = document.getElementById('todoImageUploadBtn');
+            const todoImgInput = document.getElementById('todoImageFileInput');
+            if (todoImgBtn && todoImgInput) {
+                todoImgBtn.addEventListener('click', () => todoImgInput.click());
+                todoImgInput.addEventListener('change', async (e) => {
+                    const files = Array.from(e.target.files || []);
+                    e.target.value = '';
+                    if (files.length) await handleTodoImageFiles(files);
+                });
+            }
             document.getElementById('todoForm')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 if (!currentUserId) {
@@ -4745,6 +4967,11 @@
                     notes,
                     priority: [0, 1, 2].includes(priority) ? priority : 0
                 };
+                // 只有當有待辦圖片時才附加 images 欄位：
+                // 尚未在資料庫加上 images 欄位的既有 todos 表仍可正常儲存（不帶圖片）
+                if (Array.isArray(todoFormImages) && todoFormImages.length > 0) {
+                    payload.images = todoFormImages;
+                }
                 let result;
                 if (editId) {
                     const { user_id, ...updatePayload } = payload;
@@ -5546,13 +5773,49 @@
             return false;
         }
 
-        function openLifeImageLightbox(src) {
+        // 燈箱目前瀏覽的圖片組與位置
+        let lightboxImages = [];
+        let lightboxIndex = -1;
+        let lightboxTouchStart = null;
+
+        function openLifeImageLightbox(srcs, index) {
             const box = document.getElementById('lifeImageLightbox');
             const img = document.getElementById('lifeImageLightboxImg');
-            if (!box || !img || !src) return;
+            if (!box || !img) return;
+            if (Array.isArray(srcs) && srcs.length) {
+                lightboxImages = srcs.filter(Boolean).map(String);
+            } else if (typeof srcs === 'string' && srcs) {
+                lightboxImages = [srcs];
+            } else {
+                lightboxImages = [];
+            }
+            lightboxIndex = (typeof index === 'number' && index >= 0) ? index : 0;
+            if (!lightboxImages.length) return;
+            const src = lightboxImages[lightboxIndex];
+            if (!src) return;
             img.src = src;
+            updateLightboxNav();
             box.classList.add('show');
             box.setAttribute('aria-hidden', 'false');
+        }
+
+        function updateLightboxNav() {
+            const prev = document.getElementById('lightboxPrevBtn');
+            const next = document.getElementById('lightboxNextBtn');
+            const hasMultiple = lightboxImages.length > 1;
+            if (prev) prev.classList.toggle('show', hasMultiple);
+            if (next) next.classList.toggle('show', hasMultiple);
+        }
+
+        // 切換到上一張 / 下一張（循環）
+        function showLightboxImage(dir) {
+            if (!lightboxImages.length) return;
+            const img = document.getElementById('lifeImageLightboxImg');
+            if (!img) return;
+            lightboxIndex = (lightboxIndex + dir + lightboxImages.length) % lightboxImages.length;
+            const src = lightboxImages[lightboxIndex];
+            if (!src) return;
+            img.src = src;
         }
 
         function closeLifeImageLightbox() {
@@ -5562,6 +5825,10 @@
             box.classList.remove('show');
             box.setAttribute('aria-hidden', 'true');
             if (img) img.removeAttribute('src');
+            lightboxImages = [];
+            lightboxIndex = -1;
+            lightboxTouchStart = null;
+            updateLightboxNav();
         }
 
         function toggleLifeImageLightbox(src) {
@@ -5570,10 +5837,23 @@
             else openLifeImageLightbox(src);
         }
 
-        /** 日記圖片：點擊全螢幕，再點（或 Esc）關閉 */
-        window.openDiaryImageLightbox = function(src) {
+        /** 從點擊的圖片出發：收集與它同容器（同篇日記／待辦）的其他圖片形成組 */
+        window.openDiaryImageLightbox = function(el) {
+            if (!el) return;
+            const imgEl = el.tagName === 'IMG' ? el : el.querySelector('img');
+            const src = (imgEl && (imgEl.getAttribute('src') || imgEl.src)) || (typeof el === 'string' ? el : '');
             if (!src) return;
-            openLifeImageLightbox(src);
+            const container = el.closest ? el.closest('.diary-item-images, .todo-item-images, .life-image-row') : null;
+            let srcs = [];
+            let index = 0;
+            if (container) {
+                srcs = Array.from(container.querySelectorAll('img'))
+                    .map(i => i.getAttribute('src') || i.src)
+                    .filter(Boolean);
+                index = srcs.indexOf(src);
+            }
+            if (!srcs.length) srcs = [src];
+            openLifeImageLightbox(srcs, Math.max(0, index));
         };
 
         function handleLifeImageClick(e) {
@@ -7646,13 +7926,14 @@
             return !!(todo && todo.getAttribute('data-checked') === '1');
         }
 
-        function extractDatedLinesFromDom(root) {
+        function extractDatedLinesFromDom(root, includeCompleted = false) {
             if (!root) return [];
             const lines = [];
             const seen = new Set();
             // 收合的子級仍在 DOM 內，可直接查詢 .life-date（不必展開或 sanitize）
             root.querySelectorAll('.life-date[data-date]').forEach((dateNode) => {
-                if (isLifeDateInCompletedTodo(dateNode)) return;
+                const isCompleted = isLifeDateInCompletedTodo(dateNode);
+                if (isCompleted && !includeCompleted) return;
                 const iso = dateNode.getAttribute('data-date');
                 if (!iso) return;
                 const text = getVisualLineTextForDate(dateNode, root);
@@ -7660,23 +7941,23 @@
                 const key = iso + '|' + text;
                 if (seen.has(key)) return;
                 seen.add(key);
-                lines.push({ date: iso, dates: [iso], text });
+                lines.push({ date: iso, dates: [iso], text, done: isCompleted });
             });
             return lines.sort((a, b) => a.date.localeCompare(b.date));
         }
 
-        function extractDatedLinesFromHtml(html) {
+        function extractDatedLinesFromHtml(html, includeCompleted = false) {
             const root = document.createElement('div');
             root.className = 'records-note-editor';
             // 內容在載入／儲存時已 sanitize；抽取日期不必再整樹清洗（原本是卡頓主因之一）
             root.innerHTML = html || '';
-            return extractDatedLinesFromDom(root);
+            return extractDatedLinesFromDom(root, includeCompleted);
         }
 
-        function extractDatedLinesFromEditor() {
+        function extractDatedLinesFromEditor(includeCompleted = false) {
             const editor = getNoteEditor();
             if (!editor) return [];
-            return extractDatedLinesFromDom(editor);
+            return extractDatedLinesFromDom(editor, includeCompleted);
         }
 
         function stripDateFromReminderText(text, iso) {
@@ -7698,11 +7979,11 @@
                     && getNoteEditor()
                     && (currentAppView === 'records' || noteDirty)
                 ) {
-                    lines = extractDatedLinesFromEditor();
+                    lines = extractDatedLinesFromEditor(true);
                 } else {
                     const note = lifeNotesByCategory[String(cat.id)];
                     if (!note?.content) return;
-                    lines = extractDatedLinesFromHtml(note.content);
+                    lines = extractDatedLinesFromHtml(note.content, true);
                 }
                 lines.forEach((line) => {
                     const key = `${cat.id}|${line.date}|${line.text}`;
@@ -7713,7 +7994,8 @@
                         text: line.text,
                         displayText: stripDateFromReminderText(line.text, line.date),
                         categoryId: cat.id,
-                        categoryName: cat.name
+                        categoryName: cat.name,
+                        done: line.done === true
                     });
                 });
             });
@@ -8302,22 +8584,66 @@
                 saveNoteSelection();
             });
             document.getElementById('noteInsertImageBtn')?.addEventListener('click', openNoteImagePicker);
+            // 「已完成」開關：切換是否隱藏已勾選的待辦行
+            document.getElementById('noteHideCompletedBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const card = document.querySelector('.records-note-card');
+                if (!card) return;
+                const hide = !card.classList.contains('hide-completed');
+                card.classList.toggle('hide-completed', hide);
+                const btn = document.getElementById('noteHideCompletedBtn');
+                if (btn) btn.classList.toggle('active', hide);
+            });
             document.getElementById('noteImageFileInput')?.addEventListener('change', async (e) => {
                 const files = e.target.files;
                 if (files?.length) await insertLifeImagesFromFiles(files);
                 e.target.value = '';
             });
             document.getElementById('lifeImageLightbox')?.addEventListener('mousedown', (e) => {
+                // 點到導航按鈕時不關閉燈箱
+                if (e.target.closest && e.target.closest('.lightbox-nav-btn')) return;
                 e.preventDefault();
                 e.stopPropagation();
                 closeLifeImageLightbox();
             });
             document.getElementById('lifeImageLightbox')?.addEventListener('click', (e) => {
+                // 點擊左右按鈕＝切換圖片，不關閉
+                const navBtn = e.target.closest && e.target.closest('.lightbox-nav-btn');
+                if (navBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showLightboxImage(navBtn.id === 'lightboxNextBtn' ? 1 : -1);
+                    return;
+                }
                 e.preventDefault();
                 e.stopPropagation();
             });
+            // 滑鼠：左右半透明按鈕（電腦）。已在 click 處理。
+            // 手機／觸控：左滑右滑換圖片
+            document.getElementById('lifeImageLightbox')?.addEventListener('touchstart', (e) => {
+                const t = e.changedTouches && e.changedTouches[0];
+                if (!t) return;
+                lightboxTouchStart = { x: t.clientX, y: t.clientY };
+            }, { passive: true });
+            document.getElementById('lifeImageLightbox')?.addEventListener('touchend', (e) => {
+                if (!lightboxTouchStart) return;
+                const t = e.changedTouches && e.changedTouches[0];
+                if (!t) return;
+                const dx = t.clientX - lightboxTouchStart.x;
+                const dy = t.clientY - lightboxTouchStart.y;
+                lightboxTouchStart = null;
+                if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+                    e.preventDefault();
+                    showLightboxImage(dx < 0 ? 1 : -1); // 左滑→下一張；右滑→上一張
+                }
+            }, { passive: false });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeLifeImageLightbox();
+                if (document.getElementById('lifeImageLightbox')?.classList.contains('show')) {
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); showLightboxImage(-1); }
+                    else if (e.key === 'ArrowRight') { e.preventDefault(); showLightboxImage(1); }
+                }
             });
             document.getElementById('noteDateModalCancel')?.addEventListener('click', closeNoteDateModal);
             document.getElementById('noteDateModalOk')?.addEventListener('click', confirmInsertNoteDate);
@@ -8414,9 +8740,7 @@
                 })();
             }
             if (viewName === 'english') {
-                initFsiPage();
-                fsiLoadSets();
-                fsiRenderLibrary();
+                fsiOpenPage();
             } else {
                 fsiPauseTimer();
             }
@@ -8532,8 +8856,6 @@
             }
             hideAuthGate();
             loadDarkMode();
-            initFsiPage();
-            fsiLoadSets();
             switchAppView('english');
         }
 
@@ -8574,8 +8896,16 @@
             activeSupabaseUserId = null;
             signedUrlCache = {};
             fsiSets = [];
+            fsiStore = fsiEmptyStore();
+            fsiStoreLoaded = false;
+            fsiSetById = new Map();
+            fsiReviewPool = [];
             fsiSession = null;
             fsiRemoteOk = null;
+            if (fsiPushTimer) {
+                clearTimeout(fsiPushTimer);
+                fsiPushTimer = null;
+            }
             showAuthGate('已登出', true);
         }
 
@@ -8608,8 +8938,7 @@
             initRecordsPage();
             loadLifeNotes();
             initFsiPage();
-            fsiLoadSets();
-            fsiPullRemote();
+            fsiBootStore();
             updateTagsList();
             initImageUpload();
             initDiaryInputTracking();
@@ -8885,7 +9214,7 @@
             if (urls.length > 0) {
                 return `
                     <div class="diary-item-images">
-                        ${urls.map((img) => `<img src="${escapeHtml(img)}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this.src)">`).join('')}
+                        ${urls.map((img) => `<img src="${escapeHtml(img)}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this)">`).join('')}
                     </div>
                 `;
             }
@@ -8933,7 +9262,7 @@
                 el.removeAttribute('data-image-paths');
                 el.removeAttribute('data-diary-id-for-images');
                 el.innerHTML = good
-                    .map((img) => `<img src="${escapeHtml(img)}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this.src)">`)
+                    .map((img) => `<img src="${escapeHtml(img)}" alt="日記圖片" class="diary-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this)">`)
                     .join('');
                 if (diary) {
                     diary.imageUrls = urls;
@@ -9225,6 +9554,99 @@
         async function removeInlineImage(index) {
             inlineEditImages.splice(index, 1);
             await updateInlineImagePreview();
+        }
+
+        // ===== 待辦圖片（參考日記圖片設定：壓縮 → 上傳 Supabase Storage → 存路徑陣列）=====
+
+        // 待辦表單：壓縮並上傳圖片，加入 todoFormImages 並更新預覽
+        async function handleTodoImageFiles(files) {
+            const progress = document.getElementById('todoUploadProgress');
+            if (progress) {
+                progress.style.display = 'block';
+                progress.textContent = '正在壓縮和上傳圖片...';
+            }
+            let failed = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (progress) progress.textContent = `正在處理圖片 ${i + 1}/${files.length}...`;
+                try {
+                    const compressedBlob = await compressImage(file);
+                    const imagePath = await uploadImageToSupabase(compressedBlob, file.name);
+                    if (!imagePath) { failed++; continue; }
+                    todoFormImages.push(imagePath);
+                } catch (error) {
+                    console.error('[Todo Image] Error processing image:', error);
+                    failed++;
+                }
+            }
+            if (progress) {
+                progress.style.display = 'none';
+                progress.textContent = '';
+            }
+            if (failed) showToast(`${failed} 張圖片處理失敗`, 'error');
+            await updateTodoImagePreview();
+        }
+
+        // 待辦表單：更新圖片預覽（路徑 → 顯示用 URL）
+        async function updateTodoImagePreview() {
+            const container = document.getElementById('todoUploadedImages');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!todoFormImages.length) return;
+            for (let index = 0; index < todoFormImages.length; index++) {
+                const pathOrUrl = todoFormImages[index];
+                const displayUrl = await resolveImageUrl(pathOrUrl);
+                const item = document.createElement('div');
+                item.className = 'uploaded-image-item';
+                item.innerHTML = `
+                    <img src="${displayUrl || ''}" alt="待辦圖片">
+                    <button class="remove-image" onclick="removeTodoImage(${index})">×</button>
+                `;
+                container.appendChild(item);
+            }
+        }
+
+        // 待辦表單：移除單張圖片
+        window.removeTodoImage = function(index) {
+            todoFormImages.splice(index, 1);
+            updateTodoImagePreview();
+        };
+
+        // 待辦列表：產生圖片縮圖容器（placeholder，稍後 hydrate）
+        function buildTodoImagesHtml(todo) {
+            const paths = Array.isArray(todo?.images) ? todo.images.filter(Boolean).map(String) : [];
+            if (!paths.length) return '';
+            return `
+                <div class="todo-item-images todo-images-lazy" data-todo-id-for-images="${escapeHtml(String(todo.id))}">
+                    ${paths.map(() => `<div class="todo-item-image todo-image-placeholder" aria-hidden="true"></div>`).join('')}
+                </div>
+            `;
+        }
+
+        // 待辦列表：把 placeholder 解析成真實圖片（路徑 → URL）
+        async function hydrateTodoImageContainer(el) {
+            if (!el || el.dataset.hydrated) return;
+            el.dataset.hydrated = '1';
+            const todoId = el.getAttribute('data-todo-id-for-images');
+            const todo = todos.find((t) => String(t.id) === String(todoId));
+            const paths = Array.isArray(todo?.images) ? todo.images.filter(Boolean).map(String) : [];
+            if (!paths.length) { el.innerHTML = ''; return; }
+            try {
+                const urls = await Promise.all(paths.map((p) => resolveImageUrl(p)));
+                const good = urls.filter(isDisplayableImageUrl);
+                el.innerHTML = good.length
+                    ? good.map((img) => `<img src="${escapeHtml(img)}" alt="待辦圖片" class="todo-item-image" loading="lazy" decoding="async" onclick="openDiaryImageLightbox(this)">`).join('')
+                    : '<div style="font-size:12px;color:#999;padding:8px;">圖片載入失敗</div>';
+            } catch (err) {
+                console.warn('[todo] hydrate image failed', err);
+                el.innerHTML = '<div style="font-size:12px;color:#999;padding:8px;">圖片載入失敗</div>';
+            }
+        }
+
+        // 待辦列表：渲染後解析所有待辦圖片
+        function setupTodoImageLazyLoad(root) {
+            const host = root || document.getElementById('todoList') || document;
+            (host.querySelectorAll?.('.todo-images-lazy') || []).forEach(hydrateTodoImageContainer);
         }
 
         // 更新圖片預覽（paths → signed URL）
@@ -9934,10 +10356,11 @@
                 }
 
                 const searchInput = document.getElementById('searchInput');
+                // 儲存後重新從伺服器載入，確保列表顯示最新資料
                 if (searchInput && searchInput.value.trim()) {
                     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
                 } else {
-                    await renderDiaryList();
+                    await loadDiaries();
                 }
                 updateTagsList();
                 showToast('日記已更新！', 'success');
@@ -10020,7 +10443,7 @@
             document.getElementById('cancelEditBtn').style.display = 'none';
             document.getElementById('deleteBtn').style.display = 'none';
 
-            await renderDiaryList();
+            await loadDiaries();
             updateTagsList();
             
             showToast('日記已儲存！', 'success');
@@ -11007,7 +11430,7 @@
                 
                 const contentHtml = formatDiaryContentHtml(diary.content, diary.id);
                 const translationBlock = diary.translation
-                    ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${wrapHashtagsInEscapedHtml(escapeHtml(diary.translation))}</div>`
+                    ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${wrapHashtagsInEscapedHtml(linkifyEscapedHtml(escapeHtml(diary.translation)))}</div>`
                     : '';
                 
                 return `
@@ -11019,7 +11442,7 @@
                                 <button class="diary-item-edit-btn" onclick='editDiary(${idJson}, event)'>✏️ 編輯</button>
                             </div>
                         </div>
-                        <div class="diary-item-body is-collapsed" onclick="toggleDiaryExpand(event, this)">
+                        <div class="diary-item-body is-collapsed" onmousedown="toggleDiaryExpand(event, this)">
                             <div class="diary-clamp">
                                 <div class="diary-item-content diary-item-content-main">${contentHtml}</div>
                                 ${translationBlock}
@@ -11378,7 +11801,7 @@
 
                 let contentHtml = formatDiaryContentHtml(diary.content, diary.id, keywords);
                 let highlightedTranslation = diary.translation
-                    ? wrapHashtagsInEscapedHtml(highlightText(diary.translation, keywords))
+                    ? wrapHashtagsInEscapedHtml(linkifyEscapedHtml(highlightText(diary.translation, keywords)))
                     : '';
 
                 const tagsHtml = (diary.tags || []).map(tag => 
@@ -11396,7 +11819,7 @@
                                 <button class="diary-item-edit-btn" onclick='editDiary(${idJson}, event)'>✏️ 編輯</button>
                             </div>
                         </div>
-                        <div class="diary-item-body is-collapsed" onclick="toggleDiaryExpand(event, this)">
+                        <div class="diary-item-body is-collapsed" onmousedown="toggleDiaryExpand(event, this)">
                             <div class="diary-clamp">
                                 <div class="diary-item-content diary-item-content-main">${contentHtml}</div>
                                 ${highlightedTranslation ? `<div class="diary-item-content" style="color: #666; font-style: italic; margin-top: 8px;">${highlightedTranslation}</div>` : ''}
@@ -11414,16 +11837,49 @@
             await setupInlineEditorAfterRender();
         }
 
+        // 長按／位移門檻：按壓時間低於此值且幾乎沒有位移，才視為「瞬間按壓」而縮起；
+        // 有明顯位移（圈選文字）或長按，一律不縮起。
+        const DIARY_COLLAPSE_PRESS_MS = 400;
+        const DIARY_COLLAPSE_MOVE_PX = 6;
+        let diaryCollapsePress = null; // { body, startAt, x, y }
+
         function toggleDiaryExpand(event, bodyEl) {
             if (!bodyEl) return;
-            // 點 checklist／按鈕／連結時不觸發展開
+            // 只處理左鍵「按下」；右鍵、以及滑鼠放開（mouseup/click）本身都不會觸發
+            if (!event || event.button !== 0) return;
+            // 點 checklist／按鈕／連結時不觸發
             if (event.target.closest('input, button, a, label, .checklist-item, .checklist-checkbox')) return;
             if (!bodyEl.classList.contains('has-more')) return;
+            // 故意不呼叫 preventDefault，保留文字圈選能力
 
-            const collapsing = !bodyEl.classList.contains('is-collapsed');
-            bodyEl.classList.toggle('is-collapsed', collapsing);
+            // 已展開 → 要「縮起」：只有「瞬間原地按壓」才縮起，長按或圈選文字不縮起
+            if (!bodyEl.classList.contains('is-collapsed')) {
+                diaryCollapsePress = { body: bodyEl, startAt: Date.now(), x: event.clientX, y: event.clientY };
+                document.addEventListener('mouseup', handleDiaryCollapseRelease, true);
+                return;
+            }
+
+            // 收合 → 「展開」：按下瞬間立即展開
+            applyDiaryCollapsed(bodyEl, false);
+        }
+
+        // 放開滑鼠時判斷：瞬間原地按壓才縮起；有位移（圈選文字）或長按一律放過、不縮起
+        function handleDiaryCollapseRelease(e) {
+            document.removeEventListener('mouseup', handleDiaryCollapseRelease, true);
+            const press = diaryCollapsePress;
+            diaryCollapsePress = null;
+            if (!press) return;
+            const moved = Math.hypot((e.clientX - press.x), (e.clientY - press.y)) > DIARY_COLLAPSE_MOVE_PX;
+            if (!moved && (Date.now() - press.startAt) < DIARY_COLLAPSE_PRESS_MS) {
+                applyDiaryCollapsed(press.body, true);
+            }
+        }
+
+        function applyDiaryCollapsed(bodyEl, collapsed) {
+            if (!bodyEl) return;
+            bodyEl.classList.toggle('is-collapsed', collapsed);
             const hint = bodyEl.querySelector('.diary-expand-hint');
-            if (hint) hint.textContent = collapsing ? '展開' : '收合';
+            if (hint) hint.textContent = collapsed ? '展開' : '收合';
         }
 
         function refreshDiaryExpandStates() {
@@ -11446,6 +11902,50 @@
             });
         }
 
+        // 把已轉義的 HTML 中的網址轉成可點擊的超連結（內容須已 escape，
+        //   因此不會有原始 <a>；可能含<br>、checklist 結構、highlight 產生的 <span>）
+        function linkifyEscapedHtml(html) {
+            const HOOK = '\u0000';
+            // 結尾標點不屬連結
+            const TRAIL = "[.,;:!?'\"" + '\u3002\uff1b\uff0c\uff01\uff1f\uff1a\u3010\u3011\u300b\u300a\u300d\u300c' + ')]}】』」\u3001';
+            const urlRe = new RegExp('https?://[^\\s<>"\'\\u0000]+', 'gi');
+            const wwwRe = new RegExp('(^|[\\s(>])www\\.[^\\s<>"\'\\u0000]+', 'gi');
+
+            const stripTrail = (m) => {
+                let end = m.length;
+                while (end > 0 && TRAIL.indexOf(m[end - 1]) !== -1) end--;
+                return [m.slice(0, end), m.slice(end)];
+            };
+
+            const protect = (str) => str.replace(/<\w[^>]*>|<\/\w+>/g, (tag) => (
+                /<\/(a|span)|\b(a|span)\b/i.test(tag) ? tag.replace(/</g, HOOK + 'LT') : tag
+            ));
+            const restore = (str) => str.replace(new RegExp(HOOK + 'LT', 'g'), '<');
+
+            const wrapUrl = (m) => {
+                const [clean, trail] = stripTrail(m);
+                if (!clean) return m;
+                return `<a href="${clean}" target="_blank" rel="noopener noreferrer" class="inline-link">${clean}</a>${trail}`;
+            };
+            const wrapWww = (m, pre) => {
+                const body = m.slice(pre.length);
+                const [clean, trail] = stripTrail(body);
+                if (!clean) return m;
+                return `${pre}<a href="http://${clean}" target="_blank" rel="noopener noreferrer" class="inline-link">${clean}</a>${trail}`;
+            };
+
+            const wrap = (input) => {
+                let out = String(input || '');
+                out = protect(out);
+                out = out.replace(urlRe, wrapUrl);
+                out = out.replace(wwwRe, wrapWww);
+                out = restore(out);
+                return out;
+            };
+
+            return wrap(html);
+        }
+
         // 高亮日記正文中的 #標籤（內容須已 escape）
         function wrapHashtagsInEscapedHtml(html) {
             return String(html || '').replace(
@@ -11463,6 +11963,7 @@
             } else {
                 html = escapeHtml(content || '');
             }
+            html = linkifyEscapedHtml(html);
             return wrapHashtagsInEscapedHtml(html);
         }
 
@@ -11664,6 +12165,7 @@
             completion: 'Completion 補完',
             situation: 'Situation 情境'
         };
+        const FSI_ITEM_TYPES = ['echo', 'shadow', 'substitution', 'transformation', 'response', 'expansion', 'integration', 'completion', 'situation'];
         const FSI_SOURCE_LABEL = {
             spoken: '口語',
             fsi: 'FSI 語法',
@@ -11706,12 +12208,24 @@
         ].join('\n');
 
         let fsiSets = [];
+        let fsiStore = { v: 2, progress: {}, deleted: [], custom: [] };
+        let fsiStoreLoaded = false;
+        let fsiSetById = new Map();
+        let fsiReviewPool = [];
         let fsiPreviewSet = null;
         let fsiSession = null;
         let fsiPageReady = false;
         let fsiRemoteOk = null;
         let fsiLibraryFilter = 'all';
         let fsiLevelFilter = 'all';
+        let fsiSearchQuery = '';
+        let fsiTypeFilter = new Set(FSI_ITEM_TYPES);
+        let fsiLibsPromise = null;
+        let fsiPullPromise = null;
+        let fsiPushTimer = null;
+        const FSI_STORE_VERSION = 2;
+        const FSI_LIB_FILES = ['fsi-zh-map.js', 'fsi-library.js', 'fsi-library-advanced.js', 'fsi-library-c1.js'];
+        const FSI_BUILTIN_ID = /^(starter-|adv-|c1-)/;
 
         function fsiEsc(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -11789,113 +12303,324 @@
             if (key && !key.value) key.value = s.apiKey;
         }
 
-        function fsiLoadSets() {
-            try {
-                const raw = localStorage.getItem(fsiStorageKey());
-                fsiSets = raw ? JSON.parse(raw) : [];
-                if (!Array.isArray(fsiSets)) fsiSets = [];
-            } catch (e) {
-                fsiSets = [];
-            }
-            fsiEnsureStarterSets();
+        function fsiIsBuiltinId(id) {
+            return FSI_BUILTIN_ID.test(id || '');
         }
 
-        function fsiEnsureStarterSets() {
-            const starters = (typeof FSI_STARTER_SETS !== 'undefined' && FSI_STARTER_SETS) || [];
-            if (!starters.length) return;
-            const seen = fsiReadSeenStarters();
-            if (localStorage.getItem(fsiSeedFlag())) {
-                seen.add('starter-i-want');
-                seen.add('starter-can-you');
-            }
-            const byId = new Map(starters.map(s => [s.id, s]));
-            let changed = false;
-            fsiSets = fsiSets.map(set => {
-                const fresh = byId.get(set.id);
-                if (!fresh) return set;
-                seen.add(set.id);
-                changed = true;
+        function fsiEmptyStore() {
+            return { v: FSI_STORE_VERSION, progress: {}, deleted: [], custom: [] };
+        }
+
+        function fsiStoreHasData(store) {
+            if (!store) return false;
+            return Object.keys(store.progress || {}).length > 0
+                || (store.deleted || []).length > 0
+                || (store.custom || []).length > 0;
+        }
+
+        function fsiProgressFromSet(set) {
+            if (!set) return null;
+            if (!set.timesCompleted && !set.lastPracticedAt && !set.lastTooSlow) return null;
+            return {
+                lastPracticedAt: set.lastPracticedAt || null,
+                timesCompleted: Number(set.timesCompleted || 0),
+                lastTooSlow: Number(set.lastTooSlow || 0)
+            };
+        }
+
+        function fsiMigrateLegacyArray(arr) {
+            const progress = {};
+            const custom = [];
+            const present = new Set();
+            (arr || []).forEach(raw => {
+                if (!raw || !raw.id) return;
+                present.add(raw.id);
+                const snap = fsiProgressFromSet(raw);
+                if (snap) progress[raw.id] = snap;
+                const builtin = !!raw.builtin || fsiIsBuiltinId(raw.id);
+                if (!builtin) custom.push(fsiNormalizeSet({ ...raw, builtin: false }));
+            });
+            const deleted = [];
+            fsiReadSeenStarters().forEach(id => {
+                if (id && !present.has(id) && fsiIsBuiltinId(id)) deleted.push(id);
+            });
+            return { v: FSI_STORE_VERSION, progress, deleted, custom };
+        }
+
+        function fsiCoerceStore(raw) {
+            if (!raw) return fsiEmptyStore();
+            if (Array.isArray(raw)) return fsiMigrateLegacyArray(raw);
+            if (raw.v === FSI_STORE_VERSION) {
                 return {
-                    ...fresh,
-                    createdAt: set.createdAt || fsiNowIso(),
-                    lastPracticedAt: set.lastPracticedAt || null,
-                    timesCompleted: set.timesCompleted || 0,
-                    lastTooSlow: set.lastTooSlow || 0
+                    v: FSI_STORE_VERSION,
+                    progress: raw.progress && typeof raw.progress === 'object' && !Array.isArray(raw.progress) ? raw.progress : {},
+                    deleted: Array.isArray(raw.deleted) ? raw.deleted.filter(Boolean) : [],
+                    custom: Array.isArray(raw.custom) ? raw.custom : []
+                };
+            }
+            if (Array.isArray(raw.sets)) return fsiMigrateLegacyArray(raw.sets);
+            return fsiEmptyStore();
+        }
+
+        function fsiMergeStores(local, remote) {
+            const a = fsiCoerceStore(local);
+            const b = fsiCoerceStore(remote);
+            const progress = { ...a.progress };
+            Object.keys(b.progress || {}).forEach(id => {
+                const x = progress[id];
+                const y = b.progress[id];
+                if (!x) {
+                    progress[id] = y;
+                    return;
+                }
+                const xLast = x.lastPracticedAt || '';
+                const yLast = y.lastPracticedAt || '';
+                const later = yLast >= xLast ? y : x;
+                progress[id] = {
+                    lastPracticedAt: later.lastPracticedAt || null,
+                    timesCompleted: Math.max(Number(x.timesCompleted || 0), Number(y.timesCompleted || 0)),
+                    lastTooSlow: Number(later.lastTooSlow || 0)
                 };
             });
-            const have = new Set(fsiSets.map(s => s.id));
-            starters.forEach(starter => {
-                if (have.has(starter.id) || seen.has(starter.id)) return;
-                fsiSets.push({
-                    ...starter,
-                    createdAt: fsiNowIso(),
-                    updatedAt: fsiNowIso(),
-                    lastPracticedAt: null,
-                    timesCompleted: 0,
-                    lastTooSlow: 0
-                });
-                seen.add(starter.id);
-                have.add(starter.id);
-                changed = true;
-            });
-            fsiWriteSeenStarters(seen);
-            localStorage.setItem(fsiSeedFlag(), '1');
-            localStorage.setItem('fsiLibraryVersion:' + (currentUserId || 'local'), String(window.FSI_LIBRARY_VERSION || 6));
-            if (changed) fsiSaveSets();
-        }
-
-        function fsiSaveSets() {
-            localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiSets));
-            fsiPushRemote();
-        }
-
-        function fsiMergeSets(local, remote) {
-            const map = new Map();
-            [...(local || []), ...(remote || [])].forEach(raw => {
+            const customMap = new Map();
+            [...(a.custom || []), ...(b.custom || [])].forEach(raw => {
                 const set = fsiNormalizeSet(raw);
                 if (!set.id || !set.items.length) return;
-                const prev = map.get(set.id);
-                if (!prev || (set.updatedAt || '') >= (prev.updatedAt || '')) map.set(set.id, set);
+                const prev = customMap.get(set.id);
+                if (!prev || (set.updatedAt || '') >= (prev.updatedAt || '')) customMap.set(set.id, set);
             });
-            return [...map.values()];
+            return {
+                v: FSI_STORE_VERSION,
+                progress,
+                deleted: [...new Set([...(a.deleted || []), ...(b.deleted || [])])],
+                custom: [...customMap.values()]
+            };
+        }
+
+        function fsiApplyProgress(set) {
+            const p = (fsiStore.progress || {})[set.id] || {};
+            const a = set.lastPracticedAt || '';
+            const b = p.lastPracticedAt || '';
+            const later = b >= a ? p.lastPracticedAt || set.lastPracticedAt || null : set.lastPracticedAt;
+            return {
+                ...set,
+                timesCompleted: Math.max(Number(set.timesCompleted || 0), Number(p.timesCompleted || 0)),
+                lastPracticedAt: later,
+                lastTooSlow: Number((b >= a ? p.lastTooSlow : set.lastTooSlow) || set.lastTooSlow || p.lastTooSlow || 0)
+            };
+        }
+
+        function fsiRebuildIndexes() {
+            fsiSetById = new Map();
+            fsiReviewPool = [];
+            fsiSets.forEach(set => {
+                if (!set || !set.id) return;
+                fsiSetById.set(set.id, set);
+                (set.items || []).forEach(it => {
+                    if (it.type === 'substitution' || it.type === 'response') {
+                        fsiReviewPool.push({ setId: set.id, item: it });
+                    }
+                });
+            });
+        }
+
+        function fsiHydrateSets() {
+            const deleted = new Set(fsiStore.deleted || []);
+            const starters = (typeof FSI_STARTER_SETS !== 'undefined' && FSI_STARTER_SETS) || [];
+            const catalog = starters
+                .filter(set => set && set.id && !deleted.has(set.id))
+                .map(fsiApplyProgress);
+            const custom = (fsiStore.custom || [])
+                .filter(set => set && set.id && !deleted.has(set.id))
+                .map(raw => fsiApplyProgress(fsiNormalizeSet(raw)));
+            fsiSets = catalog.concat(custom);
+            fsiRebuildIndexes();
+        }
+
+        function fsiLoadScript(src) {
+            return new Promise((resolve, reject) => {
+                const existing = document.querySelector('script[data-fsi-lib="' + src + '"]');
+                if (existing) {
+                    if (existing.dataset.loaded === '1') {
+                        resolve();
+                        return;
+                    }
+                    existing.addEventListener('load', () => resolve(), { once: true });
+                    existing.addEventListener('error', () => reject(new Error('無法載入 ' + src)), { once: true });
+                    return;
+                }
+                const el = document.createElement('script');
+                el.src = src;
+                el.async = false;
+                el.dataset.fsiLib = src;
+                el.onload = () => {
+                    el.dataset.loaded = '1';
+                    resolve();
+                };
+                el.onerror = () => reject(new Error('無法載入題庫檔 ' + src));
+                document.head.appendChild(el);
+            });
+        }
+
+        function fsiEnsureLibraries() {
+            if (window.FSI_LIBS_READY) return Promise.resolve();
+            if (fsiLibsPromise) return fsiLibsPromise;
+            fsiLibsPromise = (async () => {
+                for (const file of FSI_LIB_FILES) {
+                    await fsiLoadScript(file);
+                }
+                if (!Array.isArray(window.FSI_STARTER_SETS) || !window.FSI_STARTER_SETS.length) {
+                    throw new Error('內建題庫沒有載入成功');
+                }
+                window.FSI_LIBS_READY = true;
+            })().catch(err => {
+                fsiLibsPromise = null;
+                throw err;
+            });
+            return fsiLibsPromise;
+        }
+
+        function fsiLoadLocalStore() {
+            if (fsiStoreLoaded) return;
+            let migrated = false;
+            try {
+                const raw = localStorage.getItem(fsiStorageKey());
+                const parsed = raw ? JSON.parse(raw) : null;
+                migrated = Array.isArray(parsed);
+                fsiStore = fsiCoerceStore(parsed);
+            } catch (e) {
+                fsiStore = fsiEmptyStore();
+            }
+            fsiStoreLoaded = true;
+            if (migrated) {
+                try { localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiStore)); } catch (e) { /* quota */ }
+            }
+        }
+
+        function fsiBootStore() {
+            fsiLoadLocalStore();
+            fsiPullRemote();
+        }
+
+        async function fsiEnsureReady() {
+            fsiLoadLocalStore();
+            const remoteP = fsiPullRemote();
+            await fsiEnsureLibraries();
+            await remoteP;
+            fsiHydrateSets();
+        }
+
+        async function fsiOpenPage() {
+            initFsiPage();
+            const host = document.getElementById('fsiSetList');
+            if (host && !fsiSets.length) {
+                host.innerHTML = '<div class="empty-state"><strong>正在載入題庫…</strong>第一次會下載內建句型，之後只同步進度</div>';
+            }
+            try {
+                await fsiEnsureReady();
+                fsiRenderLibrary();
+            } catch (err) {
+                console.error('[FSI] load failed', err);
+                if (host) {
+                    host.innerHTML = '<div class="empty-state"><strong>題庫載入失敗</strong>請檢查網路後重新整理</div>';
+                }
+                showToast(err.message || '題庫載入失敗', 'error');
+            }
+        }
+
+        function fsiWriteCustom(set) {
+            const next = fsiNormalizeSet({ ...set, builtin: false });
+            const list = fsiStore.custom || [];
+            const idx = list.findIndex(s => s.id === next.id);
+            if (idx >= 0) list[idx] = next;
+            else list.unshift(next);
+            fsiStore.custom = list;
+            return next;
+        }
+
+        function fsiRememberProgress(set) {
+            if (!set || !set.id) return;
+            const snap = fsiProgressFromSet(set);
+            if (snap) fsiStore.progress[set.id] = snap;
+            else delete fsiStore.progress[set.id];
+            if (!set.builtin && !fsiIsBuiltinId(set.id)) {
+                const custom = (fsiStore.custom || []).find(s => s.id === set.id);
+                if (custom) {
+                    custom.timesCompleted = set.timesCompleted;
+                    custom.lastPracticedAt = set.lastPracticedAt;
+                    custom.lastTooSlow = set.lastTooSlow;
+                    custom.updatedAt = set.updatedAt || fsiNowIso();
+                }
+            }
+        }
+
+        function fsiPersistStore(immediate) {
+            try {
+                localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiStore));
+            } catch (e) {
+                showToast('本機儲存空間不足，進度可能沒寫入', 'error');
+            }
+            if (fsiPushTimer) {
+                clearTimeout(fsiPushTimer);
+                fsiPushTimer = null;
+            }
+            if (immediate) {
+                fsiPushRemote();
+                return;
+            }
+            fsiPushTimer = setTimeout(() => {
+                fsiPushTimer = null;
+                fsiPushRemote();
+            }, 700);
         }
 
         async function fsiPullRemote() {
-            if (!USE_SUPABASE || !currentUserId || fsiRemoteOk === false) return;
-            const rows = await supabaseRequest(
-                'fsi_drill_library',
-                'GET',
-                null,
-                `?user_id=eq.${currentUserId}&select=sets`
-            );
-            if (rows === null) {
-                fsiRemoteOk = false;
-                return;
-            }
-            fsiRemoteOk = true;
-            const remote = Array.isArray(rows[0]?.sets) ? rows[0].sets : [];
-            if (!remote.length) {
-                if (fsiSets.length) fsiPushRemote();
-                return;
-            }
-            const merged = fsiMergeSets(fsiSets, remote);
-            const before = JSON.stringify(fsiSets);
-            fsiSets = merged;
-            localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiSets));
-            if (JSON.stringify(fsiSets) !== before) {
-                fsiPushRemote();
-                if (currentAppView === 'english') fsiRenderLibrary();
-            }
+            if (!USE_SUPABASE || !activeSupabaseUserId || fsiRemoteOk === false) return;
+            if (fsiPullPromise) return fsiPullPromise;
+            fsiPullPromise = (async () => {
+                const rows = await supabaseRequest(
+                    'fsi_drill_library',
+                    'GET',
+                    null,
+                    `?user_id=eq.${activeSupabaseUserId}&select=sets`
+                );
+                if (rows === null) {
+                    fsiRemoteOk = false;
+                    return;
+                }
+                fsiRemoteOk = true;
+                const remoteRaw = rows[0] ? rows[0].sets : null;
+                const remoteEmpty = remoteRaw == null
+                    || (Array.isArray(remoteRaw) && !remoteRaw.length)
+                    || (remoteRaw && remoteRaw.v === FSI_STORE_VERSION && !fsiStoreHasData(fsiCoerceStore(remoteRaw)));
+                if (remoteEmpty) {
+                    if (fsiStoreHasData(fsiStore)) fsiPushRemote();
+                    return;
+                }
+                const merged = fsiMergeStores(fsiStore, remoteRaw);
+                fsiStore = merged;
+                try { localStorage.setItem(fsiStorageKey(), JSON.stringify(fsiStore)); } catch (e) { /* quota */ }
+                if (JSON.stringify(fsiStore) !== JSON.stringify(fsiCoerceStore(remoteRaw))) {
+                    fsiPushRemote();
+                }
+                if (currentAppView === 'english' && window.FSI_LIBS_READY) {
+                    fsiHydrateSets();
+                    fsiRenderLibrary();
+                }
+            })().finally(() => {
+                fsiPullPromise = null;
+            });
+            return fsiPullPromise;
         }
 
         async function fsiPushRemote() {
-            if (!USE_SUPABASE || !currentUserId || fsiRemoteOk === false) return;
-            const payload = { user_id: currentUserId, sets: fsiSets, updated_at: fsiNowIso() };
+            if (!USE_SUPABASE || !activeSupabaseUserId || fsiRemoteOk === false) return;
+            const payload = { user_id: activeSupabaseUserId, sets: fsiStore, updated_at: fsiNowIso() };
             const patched = await supabaseRequest(
                 'fsi_drill_library',
                 'PATCH',
                 payload,
-                `?user_id=eq.${currentUserId}`
+                `?user_id=eq.${activeSupabaseUserId}`
             );
             if (patched === null) {
                 fsiRemoteOk = false;
@@ -11903,8 +12628,7 @@
             }
             if (Array.isArray(patched) && patched.length === 0) {
                 const posted = await supabaseRequest('fsi_drill_library', 'POST', payload);
-                if (posted === null) fsiRemoteOk = false;
-                else fsiRemoteOk = true;
+                fsiRemoteOk = posted !== null;
                 return;
             }
             fsiRemoteOk = true;
@@ -11925,77 +12649,116 @@
             }
         }
 
-        function fsiRenderLibrary() {
-            const host = document.getElementById('fsiSetList');
-            if (!host) return;
-            host.innerHTML = '';
-            if (!fsiSets.length) {
-                const empty = document.createElement('div');
-                empty.className = 'empty-state';
-                empty.innerHTML = '<strong>還沒有題集</strong>點右上角「出新題集」，或匯入 JSON';
-                host.appendChild(empty);
-                return;
-            }
-            const sorted = [...fsiSets].sort((a, b) => {
+        function fsiVisibleSets() {
+            const q = fsiSearchQuery;
+            return fsiSets.filter(set => {
+                const srcOk = fsiLibraryFilter === 'all' || (set.source || '') === fsiLibraryFilter;
+                const lvOk = fsiLevelFilter === 'all' || (set.level || '') === fsiLevelFilter;
+                if (!srcOk || !lvOk) return false;
+                if (!q) return true;
+                const hay = [set.title, set.topic, set.corePattern, set.baseSentence, set.level]
+                    .join(' ')
+                    .toLowerCase();
+                return hay.includes(q);
+            }).sort((a, b) => {
                 const ta = a.lastPracticedAt || a.updatedAt || '';
                 const tb = b.lastPracticedAt || b.updatedAt || '';
                 return tb.localeCompare(ta);
-            }).filter(set => {
-                const srcOk = fsiLibraryFilter === 'all' || (set.source || '') === fsiLibraryFilter;
-                const lvOk = fsiLevelFilter === 'all' || (set.level || '') === fsiLevelFilter;
-                return srcOk && lvOk;
-            });
-            if (!sorted.length) {
-                const empty = document.createElement('div');
-                empty.className = 'empty-state';
-                empty.innerHTML = '<strong>這個分類還沒有題集</strong>可切回「全部」或自己出一本題集';
-                host.appendChild(empty);
-                return;
-            }
-            sorted.forEach(set => {
-                const card = document.createElement('article');
-                card.className = 'fsi-set-card';
-                const n = (set.items || []).length;
-                const src = FSI_SOURCE_LABEL[set.source] || (set.builtin ? '範例' : '自訂');
-                card.innerHTML = `
-                    <div><span class="fsi-chip">${fsiEsc(set.level || 'A2')}</span><span class="fsi-chip">${fsiEsc(src)}</span></div>
-                    <h3></h3>
-                    <div class="fsi-set-meta"></div>
-                    <div class="fsi-set-actions">
-                        <button type="button" class="go" data-act="play">開始操練</button>
-                        <button type="button" class="ghost" data-act="export">匯出</button>
-                        <button type="button" class="danger" data-act="del">刪除</button>
-                    </div>`;
-                card.querySelector('h3').textContent = set.title || set.corePattern || '未命名題集';
-                card.querySelector('.fsi-set-meta').textContent =
-                    `${set.topic || set.corePattern || ''} · ${n} 題 · 練過 ${set.timesCompleted || 0} 次 · ${fsiFormatWhen(set.lastPracticedAt)}`;
-                card.querySelector('[data-act="play"]').addEventListener('click', () => fsiStartSession(set.id));
-                card.querySelector('[data-act="export"]').addEventListener('click', () => fsiExportSet(set.id));
-                card.querySelector('[data-act="del"]').addEventListener('click', () => fsiDeleteSet(set.id));
-                host.appendChild(card);
             });
         }
 
-        function fsiExportSet(id) {
-            const set = fsiSets.find(s => s.id === id);
-            if (!set) return;
-            const blob = new Blob([JSON.stringify(set, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = (set.title || 'fsi-set').replace(/[\\/:*?"<>|]/g, '_') + '.json';
-            a.click();
-            URL.revokeObjectURL(a.href);
-            showToast('已匯出題集', 'success');
+        function fsiAllTypesSelected() {
+            return FSI_ITEM_TYPES.every(t => fsiTypeFilter.has(t));
+        }
+
+        function fsiTypeFilterKey() {
+            return FSI_ITEM_TYPES.filter(t => fsiTypeFilter.has(t)).join(',');
+        }
+
+        function fsiSyncTypeFilterButtons() {
+            const allOn = fsiAllTypesSelected();
+            document.querySelectorAll('[data-fsi-qtype]').forEach(btn => {
+                const t = btn.dataset.fsiQtype;
+                btn.classList.toggle('active', t === 'all' ? allOn : fsiTypeFilter.has(t));
+            });
+        }
+
+        function fsiCountMixItems(sets) {
+            let n = 0;
+            (sets || []).forEach(set => {
+                (set.items || []).forEach(it => {
+                    if (fsiMixItemAllowed(it)) n++;
+                });
+            });
+            return n;
+        }
+
+        function fsiUpdateMixHint(sets) {
+            const hint = document.getElementById('fsiMixHint');
+            const btn = document.getElementById('fsiMixBtn');
+            const setN = sets.length;
+            const itemN = fsiCountMixItems(sets);
+            if (btn) btn.disabled = setN === 0 || itemN === 0;
+            if (!hint) return;
+            if (!setN) {
+                hint.textContent = '目前沒有可抽的題集，先改篩選或搜尋。';
+                return;
+            }
+            if (!itemN) {
+                hint.textContent = `下面有 ${setN} 本題集，但沒有你勾的題型。`;
+                return;
+            }
+            const typeNote = fsiAllTypesSelected() ? '全部題型' : `已選 ${fsiTypeFilter.size} 種題型`;
+            hint.textContent = `把下面 ${setN} 本題集、${typeNote} 共 ${itemN} 題合在一起抽；同一組條件順序固定。`;
+        }
+
+        function fsiRenderLibrary() {
+            const host = document.getElementById('fsiSetList');
+            if (!host) return;
+            if (!fsiSets.length) {
+                fsiUpdateMixHint([]);
+                host.innerHTML = '<div class="empty-state"><strong>還沒有題集</strong>點右上角「出新題集」，或匯入 JSON</div>';
+                return;
+            }
+            const filtered = fsiVisibleSets();
+            fsiUpdateMixHint(filtered);
+            if (!filtered.length) {
+                host.innerHTML = fsiSearchQuery
+                    ? '<div class="empty-state"><strong>沒有符合搜尋的題集</strong>換個關鍵字，或清掉搜尋</div>'
+                    : '<div class="empty-state"><strong>這個分類還沒有題集</strong>可切回「全部」或自己出一本題集</div>';
+                return;
+            }
+            host.innerHTML = filtered.map(set => {
+                const n = (set.items || []).length;
+                const src = FSI_SOURCE_LABEL[set.source] || (set.builtin ? '範例' : '自訂');
+                const title = set.title || set.corePattern || '未命名題集';
+                const meta = `${set.topic || set.corePattern || ''} · ${n} 題 · 練過 ${set.timesCompleted || 0} 次 · ${fsiFormatWhen(set.lastPracticedAt)}`;
+                return `<article class="fsi-set-card" data-set-id="${fsiEsc(set.id)}">
+                    <div><span class="fsi-chip">${fsiEsc(set.level || 'A2')}</span><span class="fsi-chip">${fsiEsc(src)}</span></div>
+                    <h3>${fsiEsc(title)}</h3>
+                    <div class="fsi-set-meta">${fsiEsc(meta)}</div>
+                    <div class="fsi-set-actions">
+                        <button type="button" class="go" data-act="play">開始操練</button>
+                        <button type="button" class="danger" data-act="del">刪除</button>
+                    </div>
+                </article>`;
+            }).join('');
         }
 
         async function fsiDeleteSet(id) {
-            const set = fsiSets.find(s => s.id === id);
+            const set = fsiSetById.get(id) || fsiSets.find(s => s.id === id);
             if (!set) return;
             const ok = await askConfirm(`確定刪除「${set.title || '這本題集'}」？`, '刪除題集');
             if (!ok) return;
-            if (set.builtin) fsiMarkStarterSeen(id);
-            fsiSets = fsiSets.filter(s => s.id !== id);
-            fsiSaveSets();
+            if (set.builtin || fsiIsBuiltinId(id)) {
+                if (!fsiStore.deleted.includes(id)) fsiStore.deleted.push(id);
+                delete fsiStore.progress[id];
+            } else {
+                fsiStore.custom = (fsiStore.custom || []).filter(s => s.id !== id);
+                delete fsiStore.progress[id];
+            }
+            fsiHydrateSets();
+            fsiPersistStore(true);
             fsiRenderLibrary();
             showToast('已刪除題集', 'success');
         }
@@ -12017,11 +12780,12 @@
                         set.timesCompleted = 0;
                         set.lastPracticedAt = null;
                         set.builtin = false;
-                        fsiSets.unshift(set);
+                        fsiWriteCustom(set);
                         added++;
                     });
                     if (!added) throw new Error('JSON 裡沒有可用題目');
-                    fsiSaveSets();
+                    fsiHydrateSets();
+                    fsiPersistStore(true);
                     fsiRenderLibrary();
                     showToast(`已匯入 ${added} 本題集`, 'success');
                 } catch (err) {
@@ -12056,6 +12820,7 @@
                 prompt: String(it.prompt || it.cueWord || it.hint || '').trim(),
                 cue: String(it.cue || '').trim(),
                 reference: String(it.reference || it.sentence || it.expected || '').trim(),
+                zh: String(it.zh || it.translation || '').trim(),
                 ipa: String(it.ipa || '').trim(),
                 rhythm: String(it.rhythm || '').trim()
             })).filter(it => it.prompt || it.reference);
@@ -12081,6 +12846,7 @@
                 ipa: String(src.ipa || '').trim(),
                 rhythm: String(src.rhythm || '').trim(),
                 items,
+                source: String(src.source || '').trim(),
                 createdAt: src.createdAt || fsiNowIso(),
                 updatedAt: src.updatedAt || fsiNowIso(),
                 lastPracticedAt: src.lastPracticedAt || null,
@@ -12253,8 +13019,9 @@
                 showToast('沒有可存的預覽', 'error');
                 return;
             }
-            fsiSets.unshift({ ...fsiPreviewSet, updatedAt: fsiNowIso() });
-            fsiSaveSets();
+            fsiWriteCustom({ ...fsiPreviewSet, updatedAt: fsiNowIso() });
+            fsiHydrateSets();
+            fsiPersistStore(true);
             fsiPreviewSet = null;
             document.getElementById('fsiPreview')?.classList.remove('show');
             fsiShowPanel('library');
@@ -12298,35 +13065,128 @@
             return base;
         }
 
-        function fsiBuildQueue(set) {
-            const queue = (set.items || []).map(it => ({ ...it, fromSetId: set.id }));
-            const others = fsiSets.filter(s => s.id !== set.id && (s.items || []).length);
-            const reviews = [];
-            others.forEach(s => {
-                (s.items || []).forEach(it => {
-                    if (it.type === 'substitution' || it.type === 'response') {
-                        reviews.push({ ...it, fromSetId: s.id, review: true, cue: (it.cue ? it.cue + ' · ' : '') + '複習' });
-                    }
+        function fsiHashSeed(str) {
+            let h = 2166136261;
+            const s = String(str || '');
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619);
+            }
+            return h >>> 0;
+        }
+
+        function fsiMulberry32(seed) {
+            let a = seed >>> 0;
+            return function () {
+                a |= 0;
+                a = a + 0x6D2B79F5 | 0;
+                let t = Math.imul(a ^ a >>> 15, 1 | a);
+                t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        function fsiSeededShuffle(arr, seedStr) {
+            const out = arr.slice();
+            const rand = fsiMulberry32(fsiHashSeed(seedStr));
+            for (let i = out.length - 1; i > 0; i--) {
+                const j = Math.floor(rand() * (i + 1));
+                const tmp = out[i];
+                out[i] = out[j];
+                out[j] = tmp;
+            }
+            return out;
+        }
+
+        function fsiMixItemAllowed(it) {
+            if (!it) return false;
+            if (!fsiTypeFilter.has(String(it.type || '').toLowerCase())) return false;
+            return !!(it.prompt || it.reference);
+        }
+
+        function fsiItemStableKey(it) {
+            return [it.fromSetId || '', it.type || '', it.prompt || '', it.reference || ''].join('\0');
+        }
+
+        function fsiStartMixedSession() {
+            const sets = fsiVisibleSets();
+            if (!sets.length) {
+                showToast('目前篩選沒有題集', 'error');
+                return;
+            }
+            const raw = [];
+            sets.forEach(set => {
+                (set.items || []).forEach(it => {
+                    if (!fsiMixItemAllowed(it)) return;
+                    raw.push({
+                        ...it,
+                        fromSetId: set.id,
+                        mix: true,
+                        setTitle: set.title || set.corePattern || ''
+                    });
                 });
             });
-            for (let i = reviews.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [reviews[i], reviews[j]] = [reviews[j], reviews[i]];
+            if (!raw.length) {
+                showToast(fsiTypeFilter.size ? '這些題集沒有你勾的題型' : '先至少選一種題型', 'error');
+                return;
             }
-            const take = reviews.slice(0, Math.min(4, reviews.length));
-            take.forEach((item, idx) => {
-                const at = Math.min(queue.length, 8 + idx * 4);
-                queue.splice(at, 0, item);
+            raw.sort((a, b) => {
+                const ka = fsiItemStableKey(a);
+                const kb = fsiItemStableKey(b);
+                return ka < kb ? -1 : ka > kb ? 1 : 0;
             });
+            const seed = [
+                fsiLevelFilter || 'all',
+                fsiLibraryFilter || 'all',
+                fsiSearchQuery || '',
+                fsiTypeFilterKey(),
+                sets.map(s => s.id).slice().sort().join(',')
+            ].join('|');
+            const queue = fsiSeededShuffle(raw, seed);
+            fsiSession = {
+                setId: '__mix__',
+                mixed: true,
+                mixSeed: seed,
+                queue,
+                index: 0,
+                tooSlow: 0,
+                answered: 0,
+                startedAt: Date.now(),
+                waitingNext: false
+            };
+            document.getElementById('fsiDrillPlay')?.style.setProperty('display', 'block');
+            document.getElementById('fsiDrillDone')?.classList.remove('show');
+            fsiShowPanel('drill');
+            fsiShowCurrentItem();
+        }
+
+        function fsiBuildQueue(set) {
+            const queue = (set.items || [])
+                .filter(it => fsiMixItemAllowed(it))
+                .map(it => ({ ...it, fromSetId: set.id }));
+            const pool = [];
+            const source = fsiReviewPool.length ? fsiReviewPool : [];
+            for (let i = 0; i < source.length; i++) {
+                if (source[i].setId !== set.id && fsiMixItemAllowed(source[i].item)) pool.push(source[i]);
+            }
+            const take = Math.min(4, pool.length);
+            for (let n = 0; n < take; n++) {
+                const j = n + Math.floor(Math.random() * (pool.length - n));
+                const picked = pool[j];
+                pool[j] = pool[n];
+                const at = Math.min(queue.length, 8 + n * 4);
+                const cue = (picked.item.cue ? picked.item.cue + ' · ' : '') + '複習';
+                queue.splice(at, 0, { ...picked.item, fromSetId: picked.setId, review: true, cue });
+            }
             return queue;
         }
 
         function fsiStartSession(id) {
-            const set = fsiSets.find(s => s.id === id);
+            const set = fsiSetById.get(id) || fsiSets.find(s => s.id === id);
             if (!set) return;
             const queue = fsiBuildQueue(set);
             if (!queue.length) {
-                showToast('這本題集沒有題目', 'error');
+                showToast(fsiTypeFilter.size ? '這本題集沒有你勾的題型' : '先至少選一種題型', 'error');
                 return;
             }
             fsiSession = {
@@ -12365,7 +13225,9 @@
             if (play) play.style.display = 'block';
             done?.classList.remove('show');
             document.getElementById('fsiTypeBadge').textContent =
-                (item.review ? '複習 · ' : '') + (FSI_TYPE_LABEL[item.type] || item.type);
+                (item.review ? '複習 · ' : '')
+                + (item.mix && item.setTitle ? item.setTitle + ' · ' : '')
+                + (FSI_TYPE_LABEL[item.type] || item.type);
             document.getElementById('fsiPrompt').textContent = fsiDisplayPrompt(item);
             const ipaEl = document.getElementById('fsiIpa');
             if (ipaEl) ipaEl.textContent = '';
@@ -12452,18 +13314,27 @@
 
         function fsiFinishSession() {
             if (!fsiSession) return;
-            const set = fsiSets.find(s => s.id === fsiSession.setId);
-            if (set) {
-                set.timesCompleted = (set.timesCompleted || 0) + 1;
-                set.lastPracticedAt = fsiNowIso();
-                set.lastTooSlow = fsiSession.tooSlow;
-                set.updatedAt = set.lastPracticedAt;
-                fsiSaveSets();
+            if (!fsiSession.mixed) {
+                const set = fsiSetById.get(fsiSession.setId) || fsiSets.find(s => s.id === fsiSession.setId);
+                if (set) {
+                    set.timesCompleted = (set.timesCompleted || 0) + 1;
+                    set.lastPracticedAt = fsiNowIso();
+                    set.lastTooSlow = fsiSession.tooSlow;
+                    set.updatedAt = set.lastPracticedAt;
+                    fsiRememberProgress(set);
+                    fsiPersistStore();
+                }
             }
             const elapsed = Math.max(1, Math.round((Date.now() - fsiSession.startedAt) / 1000));
             const stats = document.getElementById('fsiDoneStats');
             if (stats) {
                 stats.textContent = `完成 ${fsiSession.answered} 題 · 逾時重來 ${fsiSession.tooSlow} 次 · 用時 ${elapsed} 秒`;
+            }
+            const hint = document.querySelector('#fsiDrillDone .fsi-hint');
+            if (hint) {
+                hint.textContent = fsiSession.mixed
+                    ? '同一組篩選再按一次，題目順序會一樣。'
+                    : '題集已更新複習時間。過幾天再點進來，舊提示詞會穿插出現。';
             }
             document.getElementById('fsiDrillPlay').style.display = 'none';
             document.getElementById('fsiDrillDone')?.classList.add('show');
@@ -12482,6 +13353,7 @@
             if (!page || fsiPageReady) return;
             fsiPageReady = true;
             fsiFillLlmForm();
+            fsiSyncTypeFilterButtons();
 
             document.getElementById('fsiNewSetBtn')?.addEventListener('click', () => {
                 fsiShowPanel('generate');
@@ -12522,11 +13394,26 @@
                 });
                 fsiRenderLibrary();
             });
+            document.getElementById('fsiTypeFilters')?.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-fsi-qtype]');
+                if (!btn) return;
+                const t = btn.dataset.fsiQtype;
+                if (t === 'all') {
+                    fsiTypeFilter = new Set(FSI_ITEM_TYPES);
+                } else if (FSI_ITEM_TYPES.includes(t)) {
+                    if (fsiTypeFilter.has(t)) fsiTypeFilter.delete(t);
+                    else fsiTypeFilter.add(t);
+                }
+                fsiSyncTypeFilterButtons();
+                fsiRenderLibrary();
+            });
             document.getElementById('fsiDrillExitBtn')?.addEventListener('click', fsiExitDrill);
             document.getElementById('fsiDoneBackBtn')?.addEventListener('click', fsiExitDrill);
             document.getElementById('fsiAgainBtn')?.addEventListener('click', () => {
-                if (fsiSession?.setId) fsiStartSession(fsiSession.setId);
+                if (fsiSession?.mixed) fsiStartMixedSession();
+                else if (fsiSession?.setId) fsiStartSession(fsiSession.setId);
             });
+            document.getElementById('fsiMixBtn')?.addEventListener('click', fsiStartMixedSession);
             document.getElementById('fsiPrimaryBtn')?.addEventListener('click', fsiPrimaryAction);
             document.getElementById('fsiTimerBar')?.addEventListener('animationend', fsiOnTooSlow);
             document.getElementById('fsiTypein')?.addEventListener('keydown', (e) => {
@@ -12535,6 +13422,30 @@
                     fsiPrimaryAction();
                 }
             });
+            const list = document.getElementById('fsiSetList');
+            if (list && list.dataset.delegated !== '1') {
+                list.dataset.delegated = '1';
+                list.addEventListener('click', (e) => {
+                    const btn = e.target.closest('[data-act]');
+                    if (!btn) return;
+                    const id = btn.closest('[data-set-id]')?.dataset.setId;
+                    if (!id) return;
+                    if (btn.dataset.act === 'play') fsiStartSession(id);
+                    else if (btn.dataset.act === 'del') fsiDeleteSet(id);
+                });
+            }
+            const search = document.getElementById('fsiSearch');
+            if (search && search.dataset.ready !== '1') {
+                search.dataset.ready = '1';
+                let searchTimer = null;
+                search.addEventListener('input', () => {
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(() => {
+                        fsiSearchQuery = String(search.value || '').trim().toLowerCase();
+                        fsiRenderLibrary();
+                    }, 140);
+                });
+            }
             document.addEventListener('keydown', (e) => {
                 if (currentAppView !== 'english' || !fsiSession) return;
                 if (e.key !== ' ' && e.key !== 'Enter') return;

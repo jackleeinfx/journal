@@ -1,5 +1,8 @@
--- FSI 英語操練題庫（每個使用者一列 JSON）
+-- FSI 英語操練進度（每個使用者一列 JSON）
 -- 在 Supabase SQL Editor 執行一次即可。沒跑這支也不影響本機練習。
+-- sets 欄位現在存精簡結構，不是整包內建題庫：
+-- { "v": 2, "progress": { "<setId>": { lastPracticedAt, timesCompleted, lastTooSlow } },
+--   "deleted": ["<builtinId>"], "custom": [ 使用者自建題集 ] }
 
 CREATE TABLE IF NOT EXISTS fsi_drill_library (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
