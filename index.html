@@ -5928,18 +5928,84 @@
             else openLifeImageLightbox(src);
         }
 
-        /** 從點擊的圖片出發：收集與它同容器（同篇日記／待辦）的其他圖片形成組 */
+        function indexOfLightboxSrc(srcs, clickedSrc) {
+            const wanted = String(clickedSrc || '');
+            if (!wanted) return -1;
+            const exact = srcs.indexOf(wanted);
+            if (exact >= 0) return exact;
+            const strip = (s) => String(s || '').split('#')[0];
+            const wantedBase = strip(wanted);
+            return srcs.findIndex((s) => strip(s) === wantedBase);
+        }
+
+        async function collectVisibleDiaryListImageSrcs() {
+            const list = document.getElementById('diaryList');
+            if (!list) return [];
+            const srcs = [];
+            const seen = new Set();
+            const push = (url) => {
+                const s = String(url || '').trim();
+                if (!s || seen.has(s) || !isDisplayableImageUrl(s)) return;
+                seen.add(s);
+                srcs.push(s);
+            };
+            const items = [...list.querySelectorAll('.diary-item')];
+            for (const itemEl of items) {
+                const imgs = [...itemEl.querySelectorAll('.diary-item-images img')];
+                if (imgs.length) {
+                    imgs.forEach((img) => push(img.getAttribute('src') || img.src));
+                    continue;
+                }
+                const diary = findDiaryByIdLoose(itemEl.getAttribute('data-diary-id'));
+                if (!diary) continue;
+                let urls = getDiaryDisplayImageUrls(diary);
+                const paths = normalizeDiaryImagePaths(diary.images);
+                if (paths.length && urls.length < paths.length) {
+                    try {
+                        const resolved = await Promise.all(paths.map((p) => resolveImageUrl(p)));
+                        urls = resolved.filter(isDisplayableImageUrl);
+                        diary.imageUrls = resolved;
+                    } catch (e) { /* keep whatever we have */ }
+                }
+                urls.forEach(push);
+            }
+            return srcs;
+        }
+
+        async function expandDiaryListLightbox(clickedSrc) {
+            const srcs = await collectVisibleDiaryListImageSrcs();
+            const box = document.getElementById('lifeImageLightbox');
+            if (!box?.classList.contains('show')) return;
+            if (!srcs.length) return;
+            let index = indexOfLightboxSrc(srcs, clickedSrc);
+            let nextSrcs = srcs;
+            if (index < 0) {
+                nextSrcs = [clickedSrc, ...srcs];
+                index = 0;
+            }
+            lightboxImages = nextSrcs;
+            lightboxIndex = index;
+            updateLightboxNav();
+        }
+
+        /** 日記列表：目前篩選下整份列表的圖片循環；待辦／生活紀錄仍只在同一組內循環 */
         window.openDiaryImageLightbox = function(el) {
             if (!el) return;
             const imgEl = el.tagName === 'IMG' ? el : el.querySelector('img');
             const src = (imgEl && (imgEl.getAttribute('src') || imgEl.src)) || (typeof el === 'string' ? el : '');
             if (!src) return;
+            const inDiaryList = !!(el.closest && el.closest('#diaryList'));
+            if (inDiaryList) {
+                openLifeImageLightbox([src], 0);
+                expandDiaryListLightbox(src);
+                return;
+            }
             const container = el.closest ? el.closest('.diary-item-images, .todo-item-images, .life-image-row') : null;
             let srcs = [];
             let index = 0;
             if (container) {
                 srcs = Array.from(container.querySelectorAll('img'))
-                    .map(i => i.getAttribute('src') || i.src)
+                    .map((i) => i.getAttribute('src') || i.src)
                     .filter(Boolean);
                 index = srcs.indexOf(src);
             }
