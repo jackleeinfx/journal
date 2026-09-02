@@ -9550,15 +9550,25 @@
             const files = [];
             const seen = new Set();
             const add = (file) => {
-                if (!file || !String(file.type || '').startsWith('image/')) return;
-                const key = `${file.name}:${file.size}:${file.lastModified || 0}`;
+                if (!file) return;
+                const type = String(file.type || '');
+                if (type && !type.startsWith('image/')) return;
+                const key = `${type || 'image'}:${file.size}:${file.name || ''}`;
                 if (seen.has(key)) return;
                 seen.add(key);
                 files.push(file);
             };
-            Array.from(dt?.files || []).forEach(add);
+            // 瀏覽器會同時放在 files 與 items：只取一邊，避免第一張被加兩次
+            const fromList = Array.from(dt?.files || []).filter((f) => {
+                const type = String(f?.type || '');
+                return !type || type.startsWith('image/');
+            });
+            if (fromList.length) {
+                fromList.forEach(add);
+                return files;
+            }
             Array.from(dt?.items || []).forEach((item) => {
-                if (item.kind === 'file' && String(item.type || '').startsWith('image/')) {
+                if (item.kind === 'file' && (!item.type || String(item.type).startsWith('image/'))) {
                     add(item.getAsFile());
                 }
             });
@@ -9567,11 +9577,23 @@
 
         function collectImageUrlsFromDataTransfer(dt) {
             const urls = [];
+            const seen = new Set();
             const push = (raw) => {
                 const url = String(raw || '').trim();
                 if (!url) return;
                 if (!(url.startsWith('data:image/') || /^https?:\/\//i.test(url))) return;
-                if (!urls.includes(url)) urls.push(url);
+                let key = url;
+                try {
+                    if (/^https?:\/\//i.test(url)) {
+                        const parsed = new URL(url);
+                        parsed.hash = '';
+                        key = `${parsed.origin}${parsed.pathname}`;
+                    }
+                } catch (e) { /* keep raw */ }
+                if (seen.has(key) || seen.has(url)) return;
+                seen.add(key);
+                seen.add(url);
+                urls.push(url);
             };
             const html = dt?.getData?.('text/html') || '';
             const imgRe = /<img[^>]+src\s*=\s*["']([^"']+)["']/gi;
@@ -9644,8 +9666,12 @@
             }
         }
 
+        let lastImageIngestAt = 0;
         async function ingestImagesFromDataTransfer(dt, target, boxEl) {
             if (!dt) return;
+            const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            if (now - lastImageIngestAt < 50) return;
+            lastImageIngestAt = now;
             const files = collectImageFilesFromDataTransfer(dt);
             if (files.length) {
                 await handleFiles(files, target);
@@ -9658,9 +9684,14 @@
             }
             if (boxEl) boxEl.classList.add('is-busy');
             const converted = [];
+            const convertedKeys = new Set();
             for (const url of urls.slice(0, 8)) {
                 const file = await fileFromRemoteImageUrl(url);
-                if (file) converted.push(file);
+                if (!file) continue;
+                const key = `${file.type}:${file.size}`;
+                if (convertedKeys.has(key)) continue;
+                convertedKeys.add(key);
+                converted.push(file);
             }
             if (boxEl) boxEl.classList.remove('is-busy');
             if (!converted.length) {
@@ -9780,12 +9811,9 @@
                 await ingestImagesFromDataTransfer(e.dataTransfer, null, dropBox);
             };
             
-            // 在上傳區域添加拖拽事件
+            // 拖放到上傳按鈕時只負責樣式；真正接收 drop 只綁一次，避免同一張被加兩次
             imageUploadArea.addEventListener('dragover', handleDragOver);
             imageUploadArea.addEventListener('dragleave', handleDragLeave);
-            imageUploadArea.addEventListener('drop', handleDrop);
-            
-            // 在整個容器上添加拖拽事件（支持從其他窗口拖拽）
             container.addEventListener('dragover', handleDragOver);
             container.addEventListener('dragleave', handleDragLeave);
             container.addEventListener('drop', handleDrop);
