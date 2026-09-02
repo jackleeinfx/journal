@@ -73,7 +73,8 @@
 
         .header-upload {
             display: flex;
-            align-items: center;
+            align-items: stretch;
+            gap: 8px;
         }
 
         .diary-compose-bar {
@@ -376,6 +377,68 @@
             border-style: solid;
         }
 
+        .image-drop-paste-box {
+            min-width: 92px;
+            max-width: 132px;
+            min-height: 40px;
+            padding: 5px 10px;
+            border: 2px dashed #667eea;
+            border-radius: 20px;
+            background: #f8f9fa;
+            color: #667eea;
+            cursor: text;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            line-height: 1.2;
+            outline: none;
+            user-select: none;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .image-drop-paste-box:hover,
+        .image-drop-paste-box:focus {
+            background: #e7f3ff;
+            border-style: solid;
+        }
+        .image-drop-paste-box.is-dragover,
+        .image-drop-paste-box.is-busy {
+            background: #e7f3ff;
+            border-style: solid;
+            border-color: #4c6ef5;
+        }
+        .image-drop-paste-title {
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .image-drop-paste-hint {
+            font-size: 10px;
+            color: #888;
+            font-style: normal;
+            font-weight: 400;
+        }
+        .image-drop-paste-box--inline {
+            border-radius: 8px;
+            min-height: 40px;
+            max-width: none;
+        }
+        body.dark-mode .image-drop-paste-box {
+            background: #2d2d44;
+            border-color: #667eea;
+            color: #c5cdf7;
+        }
+        body.dark-mode .image-drop-paste-box:hover,
+        body.dark-mode .image-drop-paste-box:focus,
+        body.dark-mode .image-drop-paste-box.is-dragover,
+        body.dark-mode .image-drop-paste-box.is-busy {
+            background: #3d3d5c;
+        }
+        body.dark-mode .image-drop-paste-hint {
+            color: #aaa;
+        }
+
         .image-upload-area input[type="file"] {
             position: absolute;
             width: 100%;
@@ -505,6 +568,17 @@
 
             .header-upload .image-upload-text {
                 font-size: 12px;
+            }
+
+            .image-drop-paste-box {
+                min-width: 72px;
+                padding: 4px 8px;
+            }
+            .image-drop-paste-title {
+                font-size: 11px;
+            }
+            .image-drop-paste-hint {
+                display: none;
             }
 
             .uploaded-image-item {
@@ -2537,6 +2611,10 @@
                 min-height: 44px;
                 font-size: 16px;
             }
+            .diary-compose-bar .header-upload {
+                display: flex;
+                gap: 8px;
+            }
             .diary-compose-bar .image-upload-area,
             .header-upload .image-upload-area {
                 min-height: 44px;
@@ -2544,6 +2622,12 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                flex: 1;
+            }
+            .image-drop-paste-box {
+                min-height: 44px;
+                flex: 1;
+                max-width: none;
             }
             .diary-compose-bar .image-upload-text,
             .header-upload .image-upload-text {
@@ -3958,6 +4042,10 @@
                                 <div class="image-upload-text">📷 上傳圖片</div>
                                 <div class="image-upload-hint">支持 JPG、PNG、GIF</div>
                                 <input type="file" id="imageFileInput" accept="image/*" multiple style="display: none;">
+                            </div>
+                            <div class="image-drop-paste-box" id="imageDropPasteBox" tabindex="0" role="textbox" aria-label="拖入或貼上圖片">
+                                <span class="image-drop-paste-title">拖入 / 貼上</span>
+                                <span class="image-drop-paste-hint">網頁圖片或剪貼簿</span>
                             </div>
                         </div>
                     </div>
@@ -9432,6 +9520,199 @@
             }
         }
 
+        function filenameFromImageUrl(url) {
+            try {
+                const path = new URL(url, window.location.href).pathname || '';
+                const base = decodeURIComponent(path.split('/').pop() || '');
+                if (base && /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(base)) return base;
+            } catch (e) { /* ignore */ }
+            return 'pasted-image.png';
+        }
+
+        function asImageFile(blob, nameHint) {
+            const type = (blob && blob.type && blob.type.startsWith('image/')) ? blob.type : 'image/png';
+            const ext = type === 'image/jpeg' ? 'jpg' : (type.split('/')[1] || 'png');
+            let name = String(nameHint || 'pasted-image');
+            if (!/\.[a-z0-9]+$/i.test(name)) name = `${name}.${ext}`;
+            return new File([blob], name, { type });
+        }
+
+        function dataUrlToBlob(dataUrl) {
+            const parts = String(dataUrl || '').split(',');
+            const mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/png';
+            const binary = atob(parts[1] || '');
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return new Blob([bytes], { type: mime });
+        }
+
+        function collectImageFilesFromDataTransfer(dt) {
+            const files = [];
+            const seen = new Set();
+            const add = (file) => {
+                if (!file || !String(file.type || '').startsWith('image/')) return;
+                const key = `${file.name}:${file.size}:${file.lastModified || 0}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                files.push(file);
+            };
+            Array.from(dt?.files || []).forEach(add);
+            Array.from(dt?.items || []).forEach((item) => {
+                if (item.kind === 'file' && String(item.type || '').startsWith('image/')) {
+                    add(item.getAsFile());
+                }
+            });
+            return files;
+        }
+
+        function collectImageUrlsFromDataTransfer(dt) {
+            const urls = [];
+            const push = (raw) => {
+                const url = String(raw || '').trim();
+                if (!url) return;
+                if (!(url.startsWith('data:image/') || /^https?:\/\//i.test(url))) return;
+                if (!urls.includes(url)) urls.push(url);
+            };
+            const html = dt?.getData?.('text/html') || '';
+            const imgRe = /<img[^>]+src\s*=\s*["']([^"']+)["']/gi;
+            let match;
+            while ((match = imgRe.exec(html))) push(match[1]);
+            const uriList = `${dt?.getData?.('text/uri-list') || ''}\n${dt?.getData?.('text/x-moz-url') || ''}`;
+            uriList.split(/\r?\n/).forEach((line) => {
+                if (!line || line.startsWith('#')) return;
+                push(line.split('\t')[0]);
+            });
+            const downloadUrl = dt?.getData?.('DownloadURL') || '';
+            if (downloadUrl) {
+                const parts = downloadUrl.split(':');
+                const maybeUrl = parts.slice(2).join(':');
+                push(maybeUrl);
+            }
+            const plain = dt?.getData?.('text/plain') || '';
+            if (/^(data:image\/|https?:\/\/)/i.test(plain.trim())) push(plain.trim());
+            return urls;
+        }
+
+        function fileFromImageElement(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.naturalWidth || img.width;
+                        canvas.height = img.naturalHeight || img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                reject(new Error('canvas empty'));
+                                return;
+                            }
+                            resolve(asImageFile(blob, filenameFromImageUrl(url)));
+                        }, 'image/png');
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                img.onerror = () => reject(new Error('image load failed'));
+                img.src = url;
+            });
+        }
+
+        async function fileFromRemoteImageUrl(url) {
+            const trimmed = String(url || '').trim();
+            if (!trimmed) return null;
+            if (trimmed.startsWith('data:image/')) {
+                return asImageFile(dataUrlToBlob(trimmed), 'pasted-image');
+            }
+            if (!/^https?:\/\//i.test(trimmed)) return null;
+            try {
+                const res = await fetch(trimmed, { mode: 'cors', credentials: 'omit' });
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const type = blob.type || '';
+                    if (type.startsWith('image/') || type === 'application/octet-stream' || !type) {
+                        return asImageFile(blob, filenameFromImageUrl(trimmed));
+                    }
+                }
+            } catch (e) { /* CORS or network */ }
+            try {
+                return await fileFromImageElement(trimmed);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function ingestImagesFromDataTransfer(dt, target, boxEl) {
+            if (!dt) return;
+            const files = collectImageFilesFromDataTransfer(dt);
+            if (files.length) {
+                await handleFiles(files, target);
+                return;
+            }
+            const urls = collectImageUrlsFromDataTransfer(dt);
+            if (!urls.length) {
+                showToast('沒有偵測到圖片', 'error');
+                return;
+            }
+            if (boxEl) boxEl.classList.add('is-busy');
+            const converted = [];
+            for (const url of urls.slice(0, 8)) {
+                const file = await fileFromRemoteImageUrl(url);
+                if (file) converted.push(file);
+            }
+            if (boxEl) boxEl.classList.remove('is-busy');
+            if (!converted.length) {
+                showToast('這張網頁圖片被網站保護，請改用右鍵「複製圖片」後貼上', 'error');
+                return;
+            }
+            await handleFiles(converted, target);
+        }
+
+        async function ingestImagesFromClipboard(clipboardData, target, boxEl) {
+            if (!clipboardData) return;
+            await ingestImagesFromDataTransfer(clipboardData, target, boxEl);
+        }
+
+        function bindImageDropPasteBox(el, target) {
+            if (!el || el.dataset.dropPasteBound === '1') return;
+            el.dataset.dropPasteBound = '1';
+            el.addEventListener('click', () => el.focus());
+            el.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                el.classList.add('is-dragover');
+            });
+            el.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+                el.classList.add('is-dragover');
+            });
+            el.addEventListener('dragleave', (e) => {
+                if (e.currentTarget.contains(e.relatedTarget)) return;
+                el.classList.remove('is-dragover');
+            });
+            el.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                el.classList.remove('is-dragover');
+                await ingestImagesFromDataTransfer(e.dataTransfer, target, el);
+            });
+            el.addEventListener('paste', async (e) => {
+                const dt = e.clipboardData;
+                const hasImage = dt && (
+                    collectImageFilesFromDataTransfer(dt).length
+                    || collectImageUrlsFromDataTransfer(dt).length
+                );
+                if (!hasImage) return;
+                e.preventDefault();
+                e.stopPropagation();
+                await ingestImagesFromClipboard(dt, target, el);
+            });
+        }
+
         // 初始化圖片上傳功能
         function initImageUpload() {
             console.log('[Image Upload] Initializing image upload...');
@@ -9470,12 +9751,15 @@
             console.log('[Image Upload] File input event listener added');
             
             // 在整個容器上添加拖拽功能（支持從其他窗口拖拽）
+            const dropBox = document.getElementById('imageDropPasteBox');
             const handleDragOver = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (e.dataTransfer.types.includes('Files')) {
-                    imageUploadArea.classList.add('dragover');
-                }
+                const types = Array.from(e.dataTransfer?.types || []);
+                const hasFiles = types.includes('Files');
+                const hasWebImage = types.includes('text/html') || types.includes('text/uri-list') || types.includes('text/x-moz-url');
+                if (hasFiles) imageUploadArea.classList.add('dragover');
+                if (dropBox && (hasFiles || hasWebImage)) dropBox.classList.add('is-dragover');
             };
             
             const handleDragLeave = (e) => {
@@ -9484,6 +9768,7 @@
                 // 只有當離開容器時才移除樣式
                 if (!e.currentTarget.contains(e.relatedTarget)) {
                     imageUploadArea.classList.remove('dragover');
+                    dropBox?.classList.remove('is-dragover');
                 }
             };
             
@@ -9491,11 +9776,8 @@
                 e.preventDefault();
                 e.stopPropagation();
                 imageUploadArea.classList.remove('dragover');
-                
-                const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-                if (files.length > 0) {
-                    await handleFiles(files);
-                }
+                dropBox?.classList.remove('is-dragover');
+                await ingestImagesFromDataTransfer(e.dataTransfer, null, dropBox);
             };
             
             // 在上傳區域添加拖拽事件
@@ -9507,6 +9789,8 @@
             container.addEventListener('dragover', handleDragOver);
             container.addEventListener('dragleave', handleDragLeave);
             container.addEventListener('drop', handleDrop);
+
+            bindImageDropPasteBox(dropBox, 'top');
         }
 
         // 處理上傳的圖片（target: 'top' | 'inline'）
@@ -11492,6 +11776,10 @@
                             <div class="diary-inline-meta">
                                 <input type="date" id="inlineDateInput" value="${escapeHtml(diary.date || '')}">
                                 <button type="button" class="diary-inline-upload" onclick="document.getElementById('inlineImageFileInput').click()">📷 上傳圖片</button>
+                                <div class="image-drop-paste-box image-drop-paste-box--inline" id="inlineImageDropPasteBox" tabindex="0" role="textbox" aria-label="拖入或貼上圖片">
+                                    <span class="image-drop-paste-title">拖入 / 貼上</span>
+                                    <span class="image-drop-paste-hint">網頁圖片或剪貼簿</span>
+                                </div>
                                 <input type="file" id="inlineImageFileInput" accept="image/*" multiple style="display:none;">
                             </div>
                             <div class="diary-inline-images" id="inlineUploadedImages"></div>
@@ -11748,6 +12036,7 @@
                     }
                 });
             }
+            bindImageDropPasteBox(document.getElementById('inlineImageDropPasteBox'), 'inline');
 
             await updateInlineImagePreview();
             updateTagsList();
