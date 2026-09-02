@@ -4333,8 +4333,9 @@
         let currentUserId = null; // auth.uid()
         let activeSupabaseUserId = null;
         let diariesOffset = 0;
-        let hasMoreDiaries = true;
+        let hasMoreDiaries = false;
         let isLoadingMoreDiaries = false;
+        let isBootstrappingDiaries = false;
         const DIARIES_PAGE_SIZE = 10;
         const DIARY_FILTER_PAGE_SIZE = 30;
         const PINNED_DIARY_IDS_KEY = 'pinnedDiaryIds';
@@ -9782,6 +9783,16 @@
             return ['tags.is.null', 'tags.eq.{}', 'tags.cd.{}'];
         }
 
+        function uniqueDiariesById(items) {
+            const seen = new Set();
+            return (items || []).filter((d) => {
+                const key = normalizeDiaryId(d?.id);
+                if (!key || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
         function appendUniqueDiaries(target, page) {
             (page || []).forEach((d) => {
                 if (!target.some((x) => sameDiaryId(x.id, d.id))) target.push(d);
@@ -9928,7 +9939,7 @@
             if (!('IntersectionObserver' in window)) return;
             diaryScrollObserver = new IntersectionObserver((entries) => {
                 if (!entries.some((e) => e.isIntersecting)) return;
-                if (!USE_SUPABASE || isLoadingMoreDiaries || !diaryHasMoreToLoad()) return;
+                if (!USE_SUPABASE || isBootstrappingDiaries || isLoadingMoreDiaries || !diaryHasMoreToLoad()) return;
                 if (currentEditingId !== null) return;
                 if (currentAppView && currentAppView !== 'diary') return;
                 loadMoreDiaries();
@@ -9941,7 +9952,7 @@
                 clearTimeout(diaryInfiniteScrollTimer);
                 diaryInfiniteScrollTimer = null;
             }
-            if (!USE_SUPABASE || isLoadingMoreDiaries || !diaryHasMoreToLoad()) return;
+            if (!USE_SUPABASE || isBootstrappingDiaries || isLoadingMoreDiaries || !diaryHasMoreToLoad()) return;
             if (currentEditingId !== null) return;
             if (currentAppView && currentAppView !== 'diary') return;
             if (consecutiveEmptyFilterPages >= 8) return;
@@ -10115,6 +10126,7 @@
         async function loadMoreDiaries() {
             // 就地編輯中若重繪列表，會丟失未存內容
             if (currentEditingId !== null) return;
+            if (isBootstrappingDiaries) return;
             if (!USE_SUPABASE || !activeSupabaseUserId || isLoadingMoreDiaries) return;
             if (!diaryHasMoreToLoad()) return;
 
@@ -10128,7 +10140,7 @@
                         limit: DIARIES_PAGE_SIZE,
                         mode: 'browse'
                     });
-                    diaries = diaries.concat(page);
+                    appendUniqueDiaries(diaries, page);
                     diariesOffset += page.length;
                     hasMoreDiaries = page.length === DIARIES_PAGE_SIZE;
                     await renderDiaryList();
@@ -10232,6 +10244,13 @@
 
         // 載入日記（首屏僅載入第一頁，不預先解析全部圖片 URL）
         async function loadDiaries() {
+            isBootstrappingDiaries = true;
+            hasMoreDiaries = false;
+            hasMoreRemoteFilter = false;
+            if (diaryInfiniteScrollTimer) {
+                clearTimeout(diaryInfiniteScrollTimer);
+                diaryInfiniteScrollTimer = null;
+            }
             if (USE_SUPABASE) {
                 try {
                     diaries = [];
@@ -10240,18 +10259,18 @@
                     searchCacheUserId = null;
                     searchCachePromise = null;
                     diariesOffset = 0;
-                    hasMoreDiaries = true;
+                    hasMoreDiaries = false;
 
                     const userId = getUserId();
                     if (!userId) throw new Error('尚未登入');
                     activeSupabaseUserId = userId;
                     console.log('[Supabase] Loading first diary page for user:', userId);
 
-                    diaries = await fetchDiaryPageRemote({
+                    diaries = uniqueDiariesById(await fetchDiaryPageRemote({
                         offset: 0,
                         limit: DIARIES_PAGE_SIZE,
                         mode: 'browse'
-                    });
+                    }));
                     diariesOffset = diaries.length;
                     hasMoreDiaries = diaries.length === DIARIES_PAGE_SIZE;
 
@@ -10289,16 +10308,18 @@
                 resetDiaryBrowseState();
             }
 
-            diaries = diaries.map(diary => ({
+            diaries = uniqueDiariesById(diaries.map(diary => ({
                 ...diary,
                 isPinned: isDiaryPinned(diary.id) || !!diary.isPinned
-            }));
+            })));
             await renderDiaryList();
             updateDiaryLoadMoreUI(
                 USE_SUPABASE
                     ? (hasMoreDiaries ? '往下滾動或點「載入更多」' : '已載入目前列表')
                     : ''
             );
+            isBootstrappingDiaries = false;
+            continueDiaryInfiniteScrollIfNeeded();
         }
 
         async function persistTagUsageCounts(tagNames) {
@@ -11656,7 +11677,7 @@
             // 不在此批次解析全部圖片 URL（改懶載入）
 
             // 置頂優先，其次按日期排序（最新的在前）
-            let sortedDiaries = sortDiariesWithPinnedFirst(diaries);
+            let sortedDiaries = sortDiariesWithPinnedFirst(uniqueDiariesById(diaries));
 
             // 如果顯示 checklist 篩選，應用篩選邏輯
             const checklistFilterButtons = document.getElementById('checklistFilterButtons');
@@ -11918,7 +11939,7 @@
 
         // 無限滾動備援（主要靠 IntersectionObserver +「載入更多」）
         window.addEventListener('scroll', function() {
-            if (!USE_SUPABASE || isLoadingMoreDiaries || !diaryHasMoreToLoad()) return;
+            if (!USE_SUPABASE || isBootstrappingDiaries || isLoadingMoreDiaries || !diaryHasMoreToLoad()) return;
             if (currentEditingId !== null) return;
             if ((window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 320)) {
                 loadMoreDiaries();
@@ -11938,7 +11959,7 @@
             // 圖片改懶載入，不在此批次簽全部 URL
 
             // 置頂優先，其次按日期排序
-            let sortedDiaries = sortDiariesWithPinnedFirst(filteredDiaries);
+            let sortedDiaries = sortDiariesWithPinnedFirst(uniqueDiariesById(filteredDiaries));
 
             // 如果顯示 checklist 篩選，應用篩選邏輯
             const checklistFilterButtons = document.getElementById('checklistFilterButtons');
